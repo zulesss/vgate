@@ -72,10 +72,21 @@ var _head_base_y: float = 0.0
 # FOV controller (создаётся в _ready как child). Канал для base + kicks.
 var fov_controller: FovController
 
-# Audio player для kill crack (Package B). Programmatic, не в .tscn — конвенция
-# как у fov_controller. Не идёт через Audio autoload pool: тот рандомит pitch
-# 0.9-1.1 каждый раз, что конфликтует со spec'ом «pitch не трогать».
+# Audio players для feel-эффектов (programmatic, не в .tscn — конвенция как у
+# fov_controller). Не идут через Audio autoload pool: тот рандомит pitch 0.9-1.1
+# каждый раз, что конфликтует со спекой «детерминированные числа».
 var _kill_crack_player: AudioStreamPlayer
+var _dash_whoosh_player: AudioStreamPlayer
+
+# Dash camera push state (§3): смещение camera.position.z на −DASH_PUSH_DISTANCE
+# (forward по local-Z для Camera3D в Godot), tween-возврат к 0 за DASH_PUSH_MS.
+const DASH_PUSH_DISTANCE := 0.15  # units forward
+const DASH_PUSH_MS := 200          # ease-out
+var _camera_push_remaining: float = 0.0  # секунд до восстановления к 0
+var _camera_push_total: float = 0.0      # для нормализации t в ease-out
+
+# Whoosh pitch: spec = +200 cents = 2^(200/1200) ≈ 1.1225.
+const DASH_WHOOSH_PITCH := 1.1224620483094  # 2.0 ** (200.0 / 1200.0)
 
 @onready var head = $Head
 @onready var camera = $Head/Camera
@@ -117,6 +128,19 @@ func _ready():
 	add_child(_kill_crack_player)
 
 	Events.enemy_killed.connect(_on_enemy_killed)
+
+	# Dash whoosh (§3 Package C): jump_b.ogg + pitch +200 cents. Выбран jump_b
+	# (а не jump_c) чтобы дифференцировать от jump-сигнатуры — action_jump()
+	# рандомизирует jump_a/b/c, jump_a в восприятии "якорный" jump-звук;
+	# выделяем jump_b под dash для аудио-различимости верба.
+	_dash_whoosh_player = AudioStreamPlayer.new()
+	_dash_whoosh_player.name = "DashWhooshPlayer"
+	_dash_whoosh_player.stream = load("res://sounds/jump_b.ogg")
+	_dash_whoosh_player.pitch_scale = DASH_WHOOSH_PITCH
+	_dash_whoosh_player.volume_db = 0.0
+	add_child(_dash_whoosh_player)
+
+	Events.dash_started.connect(_on_dash_started)
 
 func _process(delta):
 	# Handle functions
@@ -481,6 +505,19 @@ func _tick_feel(delta: float) -> void:
 	var bob_offset: float = sin(_bob_phase) * BOB_AMPLITUDE * _bob_amplitude_modifier
 	head.position.y = _head_base_y + bob_offset
 
+	# Dash camera push decay (§3). camera.position.z =0 baseline; во время dash'а
+	# смещаем на −DASH_PUSH_DISTANCE (forward в Camera3D local) и плавно возвращаем
+	# к 0 за DASH_PUSH_MS ease-out. camera.position.z не трогается ни в каком другом
+	# месте — конфликтов нет.
+	if _camera_push_remaining > 0.0:
+		_camera_push_remaining = maxf(0.0, _camera_push_remaining - delta)
+		var t: float = 1.0 - (_camera_push_remaining / _camera_push_total)  # 0..1
+		var inv: float = 1.0 - t
+		var ease_out: float = inv * inv  # quadratic ease-out for return-to-0
+		camera.position.z = -DASH_PUSH_DISTANCE * ease_out
+		if _camera_push_remaining <= 0.0:
+			camera.position.z = 0.0  # snap to baseline (no drift)
+
 
 # Kill burst (§2 Iter 1, MUST). FOV +15° punch ease-out-cubic 180 мс + audio crack
 # в frame 0. Hit-stop (Iter 2) и time-dilation (Iter 3) отложены до результата
@@ -491,6 +528,21 @@ func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 		fov_controller.kick(15.0, 180, "ease_out_cubic")
 	if _kill_crack_player != null:
 		_kill_crack_player.play()
+
+
+# Dash feel (§3, MUST). FOV +12° stretch ease-out-quart 250ms, camera push 0.15u
+# forward → ease-out 200ms, audio whoosh с pitch +200 cents. Все три слоя
+# срабатывают на один и тот же signal Events.dash_started, который VelocityGate
+# emit'ит из player.gd._try_start_dash() в момент старта dash'а.
+func _on_dash_started() -> void:
+	if fov_controller != null:
+		fov_controller.kick(12.0, 250, "ease_out_quart")
+	# Camera push: instant offset, decay через _tick_feel.
+	_camera_push_total = float(DASH_PUSH_MS) / 1000.0
+	_camera_push_remaining = _camera_push_total
+	camera.position.z = -DASH_PUSH_DISTANCE
+	if _dash_whoosh_player != null:
+		_dash_whoosh_player.play()
 
 
 # Symmetric ease-in-out (cubic). Используется для tunnel 72°→58°.
