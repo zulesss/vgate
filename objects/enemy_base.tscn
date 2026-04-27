@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0vgtenemybase01"]
+
+[ext_resource type="Script" uid="uid://b0vgtenemybscript" path="res://objects/enemy_base.gd" id="1_base"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_base_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="Mesh_base"]
+radius = 0.4
+height = 1.8
+
+[node name="EnemyBase" type="CharacterBody3D"]
+script = ExtResource("1_base")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_base_body")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_base")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 0.5
