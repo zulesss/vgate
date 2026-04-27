@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://b0vgtenemybase01"]
 
-[ext_resource type="Script" uid="uid://b0vgtenemybscript" path="res://objects/enemy_base.gd" id="1_base"]
+[ext_resource type="Script" uid="uid://bwv233t554obk" path="res://objects/enemy_base.gd" id="1_base"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_base_body"]
 radius = 0.4

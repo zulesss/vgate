@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://b0vgtshooter001"]
 
-[ext_resource type="Script" uid="uid://b0vgtshootscript" path="res://objects/shooter.gd" id="1_shoot"]
+[ext_resource type="Script" uid="uid://driv56em0fwrg" path="res://objects/shooter.gd" id="1_shoot"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_shooter"]
 albedo_color = Color(0.25, 0.45, 0.75, 1)

@@ -1,7 +1,7 @@
 class_name VelocityGateState extends Node
 
 # Главный state hook'а. Все числа здесь — источник правды (см. docs/systems/M1_numbers.md).
-# Player только сообщает current_speed, EnemyDummy зовёт apply_hit/apply_kill_restore,
+# Player только сообщает current_speed, EnemyBase подклассы зовут apply_hit/apply_kill_restore,
 # DebugHud только читает. Единственный owner state: этот autoload.
 
 const BASE_WALK_SPEED := 8.0

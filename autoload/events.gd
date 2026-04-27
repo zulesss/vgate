@@ -1,7 +1,7 @@
 class_name EventsBus extends Node
 
 # Signal bus для VelocityGate hook'а. Один canonical источник правды для коммуникации
-# между Player, EnemyDummy, VelocityGate, RunManager, DebugHud.
+# между Player, EnemyBase подклассами, VelocityGate, RunManager, DebugHud.
 
 signal player_hit(penalty: int)                          # враг попал по игроку, penalty = списанный cap
 signal enemy_killed(restore: int, position: Vector3)     # враг убит, +N к cap

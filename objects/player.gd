@@ -393,8 +393,8 @@ func change_weapon():
 	crosshair.texture = weapon.crosshair
 
 # Starter Kit enemy.gd зовёт player.damage(amount) если ему попасть. Маршрутизируем
-# в VelocityGate как shooter-penalty (концепт: hit от стрелка = -10 cap). Свой
-# EnemyDummy зовёт VelocityGate.apply_hit(MELEE_PENALTY) напрямую через ContactArea.
+# в VelocityGate как shooter-penalty (концепт: hit от стрелка = -10 cap). M3a
+# Shooter/Melee подклассы EnemyBase шлют apply_hit напрямую (resolve_attack path).
 func damage(_amount):
 	VelocityGate.apply_hit(VelocityGate.SHOOTER_PENALTY)
 
