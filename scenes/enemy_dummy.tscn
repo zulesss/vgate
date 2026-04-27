@@ -29,6 +29,7 @@ mesh = SubResource("Mesh_dummy")
 surface_material_override/0 = SubResource("Mat_dummy")
 
 [node name="ContactArea" type="Area3D" parent="."]
+monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="ContactArea"]
 shape = SubResource("Shape_dummy_contact")
