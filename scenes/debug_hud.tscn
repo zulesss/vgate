@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0vgtdebughud01"]
+
+[ext_resource type="Script" uid="uid://c3uo628n3l3pt" path="res://scripts/debug_hud.gd" id="1_dhud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_dhud"]
+bg_color = Color(0, 0, 0, 0.55)
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+
+[node name="DebugHud" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_dhud")
+
+[node name="Panel" type="PanelContainer" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+theme_override_styles/panel = SubResource("StyleBox_dhud")
+
+[node name="Label" type="Label" parent="Panel"]
+text = "velocity_cap: -"
+theme_override_colors/font_color = Color(0.85, 1, 0.7, 1)
