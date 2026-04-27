@@ -17,17 +17,20 @@ func _ready() -> void:
 # Зовётся player.gd → action_shoot → raycast collider.damage(weapon.damage).
 # Имя метода + untyped amount — Starter Kit convention (damage у них float).
 func damage(amount) -> void:
+	print("[TRACE EnemyDummy.damage] amount=", amount, " hp_before=", hp, " name=", name, " path=", get_path())
 	hp -= int(amount)
 	if hp <= 0:
 		die()
 
 
 func die() -> void:
+	print("[TRACE EnemyDummy.die] global_pos=", global_position)
 	VelocityGate.apply_kill_restore(global_position)
 	queue_free()
 
 
 func _on_contact_body_entered(body: Node) -> void:
+	print("[TRACE EnemyDummy contact] body=", body, " is_player=", body.is_in_group("player"))
 	if not body.is_in_group("player"):
 		return
 	# i-frames гасятся внутри VelocityGate.apply_hit — здесь просто шлём.
