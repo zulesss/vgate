@@ -5,6 +5,7 @@ class_name EnemySpawner extends Node
 # формула, multi-enemy) — M4.
 
 const RESPAWN_DELAY := 1.5
+const SPAWN_POINT_GROUP := "spawn_point"
 
 @export var enemy_scene: PackedScene
 @export var initial_spawn_position: Vector3 = Vector3(5.0, 0.9, -5.0)
@@ -37,11 +38,16 @@ func _spawn_initial() -> void:
 func _spawn_at_random_marker() -> void:
 	if enemy_scene == null:
 		return
-	var markers := get_tree().get_nodes_in_group("spawn_point")
+	var markers := get_tree().get_nodes_in_group(SPAWN_POINT_GROUP)
 	if markers.is_empty():
 		_spawn_initial()
 		return
-	var marker: Marker3D = markers[randi() % markers.size()]
+	# Cast в Marker3D с null-check: если в группу попадёт чужой Node (юзер-ошибка
+	# в сцене), не крашимся silently — варним и пропускаем тик.
+	var marker := markers[randi() % markers.size()] as Marker3D
+	if marker == null:
+		push_warning("EnemySpawner: node in '%s' group is not Marker3D, skipping" % SPAWN_POINT_GROUP)
+		return
 	var enemy := enemy_scene.instantiate()
 	get_parent().add_child(enemy)
 	# Y из marker'а = 0 (M1_arena_layout), но нам нужен capsule center на 0.9.

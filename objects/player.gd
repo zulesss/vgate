@@ -116,10 +116,9 @@ func _process(delta):
 	
 	# Falling out of arena → trigger смерть через тот же путь что drain (RunManager
 	# reset'ит VelocityGate). Пол арены на y=0; -10 это fail-safe если CSG-floor
-	# пропал/повредился.
-	if position.y < -10 and VelocityGate.is_alive:
-		VelocityGate.is_alive = false
-		Events.player_died.emit()
+	# пропал/повредился. force_kill идемпотентен — single source of truth для player_died.
+	if position.y < -10:
+		VelocityGate.force_kill()
 
 # Mouse movement
 

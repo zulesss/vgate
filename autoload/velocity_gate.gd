@@ -71,6 +71,19 @@ func reset_for_run() -> void:
 	is_alive = true
 
 
+# Single source of truth для "игрок умер" не из drain'а (например fall off arena).
+# Идемпотентен: повторные вызовы no-op'нутся, защита от double-emit player_died.
+func force_kill() -> void:
+	if not is_alive:
+		return
+	is_alive = false
+	velocity_cap = 0.0
+	if is_draining:
+		is_draining = false
+		Events.drain_stopped.emit()
+	Events.player_died.emit()
+
+
 func _physics_process(delta: float) -> void:
 	if i_frames_remaining > 0.0:
 		i_frames_remaining = maxf(0.0, i_frames_remaining - delta)
@@ -78,9 +91,12 @@ func _physics_process(delta: float) -> void:
 	if not is_alive:
 		return
 
-	# Drain timer: накапливаем время под threshold, либо сбрасываем если вышли.
+	# Drain timer: накапливаем время под threshold ТОЛЬКО до старта drain'а — после
+	# того как drain активен, его роль (gate в drain phase) выполнена и расти ему
+	# незачем (иначе float бы рос бесконечно во время затяжного drain).
 	if speed_ratio() < THRESHOLD:
-		drain_timer += delta
+		if not is_draining:
+			drain_timer += delta
 	else:
 		if drain_timer > 0.0 or is_draining:
 			drain_timer = 0.0
