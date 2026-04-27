@@ -18,7 +18,9 @@ Locked на старте проекта.
 HP в классике нет. Есть `velocity_cap` (0–100, старт 80).
 
 - **Hits от врагов** снижают `velocity_cap` (стрелок −10, ближнебой −20).
-- **Speed below threshold** (~30) дольше 2.5 сек → drain → смерть.
+- **Speed below threshold** дольше 2.5 сек → drain → смерть.
+  - Threshold формулируется как `speed_ratio = current_speed / max_speed_at_cap` где `max_speed_at_cap = base_walk_speed * (cap/100)`. Drain стартует при `speed_ratio < 0.3` (см. `docs/systems/M1_numbers.md`).
+  - **Важно** (M1 design pass от 2026-04-27, юзер approved): ratio нормирован к `max_speed_at_cap`, а не к голому `velocity_cap`. Голая нормировка к cap была математически degenerate (`current_speed / 80` всегда ≤ 0.1 → drain активен всегда). Текущая формула даёт читаемую зону "движусь медленнее 30% своего текущего потолка" + автоматический эффект "ловушка закрывается" (низкий cap → низкий max_speed → труднее выйти из drain).
 - **Kill restore**: убийство врага восстанавливает `velocity_cap` на N (стартовый ориентир +25).
 - **Враги становятся одновременно угрозой и топливом**. Это не "стрельба для очистки", это "стрельба для дыхания".
 
