@@ -64,10 +64,9 @@ func _play_telegraph() -> void:
 
 
 func _resolve_attack() -> void:
-	# Damage по контакту через ContactArea body_entered — в момент resolve
-	# проверяем дистанцию вручную (если за windup игрок отбежал, miss).
-	# Hit'ы через ContactArea также работают (idempotent через i-frames в
-	# VelocityGate.apply_hit), но resolve — explicit attack landing point.
+	# Single damage source per spec: damage только в этой точке, после windup.
+	# Если игрок успел уйти из range за 450ms — miss. ContactArea намеренно
+	# убрана из melee.tscn (legacy EnemyDummy double-hit path).
 	if not is_dying and _player != null:
 		var dist := _distance_to_player()
 		if dist <= attack_range:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://b0vgtmelee0001"]
+[gd_scene load_steps=5 format=3 uid="uid://b0vgtmelee0001"]
 
 [ext_resource type="Script" uid="uid://b0vgtmelescript" path="res://objects/melee.gd" id="1_melee"]
 
@@ -14,10 +14,6 @@ height = 1.7
 radius = 0.5
 height = 1.7
 
-[sub_resource type="CapsuleShape3D" id="Shape_melee_contact"]
-radius = 0.7
-height = 1.9
-
 [node name="Melee" type="CharacterBody3D"]
 script = ExtResource("1_melee")
 
@@ -31,9 +27,3 @@ surface_material_override/0 = SubResource("Mat_melee")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
 target_desired_distance = 0.5
-
-[node name="ContactArea" type="Area3D" parent="."]
-monitorable = false
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ContactArea"]
-shape = SubResource("Shape_melee_contact")
