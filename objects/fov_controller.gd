@@ -60,7 +60,6 @@ func _process(delta: float) -> void:
 		var t: float = elapsed / dur  # 0..1 progress
 		var remaining: float = _ease_remaining(t, k["easing"] as String)
 		kick_sum += (k["magnitude"] as float) * remaining
-		_kicks[i] = k
 
 	var final_fov: float = base_fov + kick_sum
 	if final_fov < min_fov:

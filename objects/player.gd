@@ -26,8 +26,7 @@ const FOV_AXIS2_LOCK := 85.0       # cap_ratio 0.5-0.75 — едва замет�
 const BOB_AMPLITUDE := 0.04         # baseline вертикальная амплитуда (units)
 const BOB_FREQUENCY := 8.0          # рад/сек, привязано к step-rate ходьбы
 const BOB_TAPER_SECONDS := 0.5      # время полного перехода 1↔0
-const BOB_THRESHOLD_LOW := 0.3      # speed_ratio ниже — taper к 0
-const BOB_THRESHOLD_HIGH := 0.3     # выше — restore к 1
+const BOB_THRESHOLD := 0.3          # speed_ratio: ниже — taper к 0, выше — restore к 1
 
 @export_subgroup("Weapons")
 @export var weapons: Array[Weapon] = []
@@ -451,7 +450,7 @@ func _tick_feel(delta: float) -> void:
 
 	# --- Camera bob amplitude taper ---
 	# threshold 0.3: ниже — modifier к 0 за BOB_TAPER_SECONDS, выше — к 1 за то же.
-	var target_mod: float = 0.0 if sr < BOB_THRESHOLD_LOW else 1.0
+	var target_mod: float = 0.0 if sr < BOB_THRESHOLD else 1.0
 	var step: float = delta / BOB_TAPER_SECONDS
 	if absf(target_mod - _bob_amplitude_modifier) <= step:
 		_bob_amplitude_modifier = target_mod
