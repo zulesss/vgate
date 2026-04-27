@@ -1,9 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://vgatemainm0"]
+[gd_scene load_steps=11 format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdummy0001" path="res://scenes/enemy_dummy.tscn" id="2_enemy"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
 [ext_resource type="Script" uid="uid://bchxi37kjav4d" path="res://scripts/enemy_spawner.gd" id="4_spawner"]
+[ext_resource type="Shader" path="res://shaders/vignette_flash.gdshader" id="5_vshader"]
+[ext_resource type="Script" path="res://scripts/vignette_flash.gd" id="6_vflash"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_main"]
 sky_horizon_color = Color(0.6422, 0.6502, 0.6802, 1)
@@ -19,6 +21,13 @@ ambient_light_source = 3
 ambient_light_color = Color(0.65, 0.7, 0.78, 1)
 ambient_light_energy = 0.6
 tonemap_mode = 2
+
+[sub_resource type="ShaderMaterial" id="ShaderMat_vflash"]
+shader = ExtResource("5_vshader")
+shader_parameter/flash_color = Color(0.85, 0.95, 1, 1)
+shader_parameter/flash_intensity = 0.0
+shader_parameter/vignette_inner = 0.35
+shader_parameter/vignette_outer = 0.75
 
 [node name="Main" type="Node3D"]
 
@@ -104,6 +113,20 @@ scale = Vector2(0.35, 0.35)
 pivot_offset = Vector2(64, 64)
 
 [node name="DebugHud" parent="." instance=ExtResource("3_dhud")]
+
+[node name="VignetteLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="VignetteFlash" type="ColorRect" parent="VignetteLayer"]
+material = SubResource("ShaderMat_vflash")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+script = ExtResource("6_vflash")
 
 [node name="Player" parent="." node_paths=PackedStringArray("crosshair") instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 10)

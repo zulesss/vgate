@@ -1,0 +1,44 @@
+extends ColorRect
+class_name VignetteFlash
+
+# Peripheral vignette flash on Events.enemy_killed (M2 Iter 2 swap).
+# Заменяет Velocity Exhale particles (commit 3afcffa) — юзер протестил, "не то".
+# Эффект: на kill периферия экрана коротко подсвечивается light-cyan,
+# центр без изменений. Layered поверх Iter 1 (FOV punch + audio crack);
+# параллельный subscriber на Events.enemy_killed.
+
+# Spec из брифа M2 Iter 2 swap:
+#   Stage 1: 0 → 0.4 за 50ms (rise, ease-out-quad)
+#   Stage 2: 0.4 → 0 за 100ms (decay, ease-in-quad)
+# Total 150ms — subtle coda, не drama.
+const FLASH_PEAK := 0.4
+const RISE_MS := 50
+const DECAY_MS := 100
+
+var _tween: Tween
+
+func _ready() -> void:
+	# Стартовое состояние: невидим. Shader uniform читается через material.set_shader_parameter().
+	if material is ShaderMaterial:
+		(material as ShaderMaterial).set_shader_parameter("flash_intensity", 0.0)
+	Events.enemy_killed.connect(_on_enemy_killed)
+
+func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+	# Graceful skip if player dead — иначе vignette может зависнуть на peak alpha
+	# до scene reload (RunManager делает reload через 2.8s). Hit-stop autoload не
+	# трогаем — оба слоя независимы.
+	if not VelocityGate.is_alive:
+		return
+	# Перезапускаем tween — каждый kill сбрасывает любую текущую анимацию,
+	# даже если предыдущая ещё не завершилась (kill chain не накапливает яркость).
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_tween = create_tween()
+	_tween.tween_method(_set_intensity, 0.0, FLASH_PEAK, float(RISE_MS) / 1000.0) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_tween.tween_method(_set_intensity, FLASH_PEAK, 0.0, float(DECAY_MS) / 1000.0) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+func _set_intensity(v: float) -> void:
+	if material is ShaderMaterial:
+		(material as ShaderMaterial).set_shader_parameter("flash_intensity", v)
