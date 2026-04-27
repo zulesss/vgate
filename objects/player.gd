@@ -72,12 +72,10 @@ var _head_base_y: float = 0.0
 # FOV controller (создаётся в _ready как child). Канал для base + kicks.
 var fov_controller: FovController
 
-# Audio players для feel-эффектов (programmatic, не в .tscn — конвенция как у
-# fov_controller). Не идут через Audio autoload pool: тот рандомит pitch 0.9-1.1
-# каждый раз, что конфликтует со spec'ом Package B (pitch не трогать) и Package C
-# (детерминированный +200 cents).
+# Audio player для kill crack (Package B). Programmatic, не в .tscn — конвенция
+# как у fov_controller. Не идёт через Audio autoload pool: тот рандомит pitch
+# 0.9-1.1 каждый раз, что конфликтует со spec'ом «pitch не трогать».
 var _kill_crack_player: AudioStreamPlayer
-var _dash_whoosh_player: AudioStreamPlayer
 
 @onready var head = $Head
 @onready var camera = $Head/Camera
