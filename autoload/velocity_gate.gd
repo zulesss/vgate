@@ -47,7 +47,6 @@ func apply_hit(penalty: int) -> void:
 
 
 func apply_kill_restore(pos: Vector3) -> void:
-	print("[TRACE apply_kill_restore] is_alive=", is_alive, " cap_before=", velocity_cap, " restore=", KILL_RESTORE)
 	if not is_alive:
 		return
 	velocity_cap = minf(CAP_CEILING, velocity_cap + float(KILL_RESTORE))

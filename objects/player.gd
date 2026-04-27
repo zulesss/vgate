@@ -235,7 +235,6 @@ func action_shoot():
 			if !raycast.is_colliding(): continue # Don't create impact when raycast didn't hit
 			
 			var collider = raycast.get_collider()
-			print("[TRACE shoot ", n, "] collider=", collider, " path=", collider.get_path() if collider else "<null>", " has_damage=", collider.has_method("damage") if collider else false, " group_enemy=", collider.is_in_group("enemy") if collider else false)
 
 			# Hitting an enemy
 
@@ -314,7 +313,6 @@ func change_weapon():
 # в VelocityGate как shooter-penalty (концепт: hit от стрелка = -10 cap). Свой
 # EnemyDummy зовёт VelocityGate.apply_hit(MELEE_PENALTY) напрямую через ContactArea.
 func damage(_amount):
-	print("[TRACE Player.damage SELF-HIT] amount=", _amount, " — should not happen on shoot")
 	VelocityGate.apply_hit(VelocityGate.SHOOTER_PENALTY)
 
 # Create a random knockback vector
