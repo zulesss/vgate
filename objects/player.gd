@@ -14,13 +14,18 @@ const DASH_VELOCITY_BURST := 20.0
 const DASH_DURATION := 0.2
 const DASH_COOLDOWN := 2.5
 
-# FOV double-axis (docs/feel/feel_spec.md §1). Базовое значение spec'а — 90°,
-# не Starter-Kit'овые 80° в .tscn (исправляем в _ready()).
-const FOV_BASE := 90.0
-const FOV_LOW := 72.0   # speed_ratio 0.3 — нижняя точка квадратичной t² в зоне 0.3-0.6
-const FOV_MIN := 58.0   # удушение пол: ниже motion sickness
-const FOV_TUNNEL_DURATION := 1.8  # секунды: 72° → 58° за этот период когда speed_ratio<0.3
-const FOV_AXIS2_LOCK := 85.0       # cap_ratio 0.5-0.75 — едва заметная компрессия
+# FOV single-axis cap mapping (docs/feel/feel_spec.md §1, revised 2026-04-27).
+# base_fov = cap_to_fov(velocity_cap):
+#   cap≥80 (CAP_MID) → linear 90→95° (in-form headroom)
+#   cap<80           → quadratic 90→58° (urgency accelerates near zero)
+# Pivot от axis1 (speed_ratio tunnel) + axis2 (cap_ratio plateau) + min(): плато
+# давало dead-zone, kill restore не читался визуально. Single-axis = continuous
+# read «cap = FOV», kill +25 расширяет окно сразу.
+const FOV_NORM := 90.0   # старт (cap=80)
+const FOV_PEAK := 95.0   # cap=100 — пик «в форме»
+const FOV_FLOOR := 58.0  # motion sickness limit (cap=0)
+const CAP_MID := 0.8     # 80 / VelocityGate.CAP_CEILING — точка перегиба кривой
+const FOV_BASE_SMOOTH_SECONDS := 0.1  # 100ms сглаживание дёрганья на hit/kill
 
 # Camera bob (§1, MUST). Amplitude → 0 при low ratio, restore при high. 0.5 сек tween.
 const BOB_AMPLITUDE := 0.04         # baseline вертикальная амплитуда (units)
@@ -58,11 +63,6 @@ var tween: Tween
 var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
-
-# FOV §1 — slow-down zone enter time. Когда speed_ratio впервые пересекает <0.3,
-# фиксируем t=0 для tunnel-кривой 72°→58° за 1.8 сек ease-in-out.
-var _tunnel_time: float = 0.0
-var _in_tunnel: bool = false
 
 # Camera bob state.
 var _bob_phase: float = 0.0
@@ -109,13 +109,15 @@ func _ready():
 	initiate_change_weapon(weapon_index)
 
 	# FOV controller — программный child, не в .tscn (проще + матчит conventions).
+	# Стартуем с FOV_NORM (cap=80 → 90°) — set_base в _tick_feel перепишет первым же
+	# кадром через cap_to_fov(), но snap нужен чтобы не было кадра с дефолтным 75°.
 	fov_controller = FovController.new()
 	fov_controller.name = "FovController"
-	fov_controller.base_fov = FOV_BASE
-	fov_controller.min_fov = FOV_MIN
+	fov_controller.base_fov = FOV_NORM
+	fov_controller.min_fov = FOV_FLOOR
 	fov_controller.set_camera(camera)
 	add_child(fov_controller)
-	camera.fov = FOV_BASE  # стартовый snap (Starter-Kit имел 80°)
+	camera.fov = FOV_NORM  # стартовый snap (Starter-Kit имел 80°)
 
 	_head_base_y = head.position.y
 
@@ -436,56 +438,14 @@ func get_dash_cooldown_remaining() -> float:
 	return _dash_cooldown_remaining
 
 
-# Feel pass §1 — каждый кадр пересчитываем base FOV (double-axis) и амплитуду bob'а.
-# Per-frame дёшево: пара ifelse + sin. Tween'ить modifier нужно явно (а не через Tween node)
-# чтобы не плодить allocations на каждом entry/exit.
+# Feel pass §1 — каждый кадр пересчитываем base FOV (single-axis cap) и bob taper.
+# Per-frame дёшево: одна if-ветка + lerpf. Дёрганье на дискретных hit/kill событиях
+# гасится 100ms экспоненциальным smoothing'ом внутри fov_controller.set_base().
 func _tick_feel(delta: float) -> void:
 	var sr: float = VelocityGate.speed_ratio()
-	var cap_ratio: float = VelocityGate.velocity_cap / 80.0
 
-	# --- Ось 1: speed_ratio ---
-	var fov_axis1: float
-	if sr >= 0.6:
-		fov_axis1 = FOV_BASE
-		_in_tunnel = false
-		_tunnel_time = 0.0
-	elif sr >= 0.3:
-		# Зона "тревога": квадратичная t² ease-in 90° → 72° на отрезке sr 0.6 → 0.3.
-		# t=0 при sr=0.6 (FOV_BASE), t=1 при sr=0.3 (FOV_LOW).
-		var t: float = (0.6 - sr) / 0.3
-		var eased: float = t * t  # ease-in-quadratic, периферия сужается медленно потом резко
-		fov_axis1 = lerpf(FOV_BASE, FOV_LOW, eased)
-		_in_tunnel = false
-		_tunnel_time = 0.0
-	else:
-		# "Удушение": 72° → 58° за FOV_TUNNEL_DURATION ease-in-out.
-		# Time-based, не speed-ratio-based — игрок не должен мгновенно проваливаться в 58°
-		# когда ratio пересёк 0.3, должен иметь 1.8 сек tunnel buildup.
-		if not _in_tunnel:
-			_in_tunnel = true
-			_tunnel_time = 0.0
-		_tunnel_time = minf(_tunnel_time + delta, FOV_TUNNEL_DURATION)
-		var t2: float = _tunnel_time / FOV_TUNNEL_DURATION  # 0..1
-		var eased2: float = _ease_in_out(t2)
-		fov_axis1 = lerpf(FOV_LOW, FOV_MIN, eased2)
-
-	# --- Ось 2: cap_ratio ---
-	var fov_axis2: float
-	if cap_ratio >= 0.75:
-		fov_axis2 = FOV_BASE
-	elif cap_ratio >= 0.5:
-		fov_axis2 = FOV_AXIS2_LOCK  # lock 85°, "что-то не так"
-	else:
-		# < 0.5 — продолжаем снижение (то же FOV_LOW как target в худшем случае).
-		# Линейная интерполяция от 85° (cap 0.5) к FOV_LOW (cap 0.0).
-		var t3: float = (0.5 - cap_ratio) / 0.5
-		fov_axis2 = lerpf(FOV_AXIS2_LOCK, FOV_LOW, clampf(t3, 0.0, 1.0))
-
-	var base: float = minf(fov_axis1, fov_axis2)
-	if base < FOV_MIN:
-		base = FOV_MIN
 	if fov_controller != null:
-		fov_controller.set_base(base)
+		fov_controller.set_base(cap_to_fov(VelocityGate.velocity_cap), FOV_BASE_SMOOTH_SECONDS)
 
 	# --- Camera bob amplitude taper ---
 	# threshold 0.3: ниже — modifier к 0 за BOB_TAPER_SECONDS, выше — к 1 за то же.
@@ -545,9 +505,15 @@ func _on_dash_started() -> void:
 		_dash_whoosh_player.play()
 
 
-# Symmetric ease-in-out (cubic). Используется для tunnel 72°→58°.
-static func _ease_in_out(t: float) -> float:
-	if t < 0.5:
-		return 4.0 * t * t * t
-	var inv: float = -2.0 * t + 2.0
-	return 1.0 - (inv * inv * inv) / 2.0
+# Spec §1 (revised 2026-04-27): single-axis cap → base FOV.
+#   cap_norm ≥ 0.8 → linear 90→95° (in-form headroom)
+#   cap_norm < 0.8 → quadratic 90→58° (urgency accelerates near zero)
+# Sanity: cap=80→90, cap=60→~88, cap=40→~82, cap=20→~72, cap=0→58.
+static func cap_to_fov(cap: float) -> float:
+	var cap_norm: float = cap / VelocityGate.CAP_CEILING
+	if cap_norm >= CAP_MID:
+		var t_up: float = (cap_norm - CAP_MID) / (1.0 - CAP_MID)
+		return lerpf(FOV_NORM, FOV_PEAK, clampf(t_up, 0.0, 1.0))
+	var t_down: float = (CAP_MID - cap_norm) / CAP_MID
+	t_down = clampf(t_down, 0.0, 1.0)
+	return lerpf(FOV_NORM, FOV_FLOOR, t_down * t_down)
