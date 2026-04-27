@@ -14,6 +14,21 @@ const DASH_VELOCITY_BURST := 20.0
 const DASH_DURATION := 0.2
 const DASH_COOLDOWN := 2.5
 
+# FOV double-axis (docs/feel/feel_spec.md §1). Базовое значение spec'а — 90°,
+# не Starter-Kit'овые 80° в .tscn (исправляем в _ready()).
+const FOV_BASE := 90.0
+const FOV_LOW := 72.0   # speed_ratio 0.3 — нижняя точка квадратичной t² в зоне 0.3-0.6
+const FOV_MIN := 58.0   # удушение пол: ниже motion sickness
+const FOV_TUNNEL_DURATION := 1.8  # секунды: 72° → 58° за этот период когда speed_ratio<0.3
+const FOV_AXIS2_LOCK := 85.0       # cap_ratio 0.5-0.75 — едва заметная компрессия
+
+# Camera bob (§1, MUST). Amplitude → 0 при low ratio, restore при high. 0.5 сек tween.
+const BOB_AMPLITUDE := 0.04         # baseline вертикальная амплитуда (units)
+const BOB_FREQUENCY := 8.0          # рад/сек, привязано к step-rate ходьбы
+const BOB_TAPER_SECONDS := 0.5      # время полного перехода 1↔0
+const BOB_THRESHOLD_LOW := 0.3      # speed_ratio ниже — taper к 0
+const BOB_THRESHOLD_HIGH := 0.3     # выше — restore к 1
+
 @export_subgroup("Weapons")
 @export var weapons: Array[Weapon] = []
 
@@ -45,6 +60,20 @@ var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
 
+# FOV §1 — slow-down zone enter time. Когда speed_ratio впервые пересекает <0.3,
+# фиксируем t=0 для tunnel-кривой 72°→58° за 1.8 сек ease-in-out.
+var _tunnel_time: float = 0.0
+var _in_tunnel: bool = false
+
+# Camera bob state.
+var _bob_phase: float = 0.0
+var _bob_amplitude_modifier: float = 1.0  # 0..1, taper'ится по speed_ratio threshold
+var _head_base_y: float = 0.0
+
+# FOV controller (создаётся в _ready как child). Канал для base + kicks.
+var fov_controller: FovController
+
+@onready var head = $Head
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
 @onready var muzzle = $Head/Camera/SubViewportContainer/SubViewport/CameraItem/Muzzle
@@ -64,11 +93,23 @@ func _ready():
 	weapon = weapons[weapon_index] # Weapon must never be nil
 	initiate_change_weapon(weapon_index)
 
+	# FOV controller — программный child, не в .tscn (проще + матчит conventions).
+	fov_controller = FovController.new()
+	fov_controller.name = "FovController"
+	fov_controller.base_fov = FOV_BASE
+	fov_controller.min_fov = FOV_MIN
+	fov_controller.set_camera(camera)
+	add_child(fov_controller)
+	camera.fov = FOV_BASE  # стартовый snap (Starter-Kit имел 80°)
+
+	_head_base_y = head.position.y
+
 func _process(delta):
 	# Handle functions
 	handle_controls(delta)
 	handle_gravity(delta)
 	_tick_dash(delta)
+	_tick_feel(delta)
 
 	# Movement
 
@@ -355,3 +396,81 @@ func _tick_dash(delta: float) -> void:
 # Читается DebugHud'ом. M2 уберём в HUD-проекте отдельным узлом.
 func get_dash_cooldown_remaining() -> float:
 	return _dash_cooldown_remaining
+
+
+# Feel pass §1 — каждый кадр пересчитываем base FOV (double-axis) и амплитуду bob'а.
+# Per-frame дёшево: пара ifelse + sin. Tween'ить modifier нужно явно (а не через Tween node)
+# чтобы не плодить allocations на каждом entry/exit.
+func _tick_feel(delta: float) -> void:
+	var sr: float = VelocityGate.speed_ratio()
+	var cap_ratio: float = VelocityGate.velocity_cap / 80.0
+
+	# --- Ось 1: speed_ratio ---
+	var fov_axis1: float
+	if sr >= 0.6:
+		fov_axis1 = FOV_BASE
+		_in_tunnel = false
+		_tunnel_time = 0.0
+	elif sr >= 0.3:
+		# Зона "тревога": квадратичная t² ease-in 90° → 72° на отрезке sr 0.6 → 0.3.
+		# t=0 при sr=0.6 (FOV_BASE), t=1 при sr=0.3 (FOV_LOW).
+		var t: float = (0.6 - sr) / 0.3
+		var eased: float = t * t  # ease-in-quadratic, периферия сужается медленно потом резко
+		fov_axis1 = lerpf(FOV_BASE, FOV_LOW, eased)
+		_in_tunnel = false
+		_tunnel_time = 0.0
+	else:
+		# "Удушение": 72° → 58° за FOV_TUNNEL_DURATION ease-in-out.
+		# Time-based, не speed-ratio-based — игрок не должен мгновенно проваливаться в 58°
+		# когда ratio пересёк 0.3, должен иметь 1.8 сек tunnel buildup.
+		if not _in_tunnel:
+			_in_tunnel = true
+			_tunnel_time = 0.0
+		_tunnel_time = minf(_tunnel_time + delta, FOV_TUNNEL_DURATION)
+		var t2: float = _tunnel_time / FOV_TUNNEL_DURATION  # 0..1
+		var eased2: float = _ease_in_out(t2)
+		fov_axis1 = lerpf(FOV_LOW, FOV_MIN, eased2)
+
+	# --- Ось 2: cap_ratio ---
+	var fov_axis2: float
+	if cap_ratio >= 0.75:
+		fov_axis2 = FOV_BASE
+	elif cap_ratio >= 0.5:
+		fov_axis2 = FOV_AXIS2_LOCK  # lock 85°, "что-то не так"
+	else:
+		# < 0.5 — продолжаем снижение (то же FOV_LOW как target в худшем случае).
+		# Линейная интерполяция от 85° (cap 0.5) к FOV_LOW (cap 0.0).
+		var t3: float = (0.5 - cap_ratio) / 0.5
+		fov_axis2 = lerpf(FOV_AXIS2_LOCK, FOV_LOW, clampf(t3, 0.0, 1.0))
+
+	var base: float = minf(fov_axis1, fov_axis2)
+	if base < FOV_MIN:
+		base = FOV_MIN
+	if fov_controller != null:
+		fov_controller.set_base(base)
+
+	# --- Camera bob amplitude taper ---
+	# threshold 0.3: ниже — modifier к 0 за BOB_TAPER_SECONDS, выше — к 1 за то же.
+	var target_mod: float = 0.0 if sr < BOB_THRESHOLD_LOW else 1.0
+	var step: float = delta / BOB_TAPER_SECONDS
+	if absf(target_mod - _bob_amplitude_modifier) <= step:
+		_bob_amplitude_modifier = target_mod
+	else:
+		_bob_amplitude_modifier += signf(target_mod - _bob_amplitude_modifier) * step
+
+	# Bob phase advance — только если игрок реально движется по полу. На floor'е и
+	# при non-zero XZ velocity. Иначе amplitude 0 (нет шага = нет bob'а).
+	var xz: float = Vector2(velocity.x, velocity.z).length()
+	if is_on_floor() and xz > 0.5:
+		_bob_phase += delta * BOB_FREQUENCY
+	# Применяем offset на head.position.y (camera.position.y занят landing dip'ом).
+	var bob_offset: float = sin(_bob_phase) * BOB_AMPLITUDE * _bob_amplitude_modifier
+	head.position.y = _head_base_y + bob_offset
+
+
+# Symmetric ease-in-out (cubic). Используется для tunnel 72°→58°.
+static func _ease_in_out(t: float) -> float:
+	if t < 0.5:
+		return 4.0 * t * t * t
+	var inv: float = -2.0 * t + 2.0
+	return 1.0 - (inv * inv * inv) / 2.0
