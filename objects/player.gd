@@ -1,9 +1,18 @@
 extends CharacterBody3D
 
 @export_subgroup("Properties")
-@export var movement_speed = 5
 @export_range(0, 100) var number_of_jumps: int = 2
 @export var jump_strength = 8
+
+# M1: max walking speed читается из VelocityGate.max_speed_at_cap() — каждый кадр.
+# Стартовый base_walk_speed = 8.0 u/s (см. docs/systems/M1_numbers.md). Дефолт Starter
+# Kit'а был 5 u/s; перешли на 8 чтобы арена 40×40 пересекалась за читаемое время.
+# Локально не храним speed-константу — единственный источник правды VelocityGate.
+
+# Dash (см. docs/systems/M1_numbers.md §Dash).
+const DASH_VELOCITY_BURST := 20.0
+const DASH_DURATION := 0.2
+const DASH_COOLDOWN := 2.5
 
 @export_subgroup("Weapons")
 @export var weapons: Array[Weapon] = []
@@ -21,7 +30,6 @@ var rotation_target: Vector3
 
 var input_mouse: Vector2
 
-var health: int = 100
 var gravity := 0.0
 
 var previously_floored := false
@@ -32,7 +40,13 @@ var container_offset = Vector3(1.2, -1.1, -2.75)
 
 var tween: Tween
 
-signal health_updated
+# Dash state.
+var _dash_time_remaining: float = 0.0
+var _dash_cooldown_remaining: float = 0.0
+var _dash_velocity: Vector3 = Vector3.ZERO
+
+# Death state — listener Events.player_died блокирует input/shoot/dash.
+var _input_locked: bool = false
 
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
@@ -46,8 +60,11 @@ signal health_updated
 # Functions
 
 func _ready():
+	add_to_group("player")
+	Events.player_died.connect(_on_player_died)
+
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	
+
 	weapon = weapons[weapon_index] # Weapon must never be nil
 	initiate_change_weapon(weapon_index)
 
@@ -55,18 +72,30 @@ func _process(delta):
 	# Handle functions
 	handle_controls(delta)
 	handle_gravity(delta)
-	
+	_tick_dash(delta)
+
 	# Movement
-	
+
 	var applied_velocity: Vector3
-	
-	movement_velocity = transform.basis * movement_velocity # Move forward
-	
+
+	movement_velocity = transform.basis * movement_velocity # Move forward (already масштабирован под cap)
+
 	applied_velocity = velocity.lerp(movement_velocity, delta * 10)
 	applied_velocity.y = - gravity
-	
+
+	# Dash overrides walk-acceleration: жёсткий burst в направлении взгляда. Acceleration
+	# Starter Kit'а слишком плавный для feel'а dash'а — дашим напрямую через velocity.
+	if _dash_time_remaining > 0.0:
+		applied_velocity.x = _dash_velocity.x
+		applied_velocity.z = _dash_velocity.z
+
 	velocity = applied_velocity
 	move_and_slide()
+
+	# Сообщаем VelocityGate XZ-скорость (Y исключён — концепт §Movement: jump-spam
+	# не должен поддерживать speed_ratio выше threshold).
+	var xz_speed: float = Vector2(velocity.x, velocity.z).length()
+	VelocityGate.set_current_speed(xz_speed)
 	
 	# Rotation 
 	container.position = lerp(container.position, container_offset - (basis.inverse() * applied_velocity / 30), delta * 10)
@@ -89,10 +118,12 @@ func _process(delta):
 	
 	previously_floored = is_on_floor()
 	
-	# Falling/respawning
-	
-	if position.y < -10:
-		get_tree().reload_current_scene()
+	# Falling out of arena → trigger смерть через тот же путь что drain (RunManager
+	# reset'ит VelocityGate). Пол арены на y=0; -10 это fail-safe если CSG-floor
+	# пропал/повредился.
+	if position.y < -10 and VelocityGate.is_alive:
+		VelocityGate.is_alive = false
+		Events.player_died.emit()
 
 # Mouse movement
 
@@ -102,38 +133,49 @@ func _input(event):
 		handle_rotation(event.relative.x, event.relative.y, false)
 
 func handle_controls(delta):
-	# Mouse capture
+	# Mouse capture (всегда активно — даже под input_locked, чтобы можно было освободить курсор).
 	if Input.is_action_just_pressed("mouse_capture"):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		mouse_captured = true
-	
+
 	if Input.is_action_just_pressed("mouse_capture_exit"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		mouse_captured = false
-		
+
 		input_mouse = Vector2.ZERO
-	
-	# Movement
+
+	# При смерти (player_died → input_locked=true) глушим movement/shoot/dash/jump.
+	# Игрок остаётся на полу, RunManager перезапустит сцену через 2.8 сек.
+	if _input_locked:
+		movement_velocity = Vector3.ZERO
+		return
+
+	# Movement: max-speed читается из VelocityGate каждый кадр. При cap=80 → 6.4 u/s.
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	movement_velocity = Vector3(input.x, 0, input.y).normalized() * movement_speed
-	
+	movement_velocity = Vector3(input.x, 0, input.y).normalized() * VelocityGate.max_speed_at_cap()
+
 	# Handle Controller Rotation
 	var rotation_input := Input.get_vector("camera_right", "camera_left", "camera_down", "camera_up")
 	if rotation_input:
 		handle_rotation(rotation_input.x, rotation_input.y, true, delta)
-	
+
 	# Shooting
-	
+
 	action_shoot()
-	
+
 	# Jumping
-	
+
 	if Input.is_action_just_pressed("jump"):
 		if jumps_remaining:
 			action_jump()
-		
+
+	# Dash
+
+	if Input.is_action_just_pressed("dash"):
+		_try_start_dash()
+
 	# Weapon switching
-	
+
 	action_weapon_toggle()
 
 # Camera rotation
@@ -272,14 +314,57 @@ func change_weapon():
 	raycast.target_position = Vector3(0, 0, -1) * weapon.max_distance
 	crosshair.texture = weapon.crosshair
 
-func damage(amount):
-	health -= amount
-	health_updated.emit(health) # Update health on HUD
-	
-	if health < 0:
-		get_tree().reload_current_scene() # Reset when out of health
+# Starter Kit enemy.gd зовёт player.damage(amount) если ему попасть. Маршрутизируем
+# в VelocityGate как shooter-penalty (концепт: hit от стрелка = -10 cap). Свой
+# EnemyDummy зовёт VelocityGate.apply_hit(MELEE_PENALTY) напрямую через ContactArea.
+func damage(_amount):
+	VelocityGate.apply_hit(VelocityGate.SHOOTER_PENALTY)
 
 # Create a random knockback vector
 static func random_vec2(_min: Vector2, _max: Vector2) -> Vector2:
 	var _sign = -1 if randi() % 2 == 0 else 1
 	return Vector2(randf_range(_min.x, _max.x), randf_range(_min.y, _max.y) * _sign)
+
+
+# Dash --------------------------------------------------------------------
+
+func _try_start_dash() -> void:
+	if _dash_cooldown_remaining > 0.0 or _dash_time_remaining > 0.0:
+		return
+
+	# Направление взгляда (XZ-проекция от камеры). Если игрок смотрит в стену
+	# и input нулевой — дашим вперёд. Если есть input — дашим в сторону input'а
+	# для предсказуемости (FPS convention).
+	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var dir: Vector3
+	if input_vec.length() > 0.01:
+		dir = (transform.basis * Vector3(input_vec.x, 0, input_vec.y)).normalized()
+	else:
+		var fwd: Vector3 = -transform.basis.z
+		fwd.y = 0.0
+		dir = fwd.normalized()
+
+	_dash_velocity = dir * DASH_VELOCITY_BURST
+	_dash_time_remaining = DASH_DURATION
+	_dash_cooldown_remaining = DASH_COOLDOWN
+	Events.dash_started.emit()
+
+
+func _tick_dash(delta: float) -> void:
+	if _dash_time_remaining > 0.0:
+		_dash_time_remaining = maxf(0.0, _dash_time_remaining - delta)
+	if _dash_cooldown_remaining > 0.0:
+		_dash_cooldown_remaining = maxf(0.0, _dash_cooldown_remaining - delta)
+
+
+# Читается DebugHud'ом. M2 уберём в HUD-проекте отдельным узлом.
+func get_dash_cooldown_remaining() -> float:
+	return _dash_cooldown_remaining
+
+
+# Death -------------------------------------------------------------------
+
+func _on_player_died() -> void:
+	_input_locked = true
+	movement_velocity = Vector3.ZERO
+	# Не дашим, не стреляем, не ходим. RunManager через 2.8 сек reload сцены.

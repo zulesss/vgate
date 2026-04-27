@@ -13,7 +13,8 @@ const RESPAWN_DELAY := 1.5
 func _ready() -> void:
 	Events.enemy_killed.connect(_on_enemy_killed)
 	Events.run_restarted.connect(_on_run_restarted)
-	_spawn_initial()
+	# Parent (Main) ещё формирует children в _ready'е. Deferred = после frame'а.
+	_spawn_initial.call_deferred()
 
 
 func _on_run_restarted() -> void:
