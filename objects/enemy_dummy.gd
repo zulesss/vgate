@@ -6,6 +6,11 @@ class_name EnemyDummy extends CharacterBody3D
 
 @export var hp: int = 1
 
+# blaster.tres имеет shot_count=3 (Kenney default) — 3 raycast'а в одном кадре
+# попадают в этот dummy до queue_free(), без guard'а это даёт 3× kill-restore.
+# Idempotency на источнике: первый летальный hit ставит флаг, остальные — no-op.
+var is_dying: bool = false
+
 @onready var contact_area: Area3D = $ContactArea
 
 
@@ -17,8 +22,11 @@ func _ready() -> void:
 # Зовётся player.gd → action_shoot → raycast collider.damage(weapon.damage).
 # Имя метода + untyped amount — Starter Kit convention (damage у них float).
 func damage(amount) -> void:
+	if is_dying:
+		return
 	hp -= int(amount)
 	if hp <= 0:
+		is_dying = true
 		die()
 
 
