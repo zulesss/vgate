@@ -87,14 +87,10 @@ func _update_state() -> void:
 	state = State.CHASE
 
 
-# Override: Reposition использует _reposition_target вместо player.global_position.
-func _apply_movement(_delta: float) -> void:
-	if state == State.IDLE or _is_winding_up:
-		velocity = Vector3.ZERO
-		move_and_slide()
-		return
-
-	if state == State.REPOSITION and _has_reposition_target:
+# Override: Reposition использует _reposition_target. Остальные состояния
+# (Idle/Chase/Attack-windup) дефер'им в base (та же логика что у Melee).
+func _apply_movement(delta: float) -> void:
+	if state == State.REPOSITION and _has_reposition_target and nav_agent != null:
 		nav_agent.target_position = _reposition_target
 		if nav_agent.is_navigation_finished():
 			velocity = Vector3.ZERO
@@ -108,31 +104,7 @@ func _apply_movement(_delta: float) -> void:
 		velocity = d * move_speed
 		move_and_slide()
 		return
-
-	if state != State.CHASE:
-		velocity = Vector3.ZERO
-		move_and_slide()
-		return
-
-	# Chase: к player'у, но если уже в attack_range — стоим.
-	if _player == null or nav_agent == null:
-		return
-	if _distance_to_player() <= attack_range and _has_line_of_sight():
-		velocity = Vector3.ZERO
-		move_and_slide()
-		return
-	nav_agent.target_position = _player.global_position
-	if nav_agent.is_navigation_finished():
-		velocity = Vector3.ZERO
-		move_and_slide()
-		return
-	var next_pos: Vector3 = nav_agent.get_next_path_position()
-	var dir: Vector3 = next_pos - global_position
-	dir.y = 0.0
-	if dir.length() > 0.001:
-		dir = dir.normalized()
-	velocity = dir * move_speed
-	move_and_slide()
+	super._apply_movement(delta)
 
 
 func _play_telegraph() -> void:
