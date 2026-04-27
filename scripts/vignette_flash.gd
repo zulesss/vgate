@@ -15,12 +15,15 @@ const FLASH_PEAK := 0.4
 const RISE_MS := 50
 const DECAY_MS := 100
 
+# Material — ShaderMaterial из main.tscn sub-resource. Кастуем один раз в _ready,
+# дальше работаем с типизированной ссылкой (без runtime is-checks per call).
+var _shader_mat: ShaderMaterial
 var _tween: Tween
 
 func _ready() -> void:
-	# Стартовое состояние: невидим. Shader uniform читается через material.set_shader_parameter().
-	if material is ShaderMaterial:
-		(material as ShaderMaterial).set_shader_parameter("flash_intensity", 0.0)
+	_shader_mat = material as ShaderMaterial
+	# Стартовое состояние: невидим.
+	_shader_mat.set_shader_parameter("flash_intensity", 0.0)
 	Events.enemy_killed.connect(_on_enemy_killed)
 
 func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
@@ -31,7 +34,8 @@ func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 		return
 	# Перезапускаем tween — каждый kill сбрасывает любую текущую анимацию,
 	# даже если предыдущая ещё не завершилась (kill chain не накапливает яркость).
-	if _tween != null and _tween.is_valid():
+	# is_valid() уже учитывает null/killed, отдельная проверка != null лишняя.
+	if _tween and _tween.is_valid():
 		_tween.kill()
 	_tween = create_tween()
 	_tween.tween_method(_set_intensity, 0.0, FLASH_PEAK, float(RISE_MS) / 1000.0) \
@@ -40,5 +44,4 @@ func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 func _set_intensity(v: float) -> void:
-	if material is ShaderMaterial:
-		(material as ShaderMaterial).set_shader_parameter("flash_intensity", v)
+	_shader_mat.set_shader_parameter("flash_intensity", v)
