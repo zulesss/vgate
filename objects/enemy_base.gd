@@ -50,9 +50,7 @@ func _ready() -> void:
 
 	# NavigationAgent3D: per-frame pathing достаточно дёшево на 4 enemies. Меняем
 	# только если spawn-controller M4 вырастет до 30+ — тогда throttle до 5 Hz.
-	if nav_agent != null:
-		nav_agent.path_desired_distance = 0.5
-		nav_agent.target_desired_distance = 0.5
+	# Параметры path/target_desired_distance заданы в enemy_base.tscn (0.5/0.5).
 
 	# ContactArea — только Melee. Shooter physically не контачит для damage'а
 	# (он ranged), но scene-файл shooter'а просто не имеет ContactArea node.
