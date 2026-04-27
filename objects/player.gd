@@ -72,6 +72,13 @@ var _head_base_y: float = 0.0
 # FOV controller (создаётся в _ready как child). Канал для base + kicks.
 var fov_controller: FovController
 
+# Audio players для feel-эффектов (programmatic, не в .tscn — конвенция как у
+# fov_controller). Не идут через Audio autoload pool: тот рандомит pitch 0.9-1.1
+# каждый раз, что конфликтует со spec'ом Package B (pitch не трогать) и Package C
+# (детерминированный +200 cents).
+var _kill_crack_player: AudioStreamPlayer
+var _dash_whoosh_player: AudioStreamPlayer
+
 @onready var head = $Head
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
@@ -102,6 +109,16 @@ func _ready():
 	camera.fov = FOV_BASE  # стартовый snap (Starter-Kit имел 80°)
 
 	_head_base_y = head.position.y
+
+	# Kill burst (§2 Iter 1): FOV +15° punch ease-out-cubic 180ms + audio crack.
+	# Reuse существующего enemy_destroy.ogg. Spec: 0 dB, без pitch mod.
+	_kill_crack_player = AudioStreamPlayer.new()
+	_kill_crack_player.name = "KillCrackPlayer"
+	_kill_crack_player.stream = load("res://sounds/enemy_destroy.ogg")
+	_kill_crack_player.volume_db = 0.0
+	add_child(_kill_crack_player)
+
+	Events.enemy_killed.connect(_on_enemy_killed)
 
 func _process(delta):
 	# Handle functions
@@ -465,6 +482,17 @@ func _tick_feel(delta: float) -> void:
 	# Применяем offset на head.position.y (camera.position.y занят landing dip'ом).
 	var bob_offset: float = sin(_bob_phase) * BOB_AMPLITUDE * _bob_amplitude_modifier
 	head.position.y = _head_base_y + bob_offset
+
+
+# Kill burst (§2 Iter 1, MUST). FOV +15° punch ease-out-cubic 180 мс + audio crack
+# в frame 0. Hit-stop (Iter 2) и time-dilation (Iter 3) отложены до результата
+# главного feel-чека из §5: «читается ли kill как выдох?». Если да — Iter 2/3 могут
+# быть избыточны; если нет — добавляем поверх.
+func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+	if fov_controller != null:
+		fov_controller.kick(15.0, 180, "ease_out_cubic")
+	if _kill_crack_player != null:
+		_kill_crack_player.play()
 
 
 # Symmetric ease-in-out (cubic). Используется для tunnel 72°→58°.
