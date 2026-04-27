@@ -1,5 +1,10 @@
 ; Engine configuration file.
-; Working name "VGate" — переименовать после narrative pass.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -109,5 +114,4 @@ dash={
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
 anti_aliasing/quality/screen_space_aa=1
