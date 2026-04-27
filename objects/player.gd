@@ -88,6 +88,23 @@ var _camera_push_total: float = 0.0      # для нормализации t в 
 # Whoosh pitch: spec = +200 cents = 2^(200/1200) ≈ 1.1225.
 const DASH_WHOOSH_PITCH := 1.1224620483094  # 2.0 ** (200.0 / 1200.0)
 
+# Velocity Exhale particles (M2 Iter 2, §2 layer atop kill burst). Метафора:
+# на kill из тела игрока (через камеру) "выдыхается" облачко частиц назад от взгляда.
+# Layered поверх Iter 1 (FOV punch + audio crack) на тот же Events.enemy_killed.
+const EXHALE_AMOUNT := 12              # particles per emit (8-12 spec)
+const EXHALE_LIFETIME := 0.3           # 0.25-0.3s spec
+const EXHALE_SPEED_MIN := 2.0          # ~3 u/s spec, range для естественности
+const EXHALE_SPEED_MAX := 4.0
+const EXHALE_DAMPING_MIN := 6.0        # высокий — частицы быстро тормозят
+const EXHALE_DAMPING_MAX := 8.0
+const EXHALE_SPREAD_DEG := 20.0        # 15-25° spec
+# Color spec: light mist-grey RGBA(0.8,0.85,0.9,0.2). Alpha 0.15-0.25 — НЕ больше,
+# иначе vignette-overlay на каждом kill.
+const EXHALE_COLOR := Color(0.8, 0.85, 0.9, 0.2)
+# Quad: вытянутый mist-streak, не сферическая точка.
+const EXHALE_QUAD_SIZE := Vector2(0.02, 0.10)
+var _exhale_emitter: GPUParticles3D
+
 @onready var head = $Head
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
@@ -128,6 +145,48 @@ func _ready():
 	_kill_crack_player.stream = load("res://sounds/enemy_destroy.ogg")
 	_kill_crack_player.volume_db = 0.0
 	add_child(_kill_crack_player)
+
+	# Velocity Exhale (Iter 2): GPUParticles3D как child of Camera. Direction (0,0,1)
+	# в local space = backward of camera (Camera3D forward = -Z). local_coords=false:
+	# emit-direction наследуется через basis от Camera, но после spawn частицы фиксированы
+	# в world space ("выдохнул и забыл", не следуют за камерой). one_shot+restart() —
+	# каждый kill emit'ит новый burst.
+	_exhale_emitter = GPUParticles3D.new()
+	_exhale_emitter.name = "ExhaleEmitter"
+	_exhale_emitter.emitting = false
+	_exhale_emitter.one_shot = true
+	_exhale_emitter.amount = EXHALE_AMOUNT
+	_exhale_emitter.lifetime = EXHALE_LIFETIME
+	_exhale_emitter.local_coords = false
+	# explosiveness=1.0: все 12 частиц спавнятся в один кадр (мгновенный burst).
+	# Default 0 распределил бы spawn равномерно по lifetime=0.3s, к моменту спавна
+	# последней частицы первая уже мертва — "облачко выдоха" не сложилось бы.
+	_exhale_emitter.explosiveness = 1.0
+
+	var exhale_proc := ParticleProcessMaterial.new()
+	exhale_proc.direction = Vector3(0, 0, 1)  # backward в local space (наследуется от Camera basis)
+	exhale_proc.spread = EXHALE_SPREAD_DEG
+	exhale_proc.initial_velocity_min = EXHALE_SPEED_MIN
+	exhale_proc.initial_velocity_max = EXHALE_SPEED_MAX
+	exhale_proc.gravity = Vector3.ZERO
+	exhale_proc.damping_min = EXHALE_DAMPING_MIN
+	exhale_proc.damping_max = EXHALE_DAMPING_MAX
+	exhale_proc.color = EXHALE_COLOR
+	_exhale_emitter.process_material = exhale_proc
+
+	var exhale_mesh := QuadMesh.new()
+	exhale_mesh.size = EXHALE_QUAD_SIZE
+	# Unlit billboard mat: не зависит от light, всегда смотрит на камеру (иначе flat
+	# quad edge-on невидим).
+	var exhale_mat := StandardMaterial3D.new()
+	exhale_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	exhale_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	exhale_mat.albedo_color = EXHALE_COLOR
+	exhale_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	exhale_mesh.material = exhale_mat
+	_exhale_emitter.draw_pass_1 = exhale_mesh
+
+	camera.add_child(_exhale_emitter)
 
 	Events.enemy_killed.connect(_on_enemy_killed)
 
@@ -488,6 +547,11 @@ func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 		fov_controller.kick(15.0, 180, "ease_out_cubic")
 	if _kill_crack_player != null:
 		_kill_crack_player.play()
+	# Iter 2: velocity exhale. restart() обязателен — после первого one_shot эмиттер
+	# глохнет до scene reload; restart() сбрасывает state и стартует новый burst.
+	if _exhale_emitter != null:
+		_exhale_emitter.restart()
+		_exhale_emitter.emitting = true
 
 
 # Dash feel (§3, MUST). FOV +12° stretch ease-out-quart 250ms, camera push 0.15u
