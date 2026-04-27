@@ -9,4 +9,3 @@ signal dash_started()                                    # игрок старт
 signal drain_started()                                   # speed_ratio < threshold > tolerance → drain активен
 signal drain_stopped()                                   # игрок снова движется или убил → drain отменён
 signal player_died()                                     # cap дошёл до 0 в drain → death
-signal run_restarted()                                   # после restart loop арена reset

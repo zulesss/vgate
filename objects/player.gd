@@ -45,9 +45,6 @@ var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
 
-# Death state — listener Events.player_died блокирует input/shoot/dash.
-var _input_locked: bool = false
-
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
 @onready var muzzle = $Head/Camera/SubViewportContainer/SubViewport/CameraItem/Muzzle
@@ -61,7 +58,6 @@ var _input_locked: bool = false
 
 func _ready():
 	add_to_group("player")
-	Events.player_died.connect(_on_player_died)
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -78,7 +74,7 @@ func _process(delta):
 
 	var applied_velocity: Vector3
 
-	movement_velocity = transform.basis * movement_velocity # Move forward (already масштабирован под cap)
+	movement_velocity = transform.basis * movement_velocity # Move forward
 
 	applied_velocity = velocity.lerp(movement_velocity, delta * 10)
 	applied_velocity.y = - gravity
@@ -144,9 +140,9 @@ func handle_controls(delta):
 
 		input_mouse = Vector2.ZERO
 
-	# При смерти (player_died → input_locked=true) глушим movement/shoot/dash/jump.
-	# Игрок остаётся на полу, RunManager перезапустит сцену через 2.8 сек.
-	if _input_locked:
+	# Death → пока RunManager не reload'нул сцену (2.8 сек), глушим input.
+	# Single source of truth — VelocityGate.is_alive.
+	if not VelocityGate.is_alive:
 		movement_velocity = Vector3.ZERO
 		return
 
@@ -360,11 +356,3 @@ func _tick_dash(delta: float) -> void:
 # Читается DebugHud'ом. M2 уберём в HUD-проекте отдельным узлом.
 func get_dash_cooldown_remaining() -> float:
 	return _dash_cooldown_remaining
-
-
-# Death -------------------------------------------------------------------
-
-func _on_player_died() -> void:
-	_input_locked = true
-	movement_velocity = Vector3.ZERO
-	# Не дашим, не стреляем, не ходим. RunManager через 2.8 сек reload сцены.

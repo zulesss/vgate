@@ -20,4 +20,3 @@ func _on_player_died() -> void:
 func _restart_run() -> void:
 	VelocityGate.reset_for_run()
 	get_tree().reload_current_scene()
-	Events.run_restarted.emit()

@@ -14,10 +14,10 @@ func _ready() -> void:
 	contact_area.body_entered.connect(_on_contact_body_entered)
 
 
-# Зовётся player.gd → action_shoot → raycast collider.damage().
-# Имя метода "damage" сохраняем под Starter Kit convention.
-func damage(amount: int) -> void:
-	hp -= amount
+# Зовётся player.gd → action_shoot → raycast collider.damage(weapon.damage).
+# Имя метода + untyped amount — Starter Kit convention (damage у них float).
+func damage(amount) -> void:
+	hp -= int(amount)
 	if hp <= 0:
 		die()
 

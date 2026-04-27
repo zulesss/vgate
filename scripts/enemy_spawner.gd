@@ -12,15 +12,8 @@ const RESPAWN_DELAY := 1.5
 
 func _ready() -> void:
 	Events.enemy_killed.connect(_on_enemy_killed)
-	Events.run_restarted.connect(_on_run_restarted)
 	# Parent (Main) ещё формирует children в _ready'е. Deferred = после frame'а.
 	_spawn_initial.call_deferred()
-
-
-func _on_run_restarted() -> void:
-	# При reload_current_scene scene tree пересобирается → этот узел тоже новый,
-	# initial_spawn вызовется через _ready. Ничего отдельного делать не надо.
-	pass
 
 
 func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
