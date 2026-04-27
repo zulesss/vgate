@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://b0vgtdummy0001"]
+[gd_scene format=3 uid="uid://bwcri0tuiyvnk"]
 
 [ext_resource type="Script" uid="uid://4imb7usb6kee" path="res://objects/enemy_dummy.gd" id="1_dummy"]
 
