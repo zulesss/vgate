@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 15 /home/azukki/tools/godot/godot *)",
+      "Bash(timeout 20 /home/azukki/tools/godot/godot *)",
+      "Bash(timeout 30 /home/azukki/tools/godot/godot *)"
+    ]
+  }
+}

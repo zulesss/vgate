@@ -1,0 +1,246 @@
+# vgate — План полного слайса
+
+Документ фиксирует скоуп, майлстоуны и распределение работы. Изменения обсуждаются до кода.
+
+Источники:
+- `docs/concept/M0_concept.md` — core fantasy + hook (Velocity Gate) от game-designer + market-analyst
+- `docs/feel/feel_spec.md` — must-стек feel-engineer'а на 10 дней + nice-to-have backlog
+- `docs/research/asset_pipeline.md` — ассет-стек CC0 + Kenney Starter Kit FPS как foundation
+
+---
+
+## 1. Концепт (lock)
+
+**Core fantasy** *(game-designer, locked)*:
+Ты — единственный подвижный элемент в мире, который хочет тебя остановить. Скорость — не преимущество, она обязательна. Стоять = смерть. Эмоция — **управляемая паника**. Не zen flow ULTRAKILL и не пазл Neon White — ты не контролируешь ситуацию, ты только чуть опережаешь её.
+
+**Hook — Velocity Gate**: HP в классике нет. Есть `velocity_cap` (0–100, старт 80). Хиты от врагов снижают cap. Когда `current_speed < threshold` дольше 2.5 сек — drain → смерть. **Убийство = velocity burst** (кап восстанавливается частично). Враги одновременно угроза и топливо.
+
+**Setting**: sci-fi / cyberpunk-минимализм (выбран по покрытию CC0-ассетов, см. `docs/research/asset_pipeline.md`). Финальный тон — после feel pass M2.
+
+**Player verbs (4)**: Move / Shoot / Dash / Kill (Kill — conscious verb-транзакция, не side-effect).
+
+---
+
+## 2. Скоуп — IN / OUT
+
+| ✅ IN (полный слайс) | ❌ OUT (вырезано) |
+|---|---|
+| Одна арена ~40×40, ручная компоновка из Kenney/Quaternius modular | Несколько арен / уровней |
+| Одно оружие (Kenney Blaster или Starter Kit FPS gun) | Weapon variety, переключение |
+| 2 типа врагов (стрелок + ближнебой) | 3+ типов, варианты |
+| Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | HP в классике, regen, armor |
+| Feel-стек must (FOV double-axis, heartbeat, low-pass, bob fade, kill burst, dash feel) | Nice-to-have feel (дыхание, motion blur, kill chain, dash relief) |
+| Spawn ramp continuous (Devil Daggers форма) | Дискретные волны, scripted encounters |
+| Adaptive music 2 layers + базовый SFX bus | BPM-sync music, кастомный score |
+| Score / timer / death / restart loop (2.8 сек cycle) | Online leaderboard, replay system |
+| Main menu (старт / выход) | Save, settings, options-меню |
+| Капсулы/CSG как placeholder для Kenney mesh-моделей | Анимированные риги, lip sync |
+| Нарратив | Ноль. Сеттинг — только через визуальный тон. |
+| Controller support | Только клавиатура + мышь (controller если Godot bind покрывает бесплатно) |
+
+---
+
+## 3. Exit criteria полного слайса
+
+Слайс готов когда:
+1. Один run играется от старта до смерти 10-15 минут без ошибок консоли
+2. Velocity Gate **читается**: игрок в danger-зоне понимает что замедляется ДО смерти (FOV + audio + bob)
+3. Kill ощущается как выдох — главный feel-чек (см. `docs/feel/feel_spec.md` §5)
+4. Spawn ramp создаёт ощущение нарастающего давления
+5. Death → restart < 3 сек, цикл играть-снова работает без friction
+6. Performance: 60 FPS на средней машине (стабильно при 30+ врагах на арене)
+
+---
+
+## 4. Майлстоуны
+
+Каждый майлстоун заканчивается плейтестом + code-review pass на изменённых файлах (`feedback_code_review_periodic.md`). Следующий не стартует без thumbs-up. После принятия — `git tag v0.MX`.
+
+### M0 — Foundation: Kenney Starter Kit FPS + 3D-арена placeholder
+**Цель**: импортировать Kenney Starter Kit FPS, адаптировать controller под Godot 4.6 если нужно, поднять placeholder-арену 40×40 с CSG-стенами.
+- [ ] Скачать https://github.com/KenneyNL/Starter-Kit-FPS, скопировать scripts + assets в проект
+- [ ] PlayerController работает: WASD + mouse-look + jump (стандартный)
+- [ ] Placeholder-арена: пол 40×40 (CSG-Box), 4 стены (CSG-Box), spawn-point игрока
+- [ ] Один dummy-враг (CharacterBody3D + capsule visual), стоит на месте
+- [ ] Headless smoke + import работают чисто
+
+**Owners**: godot-engineer (импорт + адаптация Starter Kit)
+**Exit**: можно бегать по арене, видеть dummy. Плейтест: управление как у обычного FPS, ничего не сломано.
+
+### M1 — Velocity Gate core
+**Цель**: hook реализован минимально читаемым способом (без feel-полировки, голые числа на UI debug).
+- [ ] Autoload `VelocityGate`: state (current_speed, velocity_cap, drain_timer, threshold)
+- [ ] Autoload `Events`: signals (player_hit, enemy_killed, dash_started, drain_started, player_died)
+- [ ] Damage on hit от dummy: cap −15, instant feedback на debug-UI
+- [ ] Drain logic: speed < threshold > 2.5 сек → tick-урон до 0
+- [ ] Kill restore: убил dummy (выстрелом из Starter Kit gun) → cap +N
+- [ ] Dash: 2.5 сек cooldown, velocity burst в направлении взгляда, instant
+- [ ] Restart loop: смерть → 2 сек → arena reset → spawn
+
+**Owners**: systems-designer (числа cap math: penalty, kill restore, drain rate, threshold) → godot-engineer
+**Exit**: hook играется. Можно умереть от drain, можно убить и не умереть. Числа сырые но петля замкнута.
+
+### M2 — Feel pass (главный полировочный майлстоун)
+**Цель**: Velocity Gate **ощущается**, не только работает в коде. Реализуем must-стек из `docs/feel/feel_spec.md`. Главный feel-чек — kill читается как выдох (см. §5 feel_spec).
+- [ ] FOV double-axis mapping (speed_ratio + cap_ratio, min из обоих, ease-in кривые)
+- [ ] Heartbeat audio: 60→110 BPM по cap, lub-DUB
+- [ ] Low-pass filter на ambient bus (8kHz→1.2kHz при низком speed_ratio)
+- [ ] Camera bob amplitude → 0 при low ratio
+- [ ] Kill burst: FOV +15° punch (ease-out 180 мс) + hit-stop 65 мс + time-dilation 0.08 сек snap + audio crack frame 0
+- [ ] Dash feel: FOV +12° stretch + camera push 0.15 units + whoosh +200 cents (или +300 если из удушения)
+- [ ] Death → restart 2.8 сек: 1.8 сек смерть + 0.6 сек чёрный + score + 0.4 сек fade-in
+
+**Owners**: feel-engineer (специфика тайминга/кривых) → godot-engineer (имп) → user playtest на главный feel-чек
+**Exit**: Главный вопрос: войти в danger-зону, убить врага. Если выдохнул — exit OK. Если нет — итерация feel-стека (+ hit-stop, потом + time-dilation).
+
+### M3 — Enemy variety: стрелок + ближнебой
+**Цель**: 2 типа врагов с различимым поведением + базовый AI.
+- [ ] Стрелок: range-attack, держит дистанцию, penalty к cap −10 на hit
+- [ ] Ближнебой: бежит на игрока, melee на ~1.5 units, penalty к cap −20 на hit
+- [ ] AI: NavigationAgent3D для пути, простые states (Idle / Chase / Attack)
+- [ ] Импорт моделей из Quaternius Sci-Fi Essentials Kit (анимированные роботы)
+- [ ] Telegraph атак: визуальный + звуковой (стрелок поднимает оружие, ближний издаёт звук перед ударом)
+
+**Owners**: game-designer (различимость поведения) → systems-designer (числа damage/HP/speed) → godot-engineer
+**Exit**: 2 типа в арене ведут себя различимо. Плейтест: "я отличаю поведение типов через 30 сек".
+
+### M4 — Spawn ramp + score/timer + run loop
+**Цель**: continuous spawn ramp работает, run длится 10-15 минут, прогрессия через сложность.
+- [ ] Spawn-controller: формула `interval = 4 / (1 + time*0.015)` (Devil Daggers форма)
+- [ ] Spawn-points distribution на арене (минимум 4 точки по периметру)
+- [ ] Score: убийства × множитель за время выживания
+- [ ] Timer на HUD: текущее время run'а
+- [ ] Local high score persisted в `user://vgate_progress.cfg`
+- [ ] Death screen: score + best + restart
+
+**Owners**: level-designer (spawn-point layout + safe-zones отсутствие) → systems-designer (calibrate ramp formula) → godot-engineer
+**Exit**: 10-15 минут run проигрывается с нарастающим давлением. Плейтест: ощущение "вот-вот сломаюсь".
+
+### M5 — Polish + audio + main menu
+**Цель**: shippable feel.
+- [ ] Adaptive music: 2 layers (base + intensity), intensity на 120 сек, volume tween
+- [ ] SFX bus: gun-fire, hit-impact, kill-confirm, dash-whoosh, heartbeat, drain-warning, ambient
+- [ ] HUD минимальный: timer + score + dash-cooldown indicator (если нужен — feel-engineer skip'нул UI как доминирующий канал)
+- [ ] Main menu: VGate title + [НАЧАТЬ] / [ВЫХОД]
+- [ ] Pause на Esc (resume / restart / main menu)
+- [ ] Background variety: skybox через Polyhaven HDRI
+
+**Owners**: feel-engineer (audio-mix + tone) → godot-engineer
+
+### M6 — Final balance + tone pass
+**Цель**: финальная балансировка после полного цикла + лёгкий narrative-touch (имя проекта, заголовок).
+- [ ] Полный playthrough — playtest-analyst на ≥2 наблюдений (правило `feedback_playtest_first.md`)
+- [ ] Финальная балансировка через systems-designer на основе плейтеста
+- [ ] Имя проекта (narrative-designer mini-pass) — переименовать VGate → final
+- [ ] Capsule art / store description если идём в Next Fest
+
+**Owners**: playtest-analyst → systems-designer → narrative-designer
+**Exit**: shippable demo. Тег `v0.M6`.
+
+---
+
+## 5. Locked решения
+
+### Концепт
+Полностью в `docs/concept/M0_concept.md`. Velocity Gate, 4 verbs, scope cuts — locked.
+
+### Feel must-стек
+Полностью в `docs/feel/feel_spec.md`. На 10 дней — только `must`-слои. Nice-to-have в backlog для post-shippable.
+
+### Числа (TBD — systems-designer в M1)
+Стартовые ориентиры (изменимы после первого playtest):
+- velocity_cap: старт 80, max 100
+- threshold: 30 (speed_ratio < 0.3 → начинается drain timer)
+- drain_timer: 2.5 сек tolerance + drain rate
+- penalty: стрелок −10, ближнебой −20
+- kill restore: +25 (одно убийство ≈ один-два хита компенсирует)
+- dash cooldown: 2.5-3 сек
+- spawn ramp formula: `interval = 4 / (1 + time*0.015)` — Devil Daggers форма
+
+Финальные числа задаст systems-designer в M1 / М4 / M6.
+
+### Layout арены (TBD — level-designer в M0/M1)
+- Размер: ~40×40 units
+- Геометрия: открытая центральная зона + 2-3 cover-блока (boxing пространства), без вертикали в M0 (vertical может прийти в M3 если работает)
+- Spawn-points: 4 по периферии
+- Sightlines: должны быть открытые на 70-80% арены, чтобы стрелок имел смысл, но cover читаем
+
+Финальный layout — level-designer pass с учётом FPS-перспективы.
+
+### Asset stack
+Полностью в `docs/research/asset_pipeline.md`. Краткое:
+- **Foundation**: Kenney Starter Kit FPS (https://github.com/KenneyNL/Starter-Kit-FPS) — character controller + weapon + base AI, MIT/CC0
+- **Environment**: Quaternius Modular Sci-Fi MegaKit (270+ моделей, CC0)
+- **Enemies**: Quaternius Sci-Fi Essentials Kit (анимированные роботы, CC0)
+- **Weapons**: Kenney Blaster Kit (40 моделей, CC0)
+- **Skybox**: Polyhaven HDRI (CC0)
+- **VFX**: Synty SIMPLE FX (free) или CSG-particles
+
+---
+
+## 6. Роли агентов
+
+| Агент | Зона | Активен в |
+|---|---|---|
+| **game-designer** | Concept arbiter, конфликты | M0 (locked), M3 enemy identity |
+| **level-designer** | Layout арены, spawn-points, sightlines | M0/M1, M4 |
+| **systems-designer** | Числа cap math, dash cooldown, enemy stats, spawn ramp | M1, M3, M4, M6 |
+| **narrative-designer** | Имя проекта, capsule copy | M6 mini-pass |
+| **feel-engineer** | Feel-стек спека (готова), tone | M2 (главный), M5, M6 |
+| **playtest-analyst** | Фидбэк-цикл по `feedback_playtest_first.md` | После каждого M, обязательно M6 |
+| **code-reviewer** | Ревью после групп коммитов | После M2, M4, M6 |
+| **godot-engineer** | Вся имплементация | Все майлстоуны |
+| **market-analyst** | Positioning / Next Fest подача | M6 / post-shippable |
+| **research** | Ассеты-обновления, Godot 4.6 best practice | По запросу |
+| **Пользователь** | Финальный арбитр + плейтестер | Все |
+
+---
+
+## 7. Риски и митигация
+
+| Риск | Митигация |
+|---|---|
+| Kenney Starter Kit FPS не подойдёт под Godot 4.6 (старая версия) | M0: godot-engineer проверяет первым шагом, если не работает — backup-план писать controller с нуля (1-2 дня) |
+| 3D headless smoke падает на сервере (`libfontconfig`) | См. context.md — это известный issue с veldrath. Если падает — флагнуть юзеру, тестировать только на Windows |
+| Главный feel-чек (kill = выдох) не сработает с базовым стеком | feel-engineer §5: итеративная проверка, начинай с FOV punch + audio crack, добавляй hit-stop потом time-dilation. Не строй полный стек сразу. |
+| FOV double-axis = motion sickness у части игроков | Min FOV 58° — нижний предел до тошноты. Plus: option в settings уменьшить эффект (post-shippable) |
+| Spawn ramp формула буксует (слишком медленно/быстро) | Числа в config-файле, systems-designer калибрует через playtest M4 |
+| Single-arena run без replay-motivation | Local high score + run-time + score-multiplier дают минимум retention; для shippable demo это honest |
+| 10 дней — рамка условная, скоуп вылезет | M3 enemy variety первая жертва (1 тип вместо 2). M5 polish — вторая (audio минимальный, без adaptive music) |
+| FPS-arena поджанр насыщен (market-analyst) | Hook (Velocity Gate) — оригинальный, в одно предложение. Это compensates за насыщенность |
+
+---
+
+## 8. Git workflow
+
+- Ветка `main` — стабильное играбельное (или в milestone, но компилится)
+- Каждый майлстоун: `git tag v0.MX`
+- Commit + push по дефолту (`feedback_commit_and_push.md`)
+- Коммит = логическая единица, не 1 line = 1 commit (`feedback_parallel_briefs.md`)
+- Code-reviewer после групп коммитов одного модуля
+- PLAN.md — единственный источник правды по скоупу. Изменения обсуждаются.
+- GitHub remote — создаётся юзером после M0 на `github.com/zulesss/vgate`
+
+---
+
+## 9. Готовность к разработке
+
+**Залочено**:
+- Core fantasy + hook + verbs + scope IN/OUT
+- Feel must-стек с конкретными числами/мс/кривыми
+- Asset pipeline (CC0 + Kenney Starter Kit FPS как foundation)
+- Майлстоуны M0–M6 с owner-агентами
+
+**TBD при старте M0/M1**:
+- Числа баланса (systems-designer)
+- Layout арены (level-designer)
+- Имя проекта (narrative-designer в M6)
+
+**После `/clear`**:
+1. Открыть `/home/azukki/vgate/`
+2. Прочитать `.claude/context.md` + `PLAN.md` + `docs/concept/M0_concept.md` + `docs/feel/feel_spec.md`
+3. Стартовать M0 через godot-engineer (импорт Kenney Starter Kit FPS + placeholder-арена)
+4. Параллельно подключить level-designer + systems-designer на M1 (числа + layout)
+
+Память `~/.claude/projects/-home-azukki/memory/` — все feedback-правила активны (включая новые: iteration_threshold, design_artifact_dump, godot_brief_template, hook на блок Edit `.gd` в parent-контексте).
