@@ -85,8 +85,8 @@ const DASH_PUSH_MS := 200          # ease-out
 var _camera_push_remaining: float = 0.0  # секунд до восстановления к 0
 var _camera_push_total: float = 0.0      # для нормализации t в ease-out
 
-# Whoosh pitch: spec = +200 cents = 2^(200/1200) ≈ 1.1225.
-const DASH_WHOOSH_PITCH := 1.1224620483094  # 2.0 ** (200.0 / 1200.0)
+# Whoosh pitch: spec = +200 cents (feel_spec §3) = 2^(200/1200) ≈ 1.1225.
+const DASH_WHOOSH_PITCH := 2.0 ** (200.0 / 1200.0)
 
 @onready var head = $Head
 @onready var camera = $Head/Camera
@@ -129,7 +129,8 @@ func _ready():
 	_kill_crack_player.volume_db = 0.0
 	add_child(_kill_crack_player)
 
-	Events.enemy_killed.connect(_on_enemy_killed)
+	if not Events.enemy_killed.is_connected(_on_enemy_killed):
+		Events.enemy_killed.connect(_on_enemy_killed)
 
 	# Dash whoosh (§3 Package C): jump_b.ogg + pitch +200 cents. Выбран jump_b
 	# (а не jump_c) чтобы дифференцировать от jump-сигнатуры — action_jump()
@@ -142,7 +143,8 @@ func _ready():
 	_dash_whoosh_player.volume_db = 0.0
 	add_child(_dash_whoosh_player)
 
-	Events.dash_started.connect(_on_dash_started)
+	if not Events.dash_started.is_connected(_on_dash_started):
+		Events.dash_started.connect(_on_dash_started)
 
 func _process(delta):
 	# Handle functions
@@ -484,6 +486,10 @@ func _tick_feel(delta: float) -> void:
 # главного feel-чека из §5: «читается ли kill как выдох?». Если да — Iter 2/3 могут
 # быть избыточны; если нет — добавляем поверх.
 func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+	# Dead-frame guard: матчит vignette_flash.gd — никаких feel-эффектов от kill'а
+	# в кадр смерти, иначе FOV punch / audio crack играют поверх death-screen.
+	if not VelocityGate.is_alive:
+		return
 	if fov_controller != null:
 		fov_controller.kick(15.0, 180, "ease_out_cubic")
 	if _kill_crack_player != null:
@@ -495,6 +501,8 @@ func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 # срабатывают на один и тот же signal Events.dash_started, который VelocityGate
 # emit'ит из player.gd._try_start_dash() в момент старта dash'а.
 func _on_dash_started() -> void:
+	# No is_alive guard here: handle_controls() возвращает рано если is_alive=false,
+	# поэтому _try_start_dash() не может вызваться и signal не эмитится на dead-кадре.
 	if fov_controller != null:
 		fov_controller.kick(12.0, 250, "ease_out_quart")
 	# Camera push: instant offset, decay через _tick_feel.

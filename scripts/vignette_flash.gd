@@ -24,7 +24,8 @@ func _ready() -> void:
 	_shader_mat = material as ShaderMaterial
 	# Стартовое состояние: невидим.
 	_shader_mat.set_shader_parameter("flash_intensity", 0.0)
-	Events.enemy_killed.connect(_on_enemy_killed)
+	if not Events.enemy_killed.is_connected(_on_enemy_killed):
+		Events.enemy_killed.connect(_on_enemy_killed)
 
 func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
 	# Graceful skip if player dead — иначе vignette может зависнуть на peak alpha
