@@ -29,8 +29,8 @@ const SHOOTER_PROB_PHASE3 := 0.60
 # Spawn-point weights (M4_spawn_rules §1). Сумма 10.
 const POINT_WEIGHTS := {"S1": 3, "S2": 3, "S3": 2, "S4": 2}
 
-# Y координата capsule center'а — матчит legacy spawn (enemy_spawner.gd использовал
-# 0.9 для marker.y=0). Marker'ы на арене лежат на полу, врагу нужен offset.
+# Marker'ы лежат на полу (y=0), capsule center'у нужен y=0.9 чтобы враг не
+# проваливался ногами в пол при spawn'е.
 const SPAWN_Y := 0.9
 
 var _run_time: float = 0.0
