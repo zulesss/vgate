@@ -36,12 +36,6 @@ var _attack_windup_remaining: float = 0.0
 var _is_winding_up: bool = false
 var _player: Node3D = null
 
-# Iter 2 diagnostic trace (M3a fix) — printed once per 0.5s when state==CHASE.
-# Cleanup TODO: remove after Iter 2 confirms movement on Windows playtest.
-var _trace_timer: float = 0.0
-var _was_chase_last_tick: bool = false
-var _logged_no_player: bool = false
-
 # Cached material (instanced per-enemy), для telegraph flash. Базовый цвет
 # фиксируется в _ready'е (читается из mesh material override) — telegraph меняет
 # emission, не albedo, чтобы не терять идентификацию типа.
@@ -68,7 +62,6 @@ func _ready() -> void:
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		_player = players[0] as Node3D
-	print("[ENEMY ", name, "] _ready: player=", _player, " group_count=", players.size())
 
 	# Material instance для telegraph: clone из mesh override чтобы не делить
 	# материал между всеми экземплярами (иначе telegraph мигнёт всех сразу).
@@ -89,9 +82,6 @@ func _physics_process(delta: float) -> void:
 	if is_dying:
 		return
 	if _player == null:
-		if not _logged_no_player:
-			print("[ENEMY ", name, "] _player == null — early return")
-			_logged_no_player = true
 		return
 
 	if _attack_cooldown_remaining > 0.0:
@@ -107,20 +97,6 @@ func _physics_process(delta: float) -> void:
 
 	_update_state()
 	_apply_movement(delta)
-
-	# Iter 2 diagnostic trace: throttled per-enemy 0.5s, печатаем когда враг ДОЛЖЕН
-	# двигаться (CHASE сейчас или был на прошлом тике — ловим переходы CHASE→ATTACK).
-	_trace_timer += delta
-	var is_chase: bool = (state == State.CHASE)
-	if (is_chase or _was_chase_last_tick) and _trace_timer >= 0.5:
-		_trace_timer = 0.0
-		var nf: bool = nav_agent != null and nav_agent.is_navigation_finished()
-		var tgt: Vector3 = nav_agent.target_position if nav_agent != null else Vector3.ZERO
-		var nxt: Vector3 = nav_agent.get_next_path_position() if nav_agent != null else Vector3.ZERO
-		print("[ENEMY ", name, "] CHASE dist=", "%.2f" % _distance_to_player(),
-			" nav_finished=", nf, " target=", tgt, " next_path=", nxt,
-			" velocity=", velocity, " self=", global_position, " player=", _player.global_position)
-	_was_chase_last_tick = is_chase
 
 
 # Подклассы переопределяют для добавления Reposition state. По дефолту: Idle / Chase / Attack.

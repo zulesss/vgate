@@ -26,5 +26,3 @@ func _ready() -> void:
 	# Sync bake (headless-safe). Async вариант через NavigationServer3D — не нужен
 	# на 40×40 арене, bake заканчивается за <100мс.
 	region.bake_navigation_mesh(false)
-	var nm := region.navigation_mesh
-	print("[NAV] bake done — polygons=", nm.get_polygon_count(), " vertices=", nm.get_vertices().size())
