@@ -21,7 +21,6 @@ var _base: AudioStreamPlayer
 var _intensity: AudioStreamPlayer
 var _pressure_smooth: float = 0.0
 var _live_enemy_count: int = 0
-var _is_active: bool = false
 var _death_tween_base: Tween = null
 var _death_tween_intensity: Tween = null
 
@@ -36,7 +35,6 @@ func _ready() -> void:
 		_base.play()
 	if _intensity != null and _intensity.stream != null:
 		_intensity.play()
-	_is_active = _base != null and _base.stream != null
 
 	Events.run_started.connect(_on_run_started)
 	Events.player_died.connect(_on_player_died)
@@ -45,7 +43,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not _is_active or _intensity == null:
+	# Если стрим не загрузился (asset gate fallback не сработал) — _intensity всё
+	# равно создан, но stream==null. Гард на stream=null не нужен — set volume_db
+	# в кадр на player'е без stream'а — no-op.
+	if _intensity == null or _intensity.stream == null:
 		return
 	if not VelocityGate.is_alive:
 		return

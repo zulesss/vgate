@@ -54,8 +54,10 @@ var _music_bus_idx: int = -1
 var _ambient_bus_idx: int = -1
 var _sfx_bus_idx: int = -1
 
-# Slot players
-var _gun_player: AudioStreamPlayer
+# Slot players. Gun не имеет своего player'а: он остаётся в legacy Audio pool
+# (player.gd action_shoot), мы только готовим SFX bus + ассет blaster.ogg для
+# будущего perehod. Если решим перевести gun сюда — добавим _gun_player +
+# play_gun() методом + правкой player.gd.
 var _hit_player: AudioStreamPlayer3D
 var _kill_player: AudioStreamPlayer
 var _dash_player: AudioStreamPlayer
@@ -83,15 +85,14 @@ func _ready() -> void:
 		_ambient_base_db = AudioServer.get_bus_volume_db(_ambient_bus_idx)
 
 	# Слоты
-	_gun_player = _make_2d("blaster.ogg", "SFX", -4.0)
-	_hit_player = _make_3d("hit_impact.ogg", "SFX", -6.0, 8.0)
-	_kill_player = _make_2d("kill_confirm.ogg", "SFX", 0.0)
-	_dash_player = _make_2d("dash_whoosh.ogg", "SFX", -3.0)
-	_heartbeat_player = _make_2d("heartbeat_60bpm.ogg", "SFX", HEARTBEAT_MUTE_DB)
+	_hit_player = _make_3d("hit_impact.ogg", -6.0, 8.0)
+	_kill_player = _make_2d("kill_confirm.ogg", 0.0)
+	_dash_player = _make_2d("dash_whoosh.ogg", -3.0)
+	_heartbeat_player = _make_2d("heartbeat_60bpm.ogg", HEARTBEAT_MUTE_DB)
 	_heartbeat_player.process_mode = Node.PROCESS_MODE_ALWAYS
 	if _heartbeat_player.stream != null:
 		_loop_stream(_heartbeat_player.stream)
-	_drain_player = _make_2d("drain_warning.ogg", "SFX", -14.0)
+	_drain_player = _make_2d("drain_warning.ogg", -14.0)
 	if _drain_player.stream != null:
 		_loop_stream(_drain_player.stream)
 	_ambient_player = _make_ambient("scifi_drone.ogg", -12.0)
@@ -134,25 +135,11 @@ func _process(delta: float) -> void:
 		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t)
 		target_vol = lerpf(HEARTBEAT_VOL_LOW_DB, HEARTBEAT_VOL_HIGH_DB, t)
 	_heartbeat_player.pitch_scale = target_pitch
-	# Smooth volume через простой step (delta / smooth_seconds) — никаких tween'ов
-	# создавать каждый кадр, это perf-ловушка.
-	var step: float = delta / HEARTBEAT_VOL_SMOOTH_S
-	if absf(target_vol - _heartbeat_vol_current) <= step * absf(HEARTBEAT_VOL_HIGH_DB - HEARTBEAT_MUTE_DB):
-		_heartbeat_vol_current = target_vol
-	else:
-		_heartbeat_vol_current += signf(target_vol - _heartbeat_vol_current) * step * absf(HEARTBEAT_VOL_HIGH_DB - HEARTBEAT_MUTE_DB)
+	# Smooth volume через move_toward — никаких tween'ов на каждый кадр (perf-ловушка).
+	# Шаг = доля диапазона (HEARTBEAT_MUTE..HEARTBEAT_VOL_HIGH ≈ 72 dB) per smooth-time.
+	var step: float = delta / HEARTBEAT_VOL_SMOOTH_S * absf(HEARTBEAT_VOL_HIGH_DB - HEARTBEAT_MUTE_DB)
+	_heartbeat_vol_current = move_toward(_heartbeat_vol_current, target_vol, step)
 	_heartbeat_player.volume_db = _heartbeat_vol_current
-
-
-# ────── Public API: play_gun (called by player.gd action_shoot)
-# Player.gd через Audio autoload (Kenney pool) уже играет blaster — оставим как
-# было, но добавим возможность дёрнуть отсюда если перейдём на детерминированный
-# pitch. M5 пока gun остаётся в legacy Audio pool — не трогаем чтобы не лезть в player.
-
-func play_gun() -> void:
-	if _gun_player != null and _gun_player.stream != null:
-		_gun_player.pitch_scale = randf_range(0.94, 1.06)  # ±6%
-		_gun_player.play()
 
 
 # ────── Event listeners
@@ -169,7 +156,7 @@ func _on_player_hit(_penalty: int) -> void:
 	_hit_player.play()
 
 
-func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
+func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	if not VelocityGate.is_alive:
 		return
 	if _kill_player != null and _kill_player.stream != null:
@@ -257,18 +244,18 @@ func _on_enemy_spawned(enemy: Node) -> void:
 
 # ────── Helpers
 
-func _make_2d(file_name: String, bus_name: String, vol_db: float) -> AudioStreamPlayer:
+func _make_2d(file_name: String, vol_db: float) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
-	p.bus = bus_name
+	p.bus = "SFX"
 	p.volume_db = vol_db
 	p.stream = _load_or_null(SFX_PATH + file_name)
 	add_child(p)
 	return p
 
 
-func _make_3d(file_name: String, bus_name: String, vol_db: float, unit_size: float) -> AudioStreamPlayer3D:
+func _make_3d(file_name: String, vol_db: float, unit_size: float) -> AudioStreamPlayer3D:
 	var p := AudioStreamPlayer3D.new()
-	p.bus = bus_name
+	p.bus = "SFX"
 	p.volume_db = vol_db
 	p.unit_size = unit_size
 	p.stream = _load_or_null(SFX_PATH + file_name)
