@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://b0vgtdeathscr01" path="res://scenes/death_screen.tscn" id="10_dscr"]
 [ext_resource type="Script" path="res://scripts/run_loop.gd" id="11_runloop"]
 [ext_resource type="Texture2D" path="res://assets/skybox/empty_warehouse_01_1k.exr" id="12_skyhdri"]
+[ext_resource type="PackedScene" uid="uid://b0vgtpausemnu01" path="res://scenes/pause_menu.tscn" id="13_pmenu"]
 
 [sub_resource type="PanoramaSkyMaterial" id="SkyMat_main"]
 panorama = ExtResource("12_skyhdri")
@@ -215,6 +216,8 @@ crosshair = NodePath("../HUD/Crosshair")
 script = ExtResource("8_spawn")
 
 [node name="DeathScreen" parent="." instance=ExtResource("10_dscr")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("13_pmenu")]
 
 [node name="RunLoop" type="Node" parent="."]
 script = ExtResource("11_runloop")

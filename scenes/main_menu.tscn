@@ -1,0 +1,74 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0vgtmainmenu01"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_mmenu"]
+
+[sub_resource type="Theme" id="Theme_mmenu"]
+default_font_size = 28
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_mmenu")
+script = ExtResource("1_mmenu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.09, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Title" type="Label" parent="Center/VBox"]
+layout_mode = 2
+text = "VGATE"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 96
+
+[node name="Tagline" type="Label" parent="Center/VBox"]
+layout_mode = 2
+text = "MOVEMENT IS LIFE"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.6, 0.7, 0.85, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 22
+
+[node name="Spacer" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="Center/VBox"]
+layout_mode = 2
+focus_mode = 2
+text = "START"
+
+[node name="CreditsButton" type="Button" parent="Center/VBox"]
+layout_mode = 2
+focus_mode = 2
+text = "CREDITS"
+
+[node name="QuitButton" type="Button" parent="Center/VBox"]
+layout_mode = 2
+focus_mode = 2
+text = "QUIT"
