@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://b0vgtmelee0001"]
+[gd_scene format=3 uid="uid://bwcrrjslwyvnk"]
 
 [ext_resource type="Script" uid="uid://cs47ly0flrdhm" path="res://objects/melee.gd" id="1_melee"]
 

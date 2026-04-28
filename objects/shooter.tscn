@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://b0vgtshooter001"]
+[gd_scene format=3 uid="uid://b72rd31tgtexc"]
 
 [ext_resource type="Script" uid="uid://driv56em0fwrg" path="res://objects/shooter.gd" id="1_shoot"]
 
