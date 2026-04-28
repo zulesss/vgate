@@ -46,7 +46,7 @@ func apply_hit(penalty: int) -> void:
 	Events.player_hit.emit(penalty)
 
 
-func apply_kill_restore(pos: Vector3) -> void:
+func apply_kill_restore(pos: Vector3, type: String = "melee") -> void:
 	if not is_alive:
 		return
 	velocity_cap = minf(CAP_CEILING, velocity_cap + float(KILL_RESTORE))
@@ -59,7 +59,7 @@ func apply_kill_restore(pos: Vector3) -> void:
 		if is_draining:
 			is_draining = false
 			Events.drain_stopped.emit()
-	Events.enemy_killed.emit(KILL_RESTORE, pos)
+	Events.enemy_killed.emit(KILL_RESTORE, pos, type)
 
 
 func reset_for_run() -> void:
@@ -69,6 +69,10 @@ func reset_for_run() -> void:
 	is_draining = false
 	i_frames_remaining = 0.0
 	is_alive = true
+	# Lifecycle hook (M4): listeners (SpawnController, ScoreState, RunHud) зануляют
+	# своё состояние на этом сигнале. Emit ПОСЛЕ reset state'а — listeners читают
+	# уже свежий VelocityGate (например ScoreState проверяет velocity_cap для in-form bonus).
+	Events.run_started.emit()
 
 
 # Single source of truth для "игрок умер" не из drain'а (например fall off arena).

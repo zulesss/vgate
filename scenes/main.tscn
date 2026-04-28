@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [gd_scene format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
@@ -7,6 +8,19 @@
 [ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="7_navbaker"]
 [ext_resource type="PackedScene" uid="uid://bwcrrjslwyvnk" path="res://objects/melee.tscn" id="8_melee"]
 [ext_resource type="PackedScene" uid="uid://b72rd31tgtexc" path="res://objects/shooter.tscn" id="9_shoot"]
+=======
+[gd_scene load_steps=21 format=3 uid="uid://vgatemainm0"]
+
+[ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
+[ext_resource type="Shader" path="res://shaders/vignette_flash.gdshader" id="5_vshader"]
+[ext_resource type="Script" path="res://scripts/vignette_flash.gd" id="6_vflash"]
+[ext_resource type="Script" path="res://scripts/nav_baker.gd" id="7_navbaker"]
+[ext_resource type="Script" path="res://scripts/spawn_controller.gd" id="8_spawn"]
+[ext_resource type="PackedScene" uid="uid://b0vgtrunhud001" path="res://scenes/run_hud.tscn" id="9_runhud"]
+[ext_resource type="PackedScene" uid="uid://b0vgtdeathscr01" path="res://scenes/death_screen.tscn" id="10_dscr"]
+[ext_resource type="Script" path="res://scripts/run_loop.gd" id="11_runloop"]
+>>>>>>> 3ed4a3676c57ff9f5189c3ca8181e5623fba7718
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_main"]
 sky_horizon_color = Color(0.6422, 0.6502, 0.6802, 1)
@@ -185,7 +199,13 @@ pivot_offset = Vector2(64, 64)
 
 [node name="DebugHud" parent="." unique_id=135852687 instance=ExtResource("3_dhud")]
 
+<<<<<<< HEAD
 [node name="VignetteLayer" type="CanvasLayer" parent="." unique_id=2146444380]
+=======
+[node name="RunHud" parent="." instance=ExtResource("9_runhud")]
+
+[node name="VignetteLayer" type="CanvasLayer" parent="."]
+>>>>>>> 3ed4a3676c57ff9f5189c3ca8181e5623fba7718
 layer = 20
 
 [node name="VignetteFlash" type="ColorRect" parent="VignetteLayer" unique_id=1147192703]
@@ -204,6 +224,7 @@ crosshair = NodePath("../HUD/Crosshair")
 
 [node name="Enemies" type="Node3D" parent="." unique_id=623013457]
 
+<<<<<<< HEAD
 [node name="MeleeS1" parent="Enemies" unique_id=1013535848 instance=ExtResource("8_melee")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.9, 22.514511)
 
@@ -215,3 +236,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.98, -19)
 
 [node name="ShooterS3" parent="Enemies" unique_id=38041496 instance=ExtResource("9_shoot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0.98, -12)
+=======
+[node name="Spawner" type="Node" parent="Enemies"]
+script = ExtResource("8_spawn")
+
+[node name="DeathScreen" parent="." instance=ExtResource("10_dscr")]
+
+[node name="RunLoop" type="Node" parent="."]
+script = ExtResource("11_runloop")
+player_path = NodePath("../Player")
+>>>>>>> 3ed4a3676c57ff9f5189c3ca8181e5623fba7718

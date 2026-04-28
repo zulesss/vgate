@@ -16,6 +16,11 @@ const REPOSITION_REACH := 1.0     # close-enough для is_navigation_finished f
 const PLAYER_HEAD_OFFSET := Vector3(0, 1.4, 0)  # ray target ≈ camera height
 const SHOOTER_RAY_OFFSET := Vector3(0, 1.0, 0)  # ray origin ≈ capsule mid
 
+# LOS raycast mask: env (layer 1) | player (layer 2) = 3. Исключает других врагов
+# (layer 4) — иначе shooter теряет LOS из-за того что другой shooter стоит между
+# ним и player'ом. См. также objects/*.tscn где collision_layer задан явно.
+const LOS_MASK := 1 | 2
+
 var _telegraph_audio: AudioStreamPlayer3D
 var _reposition_timer: float = 0.0
 var _reposition_target: Vector3 = Vector3.ZERO
@@ -43,6 +48,18 @@ func _ready() -> void:
 	_schedule_next_reposition()
 
 
+# Override _physics_process: декрементируем reposition_timer ДО super, чтобы он
+# тикал даже во время windup (super возвращается рано если _is_winding_up). Иначе
+# таймер морозился на 350мс на каждой атаке — задержка между repositions росла на
+# accumulated windup-кадрах. _update_state() больше не трогает _reposition_timer.
+func _physics_process(delta: float) -> void:
+	# is_spawning guard: telegraph fade'ит враг 250мс. За это время reposition_timer
+	# не должен тикать (иначе сразу после spawn'а уже на cooldown'е минус 0.25с).
+	if not is_dying and not is_spawning and _player != null:
+		_reposition_timer = maxf(0.0, _reposition_timer - delta)
+	super._physics_process(delta)
+
+
 # Override: добавляем Reposition state поверх Idle/Chase/Attack base'а.
 func _update_state() -> void:
 	if _is_winding_up:
@@ -52,8 +69,8 @@ func _update_state() -> void:
 		state = State.IDLE
 		return
 
-	# Reposition trigger: периодический таймер ИЛИ потеря line-of-sight в Attack/Chase.
-	_reposition_timer = maxf(0.0, _reposition_timer - get_physics_process_delta_time())
+	# Reposition trigger: периодический таймер (тикает в _physics_process выше)
+	# ИЛИ потеря line-of-sight в Attack/Chase.
 	var need_reposition := false
 	if _reposition_timer <= 0.0:
 		need_reposition = true
@@ -123,6 +140,10 @@ func _end_telegraph() -> void:
 		_material.emission_energy_multiplier = _base_emission_energy
 
 
+func _kill_type() -> String:
+	return "shooter"
+
+
 func _resolve_attack() -> void:
 	# Raycast от shooter'а к player'у. Если LOS потеряна (cover вошёл за windup) — miss.
 	# Spec: damage = SHOOTER_PENALTY (10) к cap. Не используем weapon-stat: shooter
@@ -143,6 +164,7 @@ func _has_line_of_sight() -> bool:
 	var target: Vector3 = _player.global_position + PLAYER_HEAD_OFFSET
 	var query := PhysicsRayQueryParameters3D.create(origin, target)
 	query.exclude = [self]
+	query.collision_mask = LOS_MASK
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
 		# Чистый луч до target'а без collision'ов — player в зоне (либо за пределами
@@ -173,6 +195,7 @@ func _pick_reposition_target() -> void:
 	var player_head: Vector3 = _player.global_position + PLAYER_HEAD_OFFSET
 	var start_angle: float = randf() * TAU  # рандомный стартовый offset чтобы не упорствовать одной точкой
 	var fallback: Vector3 = global_position
+	var has_fallback := false  # накапливаем первый ВАЛИДНЫЙ snapped, не привязываясь к i==0
 
 	for i in REPOSITION_CANDIDATES:
 		var a: float = start_angle + (TAU / REPOSITION_CANDIDATES) * i
@@ -184,6 +207,7 @@ func _pick_reposition_target() -> void:
 		# LOS check: от candidate к player'у. Используем та же физика что в _has_line_of_sight.
 		var query := PhysicsRayQueryParameters3D.create(snapped + SHOOTER_RAY_OFFSET, player_head)
 		query.exclude = [self]
+		query.collision_mask = LOS_MASK
 		var hit := space.intersect_ray(query)
 		var has_los := hit.is_empty()
 		if not has_los:
@@ -193,8 +217,12 @@ func _pick_reposition_target() -> void:
 			_reposition_target = snapped
 			_has_reposition_target = true
 			return
-		if i == 0:
-			fallback = snapped  # первый snapped — fallback если нет LOS-кандидата
+		# Fallback: первый ненулевой snapped, независимо от i. Если кандидат i=0
+		# отбраковался через `continue` (snapped==ZERO), без флага fallback оставался
+		# global_position и shooter "репозился сам в себя".
+		if not has_fallback:
+			fallback = snapped
+			has_fallback = true
 
 	# Fallback: ни одна точка не дала LOS (player полностью окружён cover'ом со
 	# всех 6 углов — редкий кейс). Используем первую walkable точку.
