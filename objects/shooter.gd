@@ -53,7 +53,9 @@ func _ready() -> void:
 # таймер морозился на 350мс на каждой атаке — задержка между repositions росла на
 # accumulated windup-кадрах. _update_state() больше не трогает _reposition_timer.
 func _physics_process(delta: float) -> void:
-	if not is_dying and _player != null:
+	# is_spawning guard: telegraph fade'ит враг 250мс. За это время reposition_timer
+	# не должен тикать (иначе сразу после spawn'а уже на cooldown'е минус 0.25с).
+	if not is_dying and not is_spawning and _player != null:
 		_reposition_timer = maxf(0.0, _reposition_timer - delta)
 	super._physics_process(delta)
 
@@ -136,6 +138,10 @@ func _end_telegraph() -> void:
 	if _material != null:
 		_material.emission = _base_emission_color
 		_material.emission_energy_multiplier = _base_emission_energy
+
+
+func _kill_type() -> String:
+	return "shooter"
 
 
 func _resolve_attack() -> void:

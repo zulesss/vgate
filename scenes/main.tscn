@@ -1,12 +1,11 @@
-[gd_scene load_steps=19 format=3 uid="uid://vgatemainm0"]
+[gd_scene load_steps=18 format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
 [ext_resource type="Shader" path="res://shaders/vignette_flash.gdshader" id="5_vshader"]
 [ext_resource type="Script" path="res://scripts/vignette_flash.gd" id="6_vflash"]
 [ext_resource type="Script" path="res://scripts/nav_baker.gd" id="7_navbaker"]
-[ext_resource type="PackedScene" uid="uid://b0vgtmelee0001" path="res://objects/melee.tscn" id="8_melee"]
-[ext_resource type="PackedScene" uid="uid://b0vgtshooter001" path="res://objects/shooter.tscn" id="9_shoot"]
+[ext_resource type="Script" path="res://scripts/spawn_controller.gd" id="8_spawn"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_main"]
 sky_horizon_color = Color(0.6422, 0.6502, 0.6802, 1)
@@ -206,14 +205,5 @@ crosshair = NodePath("../HUD/Crosshair")
 
 [node name="Enemies" type="Node3D" parent="."]
 
-[node name="MeleeS1" parent="Enemies" instance=ExtResource("8_melee")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.9, 19)
-
-[node name="MeleeS4" parent="Enemies" instance=ExtResource("8_melee")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.9, 16)
-
-[node name="ShooterS2" parent="Enemies" instance=ExtResource("9_shoot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.98, -19)
-
-[node name="ShooterS3" parent="Enemies" instance=ExtResource("9_shoot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0.98, -12)
+[node name="Spawner" type="Node" parent="Enemies"]
+script = ExtResource("8_spawn")

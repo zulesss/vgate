@@ -17,7 +17,7 @@ func _ready() -> void:
 	_spawn_initial.call_deferred()
 
 
-func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	var timer := get_tree().create_timer(RESPAWN_DELAY)
 	await timer.timeout
 	# Защита от reload во время задержки: если уже не в дереве — выходим.

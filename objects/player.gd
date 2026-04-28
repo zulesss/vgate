@@ -485,7 +485,7 @@ func _tick_feel(delta: float) -> void:
 # в frame 0. Hit-stop (Iter 2) и time-dilation (Iter 3) отложены до результата
 # главного feel-чека из §5: «читается ли kill как выдох?». Если да — Iter 2/3 могут
 # быть избыточны; если нет — добавляем поверх.
-func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	# Dead-frame guard: матчит vignette_flash.gd — никаких feel-эффектов от kill'а
 	# в кадр смерти, иначе FOV punch / audio crack играют поверх death-screen.
 	if not VelocityGate.is_alive:

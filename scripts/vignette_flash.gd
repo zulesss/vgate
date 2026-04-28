@@ -27,7 +27,7 @@ func _ready() -> void:
 	if not Events.enemy_killed.is_connected(_on_enemy_killed):
 		Events.enemy_killed.connect(_on_enemy_killed)
 
-func _on_enemy_killed(_restore: int, _pos: Vector3) -> void:
+func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	# Graceful skip if player dead — иначе vignette может зависнуть на peak alpha
 	# до scene reload (RunManager делает reload через 2.8s). Hit-stop autoload не
 	# трогаем — оба слоя независимы.
