@@ -17,6 +17,9 @@ const MIN_SPAWN_DISTANCE := 12.0      # < 12u от player'а — skip
 const SHOOTER_ANTI_CLUSTER_RADIUS := 8.0
 const SPAWN_POINT_COOLDOWN := 3.0
 const TELEGRAPH_FADE_SECONDS := 0.25
+# M5 audio cleanup: spawn-telegraph audio теперь exclusive у Sfx autoload через
+# Events.enemy_spawned (melee_spawn.ogg / shooter_spawn.ogg). Раньше здесь
+# create'ился AudioStreamPlayer3D с blaster.ogg — был аудио double-trigger.
 
 # Type curve (phased lerp) — anchors из M4_spawn_numbers.md §LOCKED.
 const PHASE1_END := 180.0   # 0..180c: shooter_prob = 0.30
@@ -45,11 +48,6 @@ var _player: Node3D = null
 var _melee_scene: PackedScene = preload("res://objects/melee.tscn")
 var _shooter_scene: PackedScene = preload("res://objects/shooter.tscn")
 
-# Telegraph audio — для M4 placeholder тот же blaster.ogg (юзер уточнит на M5
-# audio pass'е). Загружаем один раз чтобы не тыкать диск на каждом spawn'е.
-const TELEGRAPH_AUDIO_PATH := "res://sounds/blaster.ogg"
-var _telegraph_audio_stream: AudioStream = null
-
 
 func _ready() -> void:
 	# Spawn-points из группы (4 Marker3D на main.tscn). Casts при загрузке —
@@ -70,9 +68,6 @@ func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player") as Node3D
 	if _player == null:
 		push_warning("SpawnController: player node not in group, spawn'ы будут блокированы distance check'ом.")
-
-	if ResourceLoader.exists(TELEGRAPH_AUDIO_PATH):
-		_telegraph_audio_stream = load(TELEGRAPH_AUDIO_PATH)
 
 	Events.run_started.connect(_on_run_started)
 	Events.enemy_killed.connect(_on_enemy_killed)
@@ -237,7 +232,6 @@ func _spawn_enemy(point: Marker3D, want_shooter: bool) -> void:
 	get_parent().add_child(enemy)
 	(enemy as Node3D).global_position = spawn_pos
 
-	_attach_telegraph_audio(enemy)
 	_start_telegraph_fade(enemy)
 
 	_live_enemies += 1
@@ -246,20 +240,6 @@ func _spawn_enemy(point: Marker3D, want_shooter: bool) -> void:
 	_last_spawn_point_name = point.name
 	_point_cooldowns[str(point.name)] = SPAWN_POINT_COOLDOWN
 	Events.enemy_spawned.emit(enemy)
-
-
-func _attach_telegraph_audio(enemy: Node) -> void:
-	# Audio frame 0 — level-designer §5. M4 placeholder: blaster.ogg для обоих типов.
-	# TODO M5: low-freq thud для melee + high-freq whine для shooter, swap streams.
-	if _telegraph_audio_stream == null:
-		return
-	var audio := AudioStreamPlayer3D.new()
-	audio.name = "SpawnTelegraphAudio"
-	audio.stream = _telegraph_audio_stream
-	audio.unit_size = 6.0
-	audio.volume_db = -4.0  # тише, чем shooter attack telegraph (-0dB)
-	enemy.add_child(audio)
-	audio.play()
 
 
 func _start_telegraph_fade(enemy: Node) -> void:
