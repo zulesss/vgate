@@ -32,15 +32,10 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 @export var lunge_window: float = 0.0
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
-# mesh_instance: первый MeshInstance3D в поддереве. Для placeholder-сцен это
-# был прямой child $MeshInstance3D, для GLB-инстансов (M5) — первый mesh,
-# найденный recursive scan'ом по subtree (Quaternius модели имеют armature
-# с несколькими skinned meshes). Резолвится в _ready'е, не @onready, чтобы
-# охватить оба случая через find_children.
-var mesh_instance: MeshInstance3D = null
-# visual_root: контейнер всего визуала для transform-tween'ов (например melee
-# telegraph scale.y bump). Для GLB — это инстанс-нода "Visual" (child Node3D
-# из tscn). Для placeholder fallback — = mesh_instance.
+# visual_root: контейнер визуала для transform-tween'ов (melee telegraph
+# scale.y bump). Для GLB-инстансов (M5) — нода "Visual" (instance из tscn).
+# Для placeholder fallback (subclass без "Visual" нода) — первый MeshInstance3D
+# в subtree. Резолвится в _ready'е через find_children.
 var visual_root: Node3D = null
 @onready var contact_area: Area3D = $ContactArea if has_node("ContactArea") else null
 
@@ -84,17 +79,15 @@ func _ready() -> void:
 	if players.size() > 0:
 		_player = players[0] as Node3D
 
-	# Резолв визуала: для placeholder-сцен — direct child $MeshInstance3D.
-	# Для GLB-инстансов (M5) — первый MeshInstance3D в subtree + Visual root
-	# для transform-tween'ов. find_children рекурсивно с owned=false, чтобы
-	# зацепить subtree imported PackedScene (где владелец = imported root, не self).
+	# Резолв визуала: GLB-инстансы (M5) кладут MeshInstance3D'ы глубоко в
+	# armature subtree (Quaternius rig, 1-2 skinned meshes на enemy). Direct
+	# $MeshInstance3D path не работает; используем recursive find_children с
+	# owned=false (владелец imported nodes = imported root, не self).
 	var meshes := find_children("*", "MeshInstance3D", true, false)
-	if meshes.size() > 0:
-		mesh_instance = meshes[0] as MeshInstance3D
 	if has_node("Visual"):
 		visual_root = $Visual as Node3D
-	elif mesh_instance != null:
-		visual_root = mesh_instance
+	elif meshes.size() > 0:
+		visual_root = meshes[0] as Node3D
 
 	# Material instance для telegraph: clone из mesh material'а чтобы не делить
 	# материал между всеми экземплярами (иначе telegraph мигнёт всех сразу).
@@ -103,9 +96,8 @@ func _ready() -> void:
 	# затем ставится как surface_override на ВСЕ MeshInstance3D в subtree —
 	# Quaternius models имеют 1-2 mesh'а на одном материале (MI_Enemies/Large),
 	# uniform flash требует override на каждом.
-	if mesh_instance != null:
-		var src_any := mesh_instance.get_active_material(0)
-		var src := src_any as StandardMaterial3D
+	if meshes.size() > 0:
+		var src := (meshes[0] as MeshInstance3D).get_active_material(0) as StandardMaterial3D
 		if src != null:
 			_material = src.duplicate() as StandardMaterial3D
 			for m in meshes:
