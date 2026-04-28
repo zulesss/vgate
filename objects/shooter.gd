@@ -26,7 +26,7 @@ func _ready() -> void:
 	# Числа (M3_enemy_numbers): Shooter — HP 30, speed 4.0, range 18, windup 350ms,
 	# cooldown 4.0s, penalty 10 (SHOOTER_PENALTY), detection 35.
 	max_hp = 30
-	move_speed = 4.0
+	move_speed = 6.0
 	attack_range = 18.0
 	attack_windup = 0.35
 	attack_cooldown = 4.0
