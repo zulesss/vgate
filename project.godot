@@ -18,12 +18,18 @@ config/name="VGate"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
+[audio]
+
+buses/default_bus_layout="res://default_bus_layout.tres"
+
 [autoload]
 
 Audio="*res://scripts/audio.gd"
 Events="*res://autoload/events.gd"
 VelocityGate="*res://autoload/velocity_gate.gd"
 ScoreState="*res://autoload/score_state.gd"
+Sfx="*res://autoload/sfx.gd"
+MusicDirector="*res://autoload/music_director.gd"
 
 [display]
 
