@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://vgatemainm0"]
+[gd_scene load_steps=22 format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
@@ -9,10 +9,11 @@
 [ext_resource type="PackedScene" uid="uid://b0vgtrunhud001" path="res://scenes/run_hud.tscn" id="9_runhud"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdeathscr01" path="res://scenes/death_screen.tscn" id="10_dscr"]
 [ext_resource type="Script" path="res://scripts/run_loop.gd" id="11_runloop"]
+[ext_resource type="Texture2D" path="res://assets/skybox/empty_warehouse_01_1k.exr" id="12_skyhdri"]
 
-[sub_resource type="ProceduralSkyMaterial" id="SkyMat_main"]
-sky_horizon_color = Color(0.6422, 0.6502, 0.6802, 1)
-ground_horizon_color = Color(0.6422, 0.6502, 0.6802, 1)
+[sub_resource type="PanoramaSkyMaterial" id="SkyMat_main"]
+panorama = ExtResource("12_skyhdri")
+energy_multiplier = 1.0
 
 [sub_resource type="Sky" id="Sky_main"]
 sky_material = SubResource("SkyMat_main")
@@ -21,8 +22,8 @@ sky_material = SubResource("SkyMat_main")
 background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
-ambient_light_color = Color(0.65, 0.7, 0.78, 1)
-ambient_light_energy = 0.6
+ambient_light_color = Color(0.7, 0.74, 0.8, 1)
+ambient_light_energy = 0.75
 tonemap_mode = 2
 
 [sub_resource type="ShaderMaterial" id="ShaderMat_vflash"]
