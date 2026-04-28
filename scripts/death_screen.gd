@@ -32,6 +32,11 @@ func _ready() -> void:
 
 func _on_player_died() -> void:
 	visible = true
+	# Release mouse cursor: игроку нужна возможность кликнуть RESTART.
+	# DeathScreen — owner UI mode'а во время death sequence; restart восстанавливает.
+	# player.gd set'ит CAPTURED только в _ready() и на mouse_capture action — не hot loop,
+	# так что VISIBLE здесь не перебивается per-frame.
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	# Phase 1: 1.8s freeze. Camera drift / ragdoll — feel-engineer M5 territory;
 	# здесь просто wait. Если M5 решит что drift нужен в этом окне — добавит свой
 	# subscriber на player_died, не правя этот файл.
@@ -65,4 +70,7 @@ func _on_restart() -> void:
 	score_box.visible = false
 	black.modulate.a = 0.0
 	restart_btn.disabled = true
+	# Симметрично _on_player_died: восстанавливаем CAPTURED перед emit'ом
+	# (run_started → player снова активен, ему нужен locked cursor для FPS-mouselook).
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	Events.run_restart_requested.emit()

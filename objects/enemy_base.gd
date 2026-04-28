@@ -95,6 +95,14 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_spawning:
 		return
+	# Death-pause: игрок мёртв → freeze AI/attack/movement. Без guard'а windup
+	# дотикает и _resolve_attack() ударит уже в dead-state'е (cap drain ниже нуля).
+	# SpawnController на run_started всё равно queue_free'нет всех — здесь только
+	# заморозка, не cleanup. velocity=ZERO + move_and_slide() гасит инерцию падения.
+	if not VelocityGate.is_alive:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
 	if _player == null:
 		return
 
