@@ -197,9 +197,10 @@ func _process(delta):
 	
 	previously_floored = is_on_floor()
 	
-	# Falling out of arena → trigger смерть через тот же путь что drain (RunManager
-	# reset'ит VelocityGate). Пол арены на y=0; -10 это fail-safe если CSG-floor
-	# пропал/повредился. force_kill идемпотентен — single source of truth для player_died.
+	# Falling out of arena → trigger смерть через тот же путь что drain (RunLoop
+	# reset'ит VelocityGate по нажатию RESTART). Пол арены на y=0; -10 это fail-safe
+	# если CSG-floor пропал/повредился. force_kill идемпотентен — single source of
+	# truth для player_died.
 	if position.y < -10:
 		VelocityGate.force_kill()
 
@@ -222,7 +223,8 @@ func handle_controls(delta):
 
 		input_mouse = Vector2.ZERO
 
-	# Death → пока RunManager не reload'нул сцену (2.8 сек), глушим input.
+	# Death → пока DeathScreen не показал кнопку RESTART (3.3с) и юзер не нажал
+	# её (RunLoop reset'ит is_alive обратно в true), глушим player input.
 	# Single source of truth — VelocityGate.is_alive.
 	if not VelocityGate.is_alive:
 		movement_velocity = Vector3.ZERO

@@ -29,7 +29,7 @@ func _ready() -> void:
 
 func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	# Graceful skip if player dead — иначе vignette может зависнуть на peak alpha
-	# до scene reload (RunManager делает reload через 2.8s). Hit-stop autoload не
+	# до restart (DeathScreen + RunLoop, 3.3с минимум). Hit-stop autoload не
 	# трогаем — оба слоя независимы.
 	if not VelocityGate.is_alive:
 		return

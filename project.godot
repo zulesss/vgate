@@ -24,7 +24,6 @@ Audio="*res://scripts/audio.gd"
 Events="*res://autoload/events.gd"
 VelocityGate="*res://autoload/velocity_gate.gd"
 ScoreState="*res://autoload/score_state.gd"
-Run="*res://scripts/run_manager.gd"
 
 [display]
 
