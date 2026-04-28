@@ -24,20 +24,23 @@
 
 ## 2. Скоуп — IN / OUT
 
-| ✅ IN (полный слайс) | ❌ OUT (вырезано) |
+Скоуп расширен 2026-04-28 (после M4 экзит'а — каденс позволяет). M5+ покрывает полный полиш + 7 дополнительных майлстоунов.
+
+| ✅ IN (полный слайс + расширения) | ❌ OUT (вырезано окончательно) |
 |---|---|
-| Одна арена ~40×40, ручная компоновка из Kenney/Quaternius modular | Несколько арен / уровней |
-| Одно оружие (Kenney Blaster или Starter Kit FPS gun) | Weapon variety, переключение |
-| 2 типа врагов (стрелок + ближнебой) | 3+ типов, варианты |
-| Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | HP в классике, regen, armor |
-| Feel-стек must (FOV double-axis, heartbeat, low-pass, bob fade, kill burst, dash feel) | Nice-to-have feel (дыхание, motion blur, kill chain, dash relief) |
-| Spawn ramp continuous (Devil Daggers форма) | Дискретные волны, scripted encounters |
-| Adaptive music 2 layers + базовый SFX bus | BPM-sync music, кастомный score |
+| 2 арены: основная 40×40 + 1 vertical/multi-tier (M10) | 3+ арен |
+| 2 оружия: blaster + 1 доп (shotgun/railgun, M9) | 3+ оружий, кастомизация |
+| 3 типа врагов: melee, shooter + 1 доп (M8) | 4+ типов |
+| Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | **HP в классике, regen, armor** — конфликт с хуком |
+| Feel must (FOV double-axis, heartbeat, low-pass, bob fade, kill burst, dash feel) + nice-to-have (дыхание, motion blur, kill chain, dash relief — M7) | — |
+| 2 mode'а: continuous spawn ramp + Onslaught (M11 предзаданные волны) | — |
+| Adaptive music 2 layers + полный SFX bus | BPM-sync music, custom score (затратно для 1-2 дней) |
 | Score / timer / death / restart loop (2.8 сек cycle) | Online leaderboard, replay system |
-| Main menu (старт / выход) | Save, settings, options-меню |
-| Капсулы/CSG как placeholder для Kenney mesh-моделей | Анимированные риги, lip sync |
-| Нарратив | Ноль. Сеттинг — только через визуальный тон. |
-| Controller support | Только клавиатура + мышь (controller если Godot bind покрывает бесплатно) |
+| Main menu, Pause, Settings menu (M6: mouse sens, volume, motion blur toggle) | Run-state save (между сессиями только high-score) |
+| Quaternius модели для player + 2 типов врагов (M5, был deferred из M3) | Анимированные риги с lip sync (static Quaternius rigs OK) |
+| Controller support через Godot InputMap (M6) | — |
+| Light нарратив pass (M12: имя, tagline, environmental tone) | — |
+| Settings persist в user:// (M6) | Cloud sync |
 
 ---
 
@@ -117,26 +120,101 @@
 **Owners**: level-designer (spawn-point layout + safe-zones отсутствие) → systems-designer (calibrate ramp formula) → godot-engineer
 **Exit**: 10-15 минут run проигрывается с нарастающим давлением. Плейтест: ощущение "вот-вот сломаюсь".
 
-### M5 — Polish + audio + main menu
-**Цель**: shippable feel.
+### M5 — Polish + audio + main menu + ассеты
+**Цель**: shippable feel. Bridge от placeholder-look к legit-look.
 - [ ] Adaptive music: 2 layers (base + intensity), intensity на 120 сек, volume tween
 - [ ] SFX bus: gun-fire, hit-impact, kill-confirm, dash-whoosh, heartbeat, drain-warning, ambient
-- [ ] HUD минимальный: timer + score + dash-cooldown indicator (если нужен — feel-engineer skip'нул UI как доминирующий канал)
-- [ ] Main menu: VGate title + [НАЧАТЬ] / [ВЫХОД]
+- [ ] HUD финальный стиль: sci-fi minimal вместо дефолтных Godot Label'ов
+- [ ] Main menu: VGate title + [НАЧАТЬ] / [ВЫХОД] (Mode select добавится в M11)
 - [ ] Pause на Esc (resume / restart / main menu)
 - [ ] Background variety: skybox через Polyhaven HDRI
+- [ ] Quaternius модели: player + Melee + Shooter (deferred из M3, заменить капсулы)
 
-**Owners**: feel-engineer (audio-mix + tone) → godot-engineer
+**Owners**: research (asset scouting: audio packs + Quaternius варианты) → feel-engineer (audio-mix спека) → godot-engineer
+**Exit**: игра выглядит и звучит как продакт, не как prototype. Asset preview gate соблюдён.
 
-### M6 — Final balance + tone pass
-**Цель**: финальная балансировка после полного цикла + лёгкий narrative-touch (имя проекта, заголовок).
+### M6 — Settings + Controller + Save settings
+**Цель**: QoL, отдача в input/audio контроль.
+- [ ] Settings menu: mouse sensitivity slider, volume (master/music/SFX), motion blur toggle, controller bindings
+- [ ] Controller support через Godot InputMap (Xbox/PS layout), parity с keyboard+mouse
+- [ ] Settings persist в `user://vgate_settings.cfg` (отдельно от high-score persistence)
+- [ ] Pause menu integration: Settings доступны из Pause
+
+**Owners**: godot-engineer
+**Exit**: settings сохраняются между сессиями, controller играется параллельно клавиатуре.
+
+### M7 — Nice-to-have feel layer
+**Цель**: добивка чувств после M5 audio. См. feel-spec backlog.
+- [ ] Дыхание: heavy breath audio под heartbeat при low cap
+- [ ] Motion blur: radial blur при высокой скорости (toggle через Settings из M6)
+- [ ] Kill chain: 3+ kills в окне 3 сек → visual flair / camera flair
+- [ ] Dash relief: post-dash exhale visual (particle trail или briefcase-glow)
+
+**Owners**: feel-engineer → godot-engineer
+**Exit**: каждый эффект включается/выключается через Settings (M6). На плейтесте «дрожит лучше».
+
+### M8 — 3-й тип врага
+**Цель**: вариативность AI без подрыва Velocity Gate.
+- [ ] game-designer определяет identity (snipe-camper, juggernaut, swarmling — выбрать одного)
+- [ ] systems-designer задаёт HP/speed/damage/range/spawn-cap
+- [ ] godot-engineer импл AI поверх EnemyBase
+- [ ] Quaternius визуал (отдельный robot-archetype от melee/shooter)
+- [ ] Spawn integration в M4 ramp: type curve расширяется до 3 типов
+- [ ] Identity readable за 5 сек на плейтесте
+
+**Owners**: game-designer → systems-designer → godot-engineer
+**Exit**: 3 типа на арене, identity мгновенно различима, hook не сломан.
+
+### M9 — Weapon variety
+**Цель**: tactical variety без cognitive overload.
+- [ ] 1 доп оружие: shotgun (close-range high damage, slow) или railgun (long-range piercing, charge)
+- [ ] Weapon switch на 1/2 keys + mouse wheel
+- [ ] Visual через Kenney Blaster Kit (40 моделей CC0)
+- [ ] Balance vs blaster через systems-designer (TTK на врага per weapon)
+- [ ] Settings binding integration (M6)
+
+**Owners**: game-designer (выбор оружия) → systems-designer (баланс TTK) → godot-engineer
+**Exit**: оба оружия используются (не один доминирует), switch ощущается мгновенно.
+
+### M10 — Дополнительная арена
+**Цель**: variety локации.
+- [ ] level-designer: vertical / multi-tier layout vs текущая flat 40×40
+- [ ] Nav mesh + 4+ spawn-points с учётом верт-геометрии
+- [ ] Arena selection в main menu (M5)
+- [ ] Тестирование balance на новой арене (spawn distances, sightlines)
+
+**Owners**: level-designer → godot-engineer → playtest-analyst
+**Exit**: 2 арены, обе играбельны, баланс не ломается ни на одной.
+
+### M11 — Onslaught mode
+**Цель**: альтернативный режим — предзаданные волны вместо continuous ramp.
+- [ ] game-designer + level-designer: 10 предзаданных волн с роста сложности
+- [ ] Mode select на main menu (Continuous / Onslaught)
+- [ ] WaveController отделён от SpawnController (M4)
+- [ ] Score tracked отдельно (per-mode high-score в settings)
+
+**Owners**: game-designer + level-designer (волны) → godot-engineer
+**Exit**: оба режима работают независимо, high-score per-mode в save.
+
+### M12 — Narrative pass
+**Цель**: тон, имя проекта, capsule copy.
+- [ ] narrative-designer: имя проекта (VGate → final name) + tagline (1 строка)
+- [ ] Capsule description (3-5 строк) для Steam page / itch
+- [ ] Environmental tone: ambient audio cues, visual hints на тон (например terminal-style text при death)
+- [ ] Optional: short intro splash 2-3 сек перед main menu
+
+**Owners**: narrative-designer → godot-engineer
+**Exit**: имя финализировано, tagline ясный, environmental тон присутствует.
+
+### M13 — Final balance + shippable
+**Цель**: финальная балансировка после всего контента + capsule art если идём в Next Fest.
 - [ ] Полный playthrough — playtest-analyst на ≥2 наблюдений (правило `feedback_playtest_first.md`)
-- [ ] Финальная балансировка через systems-designer на основе плейтеста
-- [ ] Имя проекта (narrative-designer mini-pass) — переименовать VGate → final
+- [ ] Финальная балансировка через systems-designer на основе плейтеста (после M8/M9 расширения врагов и оружий)
 - [ ] Capsule art / store description если идём в Next Fest
+- [ ] Final tag `v1.0`
 
 **Owners**: playtest-analyst → systems-designer → narrative-designer
-**Exit**: shippable demo. Тег `v0.M6`.
+**Exit**: shippable demo. Тег `v1.0`.
 
 ---
 
@@ -183,16 +261,16 @@
 
 | Агент | Зона | Активен в |
 |---|---|---|
-| **game-designer** | Concept arbiter, конфликты | M0 (locked), M3 enemy identity |
-| **level-designer** | Layout арены, spawn-points, sightlines | M0/M1, M4 |
-| **systems-designer** | Числа cap math, dash cooldown, enemy stats, spawn ramp | M1, M3, M4, M6 |
-| **narrative-designer** | Имя проекта, capsule copy | M6 mini-pass |
-| **feel-engineer** | Feel-стек спека (готова), tone | M2 (главный), M5, M6 |
-| **playtest-analyst** | Фидбэк-цикл по `feedback_playtest_first.md` | После каждого M, обязательно M6 |
-| **code-reviewer** | Ревью после групп коммитов | После M2, M4, M6 |
+| **game-designer** | Concept arbiter, конфликты, новые механики | M0 (locked), M3 enemy identity, M8, M9, M11 |
+| **level-designer** | Layout арены, spawn-points, sightlines, доп уровни | M0/M1, M4, M10, M11 |
+| **systems-designer** | Числа cap math, dash cooldown, enemy stats, spawn ramp, weapon TTK | M1, M3, M4, M8, M9, M13 |
+| **narrative-designer** | Имя проекта, tagline, capsule copy, env tone | M12 |
+| **feel-engineer** | Feel-стек спека, audio mix, nice-to-have feel | M2 (главный), M5 (audio), M7 |
+| **playtest-analyst** | Фидбэк-цикл по `feedback_playtest_first.md` | После каждого M, обязательно M10, M13 |
+| **code-reviewer** | Ревью после групп коммитов | После M2, M4, M8/M9, M13 |
 | **godot-engineer** | Вся имплементация | Все майлстоуны |
-| **market-analyst** | Positioning / Next Fest подача | M6 / post-shippable |
-| **research** | Ассеты-обновления, Godot 4.6 best practice | По запросу |
+| **market-analyst** | Positioning / Next Fest подача | M13 / post-shippable |
+| **research** | Asset scouting (audio, Quaternius, Polyhaven), Godot 4.6 best practice | M5 (asset gate), по запросу |
 | **Пользователь** | Финальный арбитр + плейтестер | Все |
 
 ---
