@@ -1,16 +1,9 @@
-[gd_scene format=3 uid="uid://b72rd31tgtexc"]
+[gd_scene load_steps=4 format=3 uid="uid://b72rd31tgtexc"]
 
 [ext_resource type="Script" uid="uid://driv56em0fwrg" path="res://objects/shooter.gd" id="1_shoot"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_shooter"]
-albedo_color = Color(0.25, 0.45, 0.75, 1)
-roughness = 0.65
+[ext_resource type="PackedScene" uid="uid://2u1lsw3lnd3o" path="res://assets/models/quaternius/shooter_robot.gltf" id="2_visual"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_shooter_body"]
-radius = 0.35
-height = 1.95
-
-[sub_resource type="CapsuleMesh" id="Mesh_shooter"]
 radius = 0.35
 height = 1.95
 
@@ -22,9 +15,8 @@ script = ExtResource("1_shoot")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_shooter_body")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("Mesh_shooter")
-surface_material_override/0 = SubResource("Mat_shooter")
+[node name="Visual" parent="." instance=ExtResource("2_visual")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.975, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5

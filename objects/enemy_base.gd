@@ -32,7 +32,16 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 @export var lunge_window: float = 0.0
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var mesh_instance: MeshInstance3D = $MeshInstance3D
+# mesh_instance: первый MeshInstance3D в поддереве. Для placeholder-сцен это
+# был прямой child $MeshInstance3D, для GLB-инстансов (M5) — первый mesh,
+# найденный recursive scan'ом по subtree (Quaternius модели имеют armature
+# с несколькими skinned meshes). Резолвится в _ready'е, не @onready, чтобы
+# охватить оба случая через find_children.
+var mesh_instance: MeshInstance3D = null
+# visual_root: контейнер всего визуала для transform-tween'ов (например melee
+# telegraph scale.y bump). Для GLB — это инстанс-нода "Visual" (child Node3D
+# из tscn). Для placeholder fallback — = mesh_instance.
+var visual_root: Node3D = null
 @onready var contact_area: Area3D = $ContactArea if has_node("ContactArea") else null
 
 var hp: int
@@ -75,13 +84,32 @@ func _ready() -> void:
 	if players.size() > 0:
 		_player = players[0] as Node3D
 
-	# Material instance для telegraph: clone из mesh override чтобы не делить
+	# Резолв визуала: для placeholder-сцен — direct child $MeshInstance3D.
+	# Для GLB-инстансов (M5) — первый MeshInstance3D в subtree + Visual root
+	# для transform-tween'ов. find_children рекурсивно с owned=false, чтобы
+	# зацепить subtree imported PackedScene (где владелец = imported root, не self).
+	var meshes := find_children("*", "MeshInstance3D", true, false)
+	if meshes.size() > 0:
+		mesh_instance = meshes[0] as MeshInstance3D
+	if has_node("Visual"):
+		visual_root = $Visual as Node3D
+	elif mesh_instance != null:
+		visual_root = mesh_instance
+
+	# Material instance для telegraph: clone из mesh material'а чтобы не делить
 	# материал между всеми экземплярами (иначе telegraph мигнёт всех сразу).
-	if mesh_instance != null and mesh_instance.get_surface_override_material(0) != null:
-		var src := mesh_instance.get_surface_override_material(0) as StandardMaterial3D
+	# get_active_material покрывает оба случая: surface_override (placeholder)
+	# и mesh-baked (GLB, материал внутри ImporterMesh). Duplicate'нутый material
+	# затем ставится как surface_override на ВСЕ MeshInstance3D в subtree —
+	# Quaternius models имеют 1-2 mesh'а на одном материале (MI_Enemies/Large),
+	# uniform flash требует override на каждом.
+	if mesh_instance != null:
+		var src_any := mesh_instance.get_active_material(0)
+		var src := src_any as StandardMaterial3D
 		if src != null:
 			_material = src.duplicate() as StandardMaterial3D
-			mesh_instance.set_surface_override_material(0, _material)
+			for m in meshes:
+				(m as MeshInstance3D).set_surface_override_material(0, _material)
 			_base_emission_color = _material.emission
 			_base_emission_energy = _material.emission_energy_multiplier
 

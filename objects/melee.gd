@@ -36,8 +36,8 @@ func _ready() -> void:
 	lunge_window = 0.30
 	super._ready()
 
-	if mesh_instance != null:
-		_base_mesh_scale_y = mesh_instance.scale.y
+	if visual_root != null:
+		_base_mesh_scale_y = visual_root.scale.y
 
 	# Audio: enemy_attack.ogg (Kenney) — short windup grunt. 3D player чтобы
 	# pan/distance attenuation работал — игрок должен слышать ближний windup
@@ -58,14 +58,14 @@ func _play_telegraph() -> void:
 		_material.emission = FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
 
-	if mesh_instance != null:
+	if visual_root != null:
 		# Tween node-API проще AnimationPlayer для placeholder M3a (M3b с rigged
 		# меш-моделями — переход на AnimationPlayer).
 		if _telegraph_tween != null and _telegraph_tween.is_valid():
 			_telegraph_tween.kill()
 		_telegraph_tween = create_tween()
 		_telegraph_tween.tween_property(
-			mesh_instance, "scale:y", _base_mesh_scale_y * TELEGRAPH_SCALE_BUMP, attack_windup
+			visual_root, "scale:y", _base_mesh_scale_y * TELEGRAPH_SCALE_BUMP, attack_windup
 		).set_ease(Tween.EASE_OUT)
 
 	# Audio frame 0 — игрок имеет full window реагировать (см. brief Q3).
@@ -91,10 +91,10 @@ func _end_telegraph() -> void:
 		_material.emission = _base_emission_color
 		_material.emission_energy_multiplier = _base_emission_energy
 
-	if mesh_instance != null:
+	if visual_root != null:
 		if _telegraph_tween != null and _telegraph_tween.is_valid():
 			_telegraph_tween.kill()
 		_telegraph_tween = create_tween()
 		_telegraph_tween.tween_property(
-			mesh_instance, "scale:y", _base_mesh_scale_y, 0.1
+			visual_root, "scale:y", _base_mesh_scale_y, 0.1
 		).set_ease(Tween.EASE_OUT)
