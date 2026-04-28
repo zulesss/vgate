@@ -96,7 +96,12 @@ func _physics_process(delta: float) -> void:
 
 	# Telegraph windup tick: считаем до 0, потом resolve_attack(). Если игрок выйдет
 	# из range/sightline во время windup — _resolve_attack делает abort без damage'а.
+	# Guard is_dying ВНУТРИ windup-блока: damage()→die() в кадре когда _is_winding_up,
+	# без guard'а _attack_windup_remaining дотикает до 0 и _resolve_attack() ударит
+	# игрока уже от queue_freed enemy. Обнуляем lunge-движение и attack-resolve.
 	if _is_winding_up:
+		if is_dying:
+			return
 		_attack_windup_remaining = maxf(0.0, _attack_windup_remaining - delta)
 		if _attack_windup_remaining <= 0.0:
 			_is_winding_up = false
