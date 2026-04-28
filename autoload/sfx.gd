@@ -27,12 +27,15 @@ const KILL_DUCK_AMBIENT_MS := 120
 
 const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 
-# Heartbeat кривая. lerp по speed_ratio:
-#   sr ≥ 0.45 → mute (volume < threshold)
-#   sr ∈ (0.15, 0.45) → linear lerp pitch 1.0 → 1.833, vol -18 → -8 dB
-#   sr ≤ 0.15 → max (1.833 / -8 dB)
-const HEARTBEAT_SR_HIGH := 0.45
-const HEARTBEAT_SR_LOW := 0.15
+# Heartbeat кривая. lerp по cap_ratio (velocity_cap / CAP_CEILING):
+#   cap_ratio ≥ 0.45 → mute (cap высокий, опасности нет)
+#   cap_ratio ∈ (0.15, 0.45) → linear lerp pitch 1.0 → 1.833, vol -18 → -8 dB
+#   cap_ratio ≤ 0.15 → max BPM/vol (1.833 / -8 dB) — критическая cap-эрозия
+# Updated 2026-04-28: speed_ratio mapping triggered max heartbeat at game start
+# (player stationary, current_speed=0 → speed_ratio=0). Cap-based mapping correctly
+# represents danger as cap erosion, not momentary stillness.
+const HEARTBEAT_CAP_HIGH := 0.45
+const HEARTBEAT_CAP_LOW := 0.15
 const HEARTBEAT_PITCH_LOW := 1.0
 const HEARTBEAT_PITCH_HIGH := 1.833
 const HEARTBEAT_VOL_LOW_DB := -18.0
@@ -117,21 +120,21 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Heartbeat обновляем каждый кадр — кривая по speed_ratio. Pitch применяется
+	# Heartbeat обновляем каждый кадр — кривая по cap_ratio. Pitch применяется
 	# мгновенно (это и есть BPM), volume smoothed чтобы не дёрганье на hit/kill.
 	if not VelocityGate.is_alive:
 		return
-	var sr: float = VelocityGate.speed_ratio()
+	var cap_ratio: float = VelocityGate.velocity_cap / VelocityGate.CAP_CEILING
 	var target_pitch: float
 	var target_vol: float
-	if sr >= HEARTBEAT_SR_HIGH:
+	if cap_ratio >= HEARTBEAT_CAP_HIGH:
 		target_pitch = HEARTBEAT_PITCH_LOW
 		target_vol = HEARTBEAT_MUTE_DB
-	elif sr <= HEARTBEAT_SR_LOW:
+	elif cap_ratio <= HEARTBEAT_CAP_LOW:
 		target_pitch = HEARTBEAT_PITCH_HIGH
 		target_vol = HEARTBEAT_VOL_HIGH_DB
 	else:
-		var t: float = (HEARTBEAT_SR_HIGH - sr) / (HEARTBEAT_SR_HIGH - HEARTBEAT_SR_LOW)
+		var t: float = (HEARTBEAT_CAP_HIGH - cap_ratio) / (HEARTBEAT_CAP_HIGH - HEARTBEAT_CAP_LOW)
 		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t)
 		target_vol = lerpf(HEARTBEAT_VOL_LOW_DB, HEARTBEAT_VOL_HIGH_DB, t)
 	_heartbeat_player.pitch_scale = target_pitch
