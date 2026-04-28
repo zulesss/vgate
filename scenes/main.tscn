@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://vgatemainm0"]
+[gd_scene load_steps=19 format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
@@ -30,12 +30,35 @@ shader_parameter/flash_intensity = 0.0
 shader_parameter/vignette_inner = 0.35
 shader_parameter/vignette_outer = 0.75
 
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wallN"]
+size = Vector3(40, 4, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wallS"]
+size = Vector3(40, 4, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wallE"]
+size = Vector3(1, 4, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wallW"]
+size = Vector3(1, 4, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_coverC1"]
+size = Vector3(4, 1.2, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_coverC2"]
+size = Vector3(3, 2, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_coverC3"]
+size = Vector3(2, 1.5, 3)
+
 [sub_resource type="NavigationMesh" id="NavMesh_arena"]
 agent_radius = 0.5
 agent_height = 1.8
 agent_max_climb = 0.3
-geometry_parsed_geometry_type = 2
-geometry_collision_mask = 1
+geometry_parsed_geometry_type = 0
 geometry_source_geometry_mode = 1
 geometry_source_group_name = &"navigation_geometry"
 
@@ -56,40 +79,72 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 size = Vector3(40, 1, 40)
 
+[node name="NavMeshFloor" type="MeshInstance3D" parent="Arena/Floor"]
+visible = false
+mesh = SubResource("BoxMesh_floor")
+
 [node name="WallNorth" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -20.5)
 use_collision = true
 size = Vector3(40, 4, 1)
+
+[node name="NavMeshWallNorth" type="MeshInstance3D" parent="Arena/WallNorth"]
+visible = false
+mesh = SubResource("BoxMesh_wallN")
 
 [node name="WallSouth" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 20.5)
 use_collision = true
 size = Vector3(40, 4, 1)
 
+[node name="NavMeshWallSouth" type="MeshInstance3D" parent="Arena/WallSouth"]
+visible = false
+mesh = SubResource("BoxMesh_wallS")
+
 [node name="WallEast" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.5, 2, 0)
 use_collision = true
 size = Vector3(1, 4, 40)
+
+[node name="NavMeshWallEast" type="MeshInstance3D" parent="Arena/WallEast"]
+visible = false
+mesh = SubResource("BoxMesh_wallE")
 
 [node name="WallWest" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5, 2, 0)
 use_collision = true
 size = Vector3(1, 4, 40)
 
+[node name="NavMeshWallWest" type="MeshInstance3D" parent="Arena/WallWest"]
+visible = false
+mesh = SubResource("BoxMesh_wallW")
+
 [node name="CoverC1" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.6, -4)
 use_collision = true
 size = Vector3(4, 1.2, 2)
+
+[node name="NavMeshCoverC1" type="MeshInstance3D" parent="Arena/CoverC1"]
+visible = false
+mesh = SubResource("BoxMesh_coverC1")
 
 [node name="CoverC2" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 1)
 use_collision = true
 size = Vector3(3, 2, 2)
 
+[node name="NavMeshCoverC2" type="MeshInstance3D" parent="Arena/CoverC2"]
+visible = false
+mesh = SubResource("BoxMesh_coverC2")
+
 [node name="CoverC3" type="CSGBox3D" parent="Arena"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.75, 8)
 use_collision = true
 size = Vector3(2, 1.5, 3)
+
+[node name="NavMeshCoverC3" type="MeshInstance3D" parent="Arena/CoverC3"]
+visible = false
+mesh = SubResource("BoxMesh_coverC3")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavMesh_arena")

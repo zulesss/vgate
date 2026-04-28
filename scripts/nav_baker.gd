@@ -20,6 +20,11 @@ func _ready() -> void:
 	if region.navigation_mesh == null:
 		push_warning("NavBaker: navigation_mesh не назначен в region'е")
 		return
+	# Defer bake one physics_frame: hedge against MeshInstance3D children not yet
+	# being registered as parse targets on parent's _ready. Cheap insurance.
+	await get_tree().physics_frame
 	# Sync bake (headless-safe). Async вариант через NavigationServer3D — не нужен
 	# на 40×40 арене, bake заканчивается за <100мс.
 	region.bake_navigation_mesh(false)
+	var nm := region.navigation_mesh
+	print("[NAV] bake done — polygons=", nm.get_polygon_count(), " vertices=", nm.get_vertices().size())
