@@ -27,19 +27,22 @@ const KILL_DUCK_AMBIENT_MS := 120
 
 const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 
-# Heartbeat кривая. lerp по cap_ratio (velocity_cap / CAP_CEILING):
-#   cap_ratio ≥ 0.45 → mute (cap высокий, опасности нет)
-#   cap_ratio ∈ (0.15, 0.45) → linear lerp pitch 1.0 → 1.833, vol -18 → -8 dB
-#   cap_ratio ≤ 0.15 → max BPM/vol (1.833 / -8 dB) — критическая cap-эрозия
-# Updated 2026-04-28: speed_ratio mapping triggered max heartbeat at game start
+# Heartbeat кривая. quadratic ease-in по cap_ratio (velocity_cap / CAP_CEILING):
+#   cap_ratio ≥ 0.50 → mute (cap высокий, опасности нет)
+#   cap_ratio ∈ (0.10, 0.50) → quadratic ease pitch 1.0 → 1.5, vol -80 → -12 dB
+#   cap_ratio ≤ 0.10 → peak (1.5 / -12 dB) — критическая cap-эрозия (cap < 10)
+# Updated 2026-04-28 (iter 1): speed_ratio mapping triggered max heartbeat at game start
 # (player stationary, current_speed=0 → speed_ratio=0). Cap-based mapping correctly
 # represents danger as cap erosion, not momentary stillness.
-const HEARTBEAT_CAP_HIGH := 0.45
-const HEARTBEAT_CAP_LOW := 0.15
+# Updated 2026-04-28 (iter 2): user playtest "режет уши на низком cap" — peak BPM
+# понижен с 110 (1.833) до ~90 (1.5), peak vol с -8 до -12 dB, ramp window расширен
+# 0.15-0.45 → 0.10-0.50, linear → quadratic ease для долгого плато на mid-cap.
+# Heartbeat = pressure, не alarm.
+const HEARTBEAT_CAP_HIGH := 0.50
+const HEARTBEAT_CAP_LOW := 0.10
 const HEARTBEAT_PITCH_LOW := 1.0
-const HEARTBEAT_PITCH_HIGH := 1.833
-const HEARTBEAT_VOL_LOW_DB := -18.0
-const HEARTBEAT_VOL_HIGH_DB := -8.0
+const HEARTBEAT_PITCH_HIGH := 1.5
+const HEARTBEAT_VOL_HIGH_DB := -12.0
 const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
 const HEARTBEAT_VOL_SMOOTH_S := 0.4
@@ -130,13 +133,13 @@ func _process(delta: float) -> void:
 	if cap_ratio >= HEARTBEAT_CAP_HIGH:
 		target_pitch = HEARTBEAT_PITCH_LOW
 		target_vol = HEARTBEAT_MUTE_DB
-	elif cap_ratio <= HEARTBEAT_CAP_LOW:
-		target_pitch = HEARTBEAT_PITCH_HIGH
-		target_vol = HEARTBEAT_VOL_HIGH_DB
 	else:
-		var t: float = (HEARTBEAT_CAP_HIGH - cap_ratio) / (HEARTBEAT_CAP_HIGH - HEARTBEAT_CAP_LOW)
-		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t)
-		target_vol = lerpf(HEARTBEAT_VOL_LOW_DB, HEARTBEAT_VOL_HIGH_DB, t)
+		# Quadratic ease-in: t² держит heartbeat почти неслышным на mid-cap
+		# (long plateau), нарастает резче только в нижней четверти диапазона.
+		var t: float = clampf((HEARTBEAT_CAP_HIGH - cap_ratio) / (HEARTBEAT_CAP_HIGH - HEARTBEAT_CAP_LOW), 0.0, 1.0)
+		var t_eased: float = t * t
+		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t_eased)
+		target_vol = lerpf(HEARTBEAT_MUTE_DB, HEARTBEAT_VOL_HIGH_DB, t_eased)
 	_heartbeat_player.pitch_scale = target_pitch
 	# Smooth volume через move_toward — никаких tween'ов на каждый кадр (perf-ловушка).
 	# Шаг = доля диапазона (HEARTBEAT_MUTE..HEARTBEAT_VOL_HIGH ≈ 72 dB) per smooth-time.
