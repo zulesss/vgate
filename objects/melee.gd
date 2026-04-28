@@ -24,6 +24,14 @@ func _ready() -> void:
 	attack_cooldown = 2.5
 	attack_penalty = VelocityGate.MELEE_PENALTY
 	detection_radius = 35.0
+	# Lunge: snap-rush в финальные 200мс windup'а (см. M3_identity §2 attack
+	# telegraph — "small forward burst as visual tell"). Без него walk-back
+	# (player_speed 1.6 u/s при cap=20) escape'ит attack_range за 450мс freeze
+	# каждый цикл — петля без попаданий. С lunge'ем relative speed melee→player
+	# в финальные 200мс = 7.5-1.6 = 5.9 u/s → закрывает 1.18u → HIT гарантирован
+	# на walk. Dash (20 u/s × 0.2с = 4u burst) всё ещё escape'ит.
+	lunge_speed = 7.5
+	lunge_window = 0.20
 	super._ready()
 
 	if mesh_instance != null:

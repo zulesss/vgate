@@ -24,6 +24,13 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 @export var detection_radius: float = 35.0
 @export var attack_penalty: int = 20  # default = MELEE_PENALTY
 
+# Lunge на windup'е: финальные lunge_window секунд windup'а melee делает рывок
+# к текущей позиции игрока на lunge_speed u/s (см. M3_identity §2). Default 0 =
+# lunge выключен (shooter — frozen на windup'е, ему рваться вперёд незачем).
+# Подкласс melee включает в _ready'е (lunge_speed=7.5, lunge_window=0.20).
+@export var lunge_speed: float = 0.0
+@export var lunge_window: float = 0.0
+
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var contact_area: Area3D = $ContactArea if has_node("ContactArea") else null
@@ -119,9 +126,29 @@ func _update_state() -> void:
 
 
 func _apply_movement(_delta: float) -> void:
-	# Idle / windup → стоп. Chase → к player через NavAgent. Attack — windup тоже стоп.
-	if state == State.IDLE or _is_winding_up:
+	# Idle → стоп. Chase → к player через NavAgent. Windup: melee делает snap-lunge
+	# в финальные lunge_window секунд (direct direction к player.global_position,
+	# не через NavAgent — на 200мс пересчитывать path дорого, а в attack_range
+	# игрок почти всегда в LOS). Shooter имеет lunge_speed=0 → frozen как раньше.
+	if state == State.IDLE:
 		velocity = Vector3.ZERO
+		move_and_slide()
+		return
+	if _is_winding_up:
+		if (
+			lunge_speed > 0.0
+			and _attack_windup_remaining < lunge_window
+			and _player != null
+		):
+			var lunge_dir: Vector3 = _player.global_position - global_position
+			lunge_dir.y = 0.0
+			if lunge_dir.length() > 0.001:
+				lunge_dir = lunge_dir.normalized()
+				velocity = lunge_dir * lunge_speed
+			else:
+				velocity = Vector3.ZERO
+		else:
+			velocity = Vector3.ZERO
 		move_and_slide()
 		return
 	if state != State.CHASE:
