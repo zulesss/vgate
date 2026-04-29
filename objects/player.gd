@@ -171,7 +171,7 @@ func _process(delta):
 
 	sound_footsteps.stream_paused = true
 
-	if is_on_floor():
+	if _dash_time_remaining <= 0.0 and is_on_floor():
 		if abs(velocity.x) > 1 or abs(velocity.z) > 1:
 			sound_footsteps.stream_paused = false
 
