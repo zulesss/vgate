@@ -40,11 +40,15 @@ const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 # Heartbeat = pressure, не alarm.
 # Updated 2026-04-29 (iter 4): /9 → ≈10 BPM peak, ≈2.5 октавы вниз — feel-эксперимент
 # юзера, очень низкое гулкое сердце.
+# Updated 2026-04-29 (iter 5): pitch /18 (≈5 BPM peak, ~3.5 октавы вниз — sub-bass
+# rumble), linear ease вместо quadratic, floor -36 dB → heartbeat audible через весь
+# cap 50→10 (плато t² на mid-cap делало звук неслышимым на 30-50).
 const HEARTBEAT_CAP_HIGH := 0.50
 const HEARTBEAT_CAP_LOW := 0.10
-const HEARTBEAT_PITCH_LOW := 1.0 / 9.0
-const HEARTBEAT_PITCH_HIGH := 1.5 / 9.0
+const HEARTBEAT_PITCH_LOW := 1.0 / 18.0
+const HEARTBEAT_PITCH_HIGH := 1.5 / 18.0
 const HEARTBEAT_VOL_HIGH_DB := -12.0
+const HEARTBEAT_VOL_FLOOR_DB := -36.0  # in-range volume floor — audible plateau на cap=HIGH
 const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
 const HEARTBEAT_VOL_SMOOTH_S := 0.4
@@ -130,12 +134,11 @@ func _process(delta: float) -> void:
 		target_pitch = HEARTBEAT_PITCH_LOW
 		target_vol = HEARTBEAT_MUTE_DB
 	else:
-		# Quadratic ease-in: t² держит heartbeat почти неслышным на mid-cap
-		# (long plateau), нарастает резче только в нижней четверти диапазона.
+		# Linear lerp в-range — heartbeat слышен через весь диапазон cap 50→10,
+		# нарастает плавно. Floor -36 dB на cap=50 (just audible), peak -12 dB на cap=10.
 		var t: float = clampf((HEARTBEAT_CAP_HIGH - cap_ratio) / (HEARTBEAT_CAP_HIGH - HEARTBEAT_CAP_LOW), 0.0, 1.0)
-		var t_eased: float = t * t
-		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t_eased)
-		target_vol = lerpf(HEARTBEAT_MUTE_DB, HEARTBEAT_VOL_HIGH_DB, t_eased)
+		target_pitch = lerpf(HEARTBEAT_PITCH_LOW, HEARTBEAT_PITCH_HIGH, t)
+		target_vol = lerpf(HEARTBEAT_VOL_FLOOR_DB, HEARTBEAT_VOL_HIGH_DB, t)
 	_heartbeat_player.pitch_scale = target_pitch
 	# Smooth volume через move_toward — никаких tween'ов на каждый кадр (perf-ловушка).
 	# Шаг = доля диапазона (HEARTBEAT_MUTE..HEARTBEAT_VOL_HIGH ≈ 72 dB) per smooth-time.
