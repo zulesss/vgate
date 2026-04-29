@@ -89,7 +89,7 @@ var _material: StandardMaterial3D = null
 # decay 80мс out-expo назад к base или к telegraph state (если враг в windup'е).
 # Подклассы melee/shooter выставляют _telegraph_active+color+energy в своих
 # _play_telegraph(), сбрасывают _telegraph_active в _end_telegraph(). Это
-# нужно чтобы flash decay возвращался к activnomu telegraph color, а не к
+# нужно чтобы flash decay возвращался к активному telegraph color, а не к
 # базовому — иначе hit во время windup'а мигает враг "к нейтральному" и
 # ломает читаемость telegraph'а.
 const HIT_FLASH_COLOR := Color(1.0, 1.0, 1.0)
