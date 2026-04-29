@@ -62,9 +62,11 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	# Esc внутри settings = BACK. layer=50 (выше pause layer=40) → ловим event ДО
 	# pause_menu'a чтобы избежать двойного закрытия (settings → pause → game).
+	# Ордер важен: set_input_as_handled() ДО _on_back(), иначе в non-overlay режиме
+	# change_scene_to_file фриз'ит ноду, get_viewport() становится null → краш.
 	if event.is_action_pressed("mouse_capture_exit"):
-		_on_back()
 		get_viewport().set_input_as_handled()
+		_on_back()
 
 
 func _on_master_changed(v: float) -> void:
