@@ -71,6 +71,7 @@ func _play_telegraph() -> void:
 
 	# Audio frame 0 — игрок имеет full window реагировать (см. brief Q3).
 	if _telegraph_audio != null:
+		print("[AUDIO] melee.gd | windup_telegraph | enemy_attack.ogg")
 		_telegraph_audio.play()
 
 	# Animation: Charge (one-shot) — windup pose. Длительность анимации может
