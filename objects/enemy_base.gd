@@ -39,7 +39,21 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 var visual_root: Node3D = null
 @onready var contact_area: Area3D = $ContactArea if has_node("ContactArea") else null
 
+# AnimationPlayer внутри GLB-инстанса (Quaternius rigged-mesh). Резолвится
+# recursive find_child'ом — Godot кладёт AnimationPlayer глубоко в imported
+# subtree (под armature root). owned=false: AnimationPlayer владеет imported
+# scene root, не self. Если плеера нет (placeholder без GLB) — все
+# _play_anim* вызовы становятся no-op (guard внутри).
+var _anim_player: AnimationPlayer = null
+# Кэш имени текущей loop-анимации, чтобы не дёргать play() каждый physics-кадр
+# при том же state'е (idempotency для _update_state spam'а — _update_state может
+# звать _set_loop_anim с тем же именем 60 раз/с).
+var _current_loop_anim: StringName = &""
+
 var hp: int
+# True пока играется one-shot анимация поверх loop'а (Charge/Attack/Hit/death).
+# _set_loop_anim() уважает этот флаг — не перебивает one-shot loop'ом.
+var _oneshot_active: bool = false
 var is_dying: bool = false
 # Spawn telegraph (M4): пока true — _physics_process выходит сразу, AI/attack/movement
 # заморожены. SpawnController снимает флаг по окончании 250мс fade-tween. Default
@@ -109,6 +123,16 @@ func _ready() -> void:
 	# Применяем как initial cooldown — first attack откладывается.
 	_attack_cooldown_remaining = randf_range(0.0, 1.5)
 
+	# AnimationPlayer внутри GLB-instance (под armature). owned=false — узел
+	# принадлежит imported scene root'у, не self'у. Если placeholder без GLB —
+	# плеера нет, все _play_anim* — no-op.
+	_anim_player = find_child("AnimationPlayer", true, false) as AnimationPlayer
+	# Idle сразу при spawn'е — пусть враг "оживает" даже во время 250мс fade-in.
+	# AnimationPlayer независим от _physics_process, is_spawning его не блокирует.
+	var idle_anim := _anim_for_state(State.IDLE)
+	if idle_anim != &"":
+		_set_loop_anim(idle_anim)
+
 
 func _physics_process(delta: float) -> void:
 	if is_dying:
@@ -143,6 +167,15 @@ func _physics_process(delta: float) -> void:
 			_resolve_attack()
 
 	_update_state()
+	# Синхронизация loop-анимации со state'ом ПОСЛЕ _update_state. Подкласс
+	# override'ит _anim_for_state — мапинг state→имя. Не трогаем во время
+	# windup'а (telegraph one-shot уже играет: Charge/Charging) и if mid-Hit
+	# one-shot — _set_loop_anim проверит активность one-shot через
+	# _oneshot_active.
+	if not _is_winding_up:
+		var loop_name := _anim_for_state(state)
+		if loop_name != &"":
+			_set_loop_anim(loop_name)
 	_apply_movement(delta)
 
 
@@ -247,6 +280,61 @@ func _end_telegraph() -> void:
 	pass
 
 
+# Подкласс override'ит для маппинга state→имя loop-анимации. Возвращает &""
+# когда нет анимации (placeholder без GLB / state без подходящей animации
+# в rig'е). Default: пусто — base не знает имена анимаций конкретного rig'а.
+func _anim_for_state(_s: int) -> StringName:
+	return &""
+
+
+# Idempotent loop-анимация: если уже играет с таким именем — no-op. Не перебивает
+# активный one-shot (Charge/Attack/Hit/death) — loop вернётся когда one-shot закончится.
+func _set_loop_anim(anim_name: StringName) -> void:
+	if _anim_player == null:
+		return
+	if _oneshot_active:
+		return
+	if _current_loop_anim == anim_name and _anim_player.is_playing():
+		return
+	if not _anim_player.has_animation(anim_name):
+		return
+	# Loop-флаг настраиваем на самой Animation-resource'е. Quaternius анимации
+	# могут идти как ONCE — для Idle/Run нужен LOOP_LINEAR.
+	var anim := _anim_player.get_animation(anim_name)
+	if anim != null and anim.loop_mode != Animation.LOOP_LINEAR:
+		anim.loop_mode = Animation.LOOP_LINEAR
+	_anim_player.play(anim_name)
+	_current_loop_anim = anim_name
+
+
+# One-shot поверх loop'а. После окончания — возвращаемся к loop-анимации
+# текущего state'а. Прерывает текущий one-shot если уже играет (последний
+# trigger выигрывает: Hit поверх Charge, Attack поверх Charge — обычный flow).
+func _play_oneshot(anim_name: StringName) -> void:
+	if _anim_player == null:
+		return
+	if not _anim_player.has_animation(anim_name):
+		return
+	var anim := _anim_player.get_animation(anim_name)
+	if anim != null and anim.loop_mode != Animation.LOOP_NONE:
+		anim.loop_mode = Animation.LOOP_NONE
+	# Disconnect старый animation_finished listener чтобы не получить double-fire
+	# на back-to-back one-shot'ах. Используем connect с CONNECT_ONE_SHOT.
+	if _anim_player.animation_finished.is_connected(_on_oneshot_finished):
+		_anim_player.animation_finished.disconnect(_on_oneshot_finished)
+	_anim_player.animation_finished.connect(_on_oneshot_finished, CONNECT_ONE_SHOT)
+	_anim_player.play(anim_name)
+	_oneshot_active = true
+	_current_loop_anim = &""  # инвалидируем кэш — после one-shot'а _set_loop_anim
+	# должен заново play() loop-анимацию даже с тем же именем.
+
+
+func _on_oneshot_finished(_anim_name: StringName) -> void:
+	_oneshot_active = false
+	# Loop-анимация вернётся на следующем _physics_process'е через _set_loop_anim
+	# из main loop'а. Если is_dying — не возвращаемся ни к чему: queue_free скоро.
+
+
 # Зовётся player.gd → action_shoot → raycast collider.damage(weapon.damage).
 # Имя метода + untyped amount — Starter Kit convention (damage у них float).
 func damage(amount) -> void:
@@ -256,13 +344,59 @@ func damage(amount) -> void:
 	if hp <= 0:
 		is_dying = true
 		die()
+		return
+	# Hit reaction: short one-shot поверх state-loop'а. Edge case: если
+	# _is_winding_up — не пускаем Hit, оставляем Charge/Charging играть до
+	# конца. Telegraph emission flash + audio cue остаются как сигнал —
+	# обрывать визуальный wind-up на 0.1с до удара читается хуже.
+	# (Игрок видит windup, успевает уклониться — это feel-приоритет.)
+	if not _is_winding_up:
+		_play_oneshot(_hit_anim_name())
+
+
+# Подкласс возвращает имя hit-анимации в своём rig'е. Default пусто — база
+# без знания rig'а не пускает hit (одинаково для placeholder и для unknown rig'а).
+func _hit_anim_name() -> StringName:
+	return &""
 
 
 func die() -> void:
 	# Type tag в kill-сигнал нужен ScoreState (base score 100/150) и SpawnController
 	# (live_shooters счётчик). Подкласс override _kill_type если новый тип появится.
+	# apply_kill_restore — gameplay-impact (cap restore + counter), вызываем СРАЗУ.
+	# queue_free отложен до конца death-анимации (max 0.6s — чтобы труп не блокировал
+	# geometry дольше). collision_layer=0: отключаем дальнейшие raycast'ы / contact'ы
+	# (player может стрелять в умирающего, ловить на body collision'е — нечестно).
 	VelocityGate.apply_kill_restore(global_position, _kill_type())
+	collision_layer = 0
+	collision_mask = 0
+	_play_death_animation_then_free()
+
+
+func _play_death_animation_then_free() -> void:
+	var death_name := _death_anim_name()
+	var wait_time: float = 0.0
+	if _anim_player != null and death_name != &"" and _anim_player.has_animation(death_name):
+		var anim := _anim_player.get_animation(death_name)
+		if anim != null:
+			anim.loop_mode = Animation.LOOP_NONE
+			# Cap = 0.6с (per brief): достаточно для большинства Quaternius rig-death'ов
+			# (TurnOff ≈ 0.5с, BackFlip ≈ 0.7с — обрежем). Дольше — труп блокирует geometry.
+			wait_time = minf(anim.length, 0.6)
+		# Disconnect oneshot listener — death игнорирует _oneshot_active flow,
+		# у нас свой timer-based wait.
+		if _anim_player.animation_finished.is_connected(_on_oneshot_finished):
+			_anim_player.animation_finished.disconnect(_on_oneshot_finished)
+		_anim_player.play(death_name)
+	if wait_time > 0.0:
+		await get_tree().create_timer(wait_time).timeout
 	queue_free()
+
+
+# Подкласс возвращает имя death-анимации в своём rig'е. Default пусто — без
+# анимации queue_free сразу (для placeholder/dummy без GLB).
+func _death_anim_name() -> StringName:
+	return &""
 
 
 # Default: melee. Shooter переопределит "shooter". Расширяемая convention для будущих

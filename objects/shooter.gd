@@ -132,6 +132,8 @@ func _play_telegraph() -> void:
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
 	if _telegraph_audio != null:
 		_telegraph_audio.play()
+	# Animation: Charging (one-shot windup pose).
+	_play_oneshot(&"Charging")
 
 
 func _end_telegraph() -> void:
@@ -150,7 +152,26 @@ func _resolve_attack() -> void:
 	# bypassing player.damage() chain, шлём напрямую в VelocityGate (как melee).
 	if not is_dying and _player != null and _has_line_of_sight():
 		VelocityGate.apply_hit(attack_penalty)
+	# Attack one-shot — fire pose. Возврат к Idle через _on_oneshot_finished.
+	_play_oneshot(&"Attack")
 	super._resolve_attack()
+
+
+func _anim_for_state(_s: int) -> StringName:
+	# Quaternius shooter rig не имеет Run/Walk — используем Idle для всех
+	# состояний (CHASE / REPOSITION / IDLE). Шутер скользит на Idle pose
+	# при движении — намеренное ограничение модели, не блокер.
+	return &"Idle"
+
+
+func _hit_anim_name() -> StringName:
+	return &"Hit"
+
+
+func _death_anim_name() -> StringName:
+	# Shooter rig не имеет TurnOff — используем BackFlip как flat death substitute.
+	# Cap 0.6с в base'е обрежет если анимация длиннее.
+	return &"BackFlip"
 
 
 # Line-of-sight: physics raycast от shooter'а к голове player'а. Excludes self.

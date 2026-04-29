@@ -59,8 +59,9 @@ func _play_telegraph() -> void:
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
 
 	if visual_root != null:
-		# Tween node-API проще AnimationPlayer для placeholder M3a (M3b с rigged
-		# меш-моделями — переход на AnimationPlayer).
+		# Tween на scale.y остаётся как третий слой telegraph-читаемости —
+		# AnimationPlayer Charge изменяет skinned-mesh pose, но bump визуально
+		# выделяется и через silhouette.
 		if _telegraph_tween != null and _telegraph_tween.is_valid():
 			_telegraph_tween.kill()
 		_telegraph_tween = create_tween()
@@ -72,6 +73,11 @@ func _play_telegraph() -> void:
 	if _telegraph_audio != null:
 		_telegraph_audio.play()
 
+	# Animation: Charge (one-shot) — windup pose. Длительность анимации может
+	# отличаться от attack_windup (0.45с) — Godot обрежет на следующем play()
+	# при resolve, не блокер.
+	_play_oneshot(&"Charge")
+
 
 func _resolve_attack() -> void:
 	# Single damage source per spec: damage только в этой точке, после windup.
@@ -81,6 +87,9 @@ func _resolve_attack() -> void:
 		var dist := _distance_to_player()
 		if dist <= attack_range:
 			VelocityGate.apply_hit(attack_penalty)
+	# Attack one-shot ДО super (super вызывает _end_telegraph, не трогает
+	# анимацию). После Attack one-shot заканчивается → return к Idle/Run loop'у.
+	_play_oneshot(&"Attack")
 	super._resolve_attack()
 
 
@@ -98,3 +107,20 @@ func _end_telegraph() -> void:
 		_telegraph_tween.tween_property(
 			visual_root, "scale:y", _base_mesh_scale_y, 0.1
 		).set_ease(Tween.EASE_OUT)
+
+
+func _anim_for_state(s: int) -> StringName:
+	# IDLE / ATTACK (idle pose в attack-cooldown'е) → Idle. CHASE → Run.
+	# REPOSITION у melee не используется (override в Shooter), но возвращаем
+	# Idle для безопасности.
+	if s == State.CHASE:
+		return &"Run"
+	return &"Idle"
+
+
+func _hit_anim_name() -> StringName:
+	return &"Hit"
+
+
+func _death_anim_name() -> StringName:
+	return &"TurnOff"
