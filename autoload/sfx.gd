@@ -29,8 +29,8 @@ const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 
 # Heartbeat кривая. quadratic ease-in по cap_ratio (velocity_cap / CAP_CEILING):
 #   cap_ratio ≥ 0.50 → mute (cap высокий, опасности нет)
-#   cap_ratio ∈ (0.10, 0.50) → quadratic ease pitch 1.0 → 1.5, vol -80 → -12 dB
-#   cap_ratio ≤ 0.10 → peak (1.5 / -12 dB) — критическая cap-эрозия (cap < 10)
+#   cap_ratio ∈ (0.10, 0.50) → quadratic ease pitch ≈0.333 → 0.5, vol -80 → -12 dB
+#   cap_ratio ≤ 0.10 → peak (0.5 / -12 dB) — критическая cap-эрозия (cap < 10)
 # Updated 2026-04-28 (iter 1): speed_ratio mapping triggered max heartbeat at game start
 # (player stationary, current_speed=0 → speed_ratio=0). Cap-based mapping correctly
 # represents danger as cap erosion, not momentary stillness.
@@ -38,10 +38,13 @@ const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 # понижен с 110 (1.833) до ~90 (1.5), peak vol с -8 до -12 dB, ramp window расширен
 # 0.15-0.45 → 0.10-0.50, linear → quadratic ease для долгого плато на mid-cap.
 # Heartbeat = pressure, не alarm.
+# Updated 2026-04-29 (iter 3): user "стучит слишком быстро" — pitch_scale делён на 3
+# (≈60→20 BPM low, ≈90→30 BPM peak). Side-effect: семпл звучит на октаву ниже —
+# гулкое "глубокое" сердце вместо нервного быстрого. Желаемый feel.
 const HEARTBEAT_CAP_HIGH := 0.50
 const HEARTBEAT_CAP_LOW := 0.10
-const HEARTBEAT_PITCH_LOW := 1.0
-const HEARTBEAT_PITCH_HIGH := 1.5
+const HEARTBEAT_PITCH_LOW := 1.0 / 3.0
+const HEARTBEAT_PITCH_HIGH := 1.5 / 3.0
 const HEARTBEAT_VOL_HIGH_DB := -12.0
 const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)

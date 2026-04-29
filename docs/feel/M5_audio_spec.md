@@ -89,6 +89,8 @@ VelocityGate.speed_ratio() на момент сигнала и выбирает 
 
 **5. heartbeat**
 
+> **Updated 2026-04-29:** heartbeat slowed 3x per user feedback (HIGH=0.5, LOW≈0.333, ≈30 BPM peak / ≈20 BPM low). Side-effect: семпл звучит на октаву ниже — гулкое "глубокое" сердце.
+
 > **Updated 2026-04-28:** mapping переключён со `speed_ratio` на `cap_ratio = velocity_cap / 100`.
 > Speed_ratio mapping выдавал max BPM/volume при старте игры (player stationary, current_speed=0
 > даёт speed_ratio=0) — даже при cap=80 (полное здоровье) heartbeat бил в максимум. Cap-based
