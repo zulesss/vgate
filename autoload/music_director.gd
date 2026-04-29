@@ -31,12 +31,8 @@ func _ready() -> void:
 	_base = _setup_player("dos88_base.ogg", INTENSITY_MAX_DB)
 	_intensity = _setup_player("dos88_intensity.ogg", INTENSITY_MIN_DB)
 
-	if _base != null and _base.stream != null:
-		print("[AUDIO] music_director.gd | boot_play_base | dos88_base.ogg")
-		_base.play()
-	if _intensity != null and _intensity.stream != null:
-		print("[AUDIO] music_director.gd | boot_play_intensity | dos88_intensity.ogg")
-		_intensity.play()
+	# Music starts on Events.run_started — autoload init только готовит players,
+	# boot тишина для главного меню.
 
 	Events.run_started.connect(_on_run_started)
 	Events.player_died.connect(_on_player_died)
@@ -91,6 +87,20 @@ func _on_run_started() -> void:
 		if not _intensity.playing and _intensity.stream != null:
 			print("[AUDIO] music_director.gd | run_started_replay_intensity | dos88_intensity.ogg")
 			_intensity.play()
+
+
+func stop_all() -> void:
+	# Используется main_menu при возврате из gameplay'а — тушит обе layer'а
+	# сразу, без death-fade'а. Tween'ы убиваем чтобы не оставались висящие.
+	if _death_tween_base != null and _death_tween_base.is_valid():
+		_death_tween_base.kill()
+	if _death_tween_intensity != null and _death_tween_intensity.is_valid():
+		_death_tween_intensity.kill()
+	if _base != null and _base.playing:
+		_base.stop()
+	if _intensity != null and _intensity.playing:
+		_intensity.stop()
+	print("[AUDIO] music_director.gd | stop_all | both layers stopped")
 
 
 func _on_player_died() -> void:

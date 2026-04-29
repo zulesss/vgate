@@ -101,8 +101,8 @@ func _ready() -> void:
 	# Spawn audio через 3D-инстансы создаём per-spawn (positional). Только prototype'ы.
 	_melee_spawn_proto = _load_or_null(SFX_PATH + "melee_spawn.ogg")
 
-	# Heartbeat loop стартует сразу, volume = mute → станет слышен только на низком sr.
-	_heartbeat_player.play()
+	# Heartbeat loop стартует только на Events.run_started — главное меню должно
+	# быть тихим. См. _on_run_started ниже.
 
 	# Events
 	Events.player_hit.connect(_on_player_hit)
@@ -220,6 +220,20 @@ func _on_run_started() -> void:
 		_ambient_player.play()
 
 
+func stop_all_loops() -> void:
+	# Используется main_menu при возврате из gameplay'а. Тушим heartbeat,
+	# drain_warning, ambient — все loop'ы. One-shot'ы (hit, kill, dash)
+	# сами отыграют и остановятся.
+	if _heartbeat_player != null and _heartbeat_player.playing:
+		_heartbeat_player.stop()
+	if _drain_player != null and _drain_player.playing:
+		_drain_player.stop()
+	if _ambient_player != null and _ambient_player.playing:
+		_ambient_player.stop()
+	_heartbeat_vol_current = HEARTBEAT_MUTE_DB
+	print("[AUDIO] sfx.gd | stop_all_loops | heartbeat/drain/ambient stopped")
+
+
 func _on_enemy_spawned(enemy: Node) -> void:
 	# 3D positional — проигрываем prototype-stream через временный AudioStreamPlayer3D
 	# на позиции врага. После finished — удаляем.
@@ -265,13 +279,14 @@ func _make_3d(file_name: String, vol_db: float, unit_size: float) -> AudioStream
 
 
 func _make_ambient(file_name: String, vol_db: float) -> AudioStreamPlayer:
+	# Не стартуем play() здесь — ambient запускается из _on_run_started вместе с
+	# heartbeat'ом (после press START в главном меню). См. рефакторинг
+	# "silent main menu" 2026-04-29.
 	var p := AudioStreamPlayer.new()
 	p.bus = "Ambient"
 	p.volume_db = vol_db
 	p.stream = _load_or_null(AMBIENT_PATH + file_name)
 	add_child(p)
-	if p.stream != null:
-		p.play()
 	return p
 
 

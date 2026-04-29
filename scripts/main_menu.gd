@@ -19,6 +19,11 @@ func _ready() -> void:
 	# при старте арены вернёт CAPTURED. Между сценами state mouse_mode не
 	# наследуется автоматически — set'им явно.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Возврат в меню из gameplay (через pause → MAIN MENU или через credits)
+	# может оставить музыку/heartbeat играющими — autoload'ы переживают смену сцены.
+	# Глушим явно, чтобы меню было тихим.
+	MusicDirector.stop_all()
+	Sfx.stop_all_loops()
 	start_btn.pressed.connect(_on_start)
 	settings_btn.pressed.connect(_on_settings)
 	credits_btn.pressed.connect(_on_credits)
