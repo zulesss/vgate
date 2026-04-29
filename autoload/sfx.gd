@@ -38,13 +38,12 @@ const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 # понижен с 110 (1.833) до ~90 (1.5), peak vol с -8 до -12 dB, ramp window расширен
 # 0.15-0.45 → 0.10-0.50, linear → quadratic ease для долгого плато на mid-cap.
 # Heartbeat = pressure, не alarm.
-# Updated 2026-04-29 (iter 3): user "стучит слишком быстро" — pitch_scale делён на 3
-# (≈60→20 BPM low, ≈90→30 BPM peak). Side-effect: семпл звучит на октаву ниже —
-# гулкое "глубокое" сердце вместо нервного быстрого. Желаемый feel.
+# Updated 2026-04-29 (iter 4): /9 → ≈10 BPM peak, ≈2.5 октавы вниз — feel-эксперимент
+# юзера, очень низкое гулкое сердце.
 const HEARTBEAT_CAP_HIGH := 0.50
 const HEARTBEAT_CAP_LOW := 0.10
-const HEARTBEAT_PITCH_LOW := 1.0 / 3.0
-const HEARTBEAT_PITCH_HIGH := 1.5 / 3.0
+const HEARTBEAT_PITCH_LOW := 1.0 / 9.0
+const HEARTBEAT_PITCH_HIGH := 1.5 / 9.0
 const HEARTBEAT_VOL_HIGH_DB := -12.0
 const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
@@ -77,8 +76,8 @@ var _heartbeat_vol_current: float = HEARTBEAT_MUTE_DB
 var _heartbeat_was_audible: bool = false
 
 # Process_mode ALWAYS, чтобы pause-меню не ломало death-fade tween'ы. Heartbeat
-# loop тоже должен жить пока tree.paused = true (для feel'а: pause не должна
-# превращать heartbeat в startle при resume).
+# player'у явный PAUSABLE override ставим в _ready (юзер flip'нул feel-decision
+# 2026-04-29: pause = full silence, в т.ч. heartbeat).
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -92,7 +91,9 @@ func _ready() -> void:
 	_hit_player = _make_3d("hit_impact.ogg", -6.0, 8.0)
 	_kill_player = _make_2d("kill_confirm.ogg", 0.0)
 	_heartbeat_player = _make_2d("heartbeat_60bpm.ogg", HEARTBEAT_MUTE_DB)
-	_heartbeat_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	# pause замораживает heartbeat (юзер flip'нул feel-decision 2026-04-29 — pause =
+	# full silence, including heartbeat). Явный PAUSABLE override т.к. родитель ALWAYS.
+	_heartbeat_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if _heartbeat_player.stream != null:
 		_loop_stream(_heartbeat_player.stream)
 	_drain_player = _make_2d("drain_warning.ogg", -14.0)
