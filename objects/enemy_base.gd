@@ -37,11 +37,11 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 # но не snap-щёлкает у melee при resposition'е игрока. IDLE/dying/spawning
 # не крутятся (early-return в _physics_process).
 const TURN_SPEED := 8.0
-# Quaternius enemy rigs (melee, shooter) смотрят в +Z направлении (eyelids
-# и body-extents в +Z). Godot 3D convention: forward = -Z. Поэтому к
-# atan2(to_player.x, to_player.z) добавляем PI чтобы модель развернулась
-# лицом к игроку, а не спиной.
-const FACE_YAW_OFFSET := PI
+# Quaternius enemy rigs (melee, shooter) смотрят в -Z направлении — совпадает
+# с Godot 3D convention (forward = -Z). atan2(to_player.x, to_player.z) даёт
+# yaw, при котором локальный -Z указывает на игрока, без offset'а.
+# (Изначально предположили +Z forward → добавили PI offset → F5 показал, что
+#  враги смотрели спиной. Bbox-анализ был обманчив, ground-truth — playtest.)
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 # visual_root: контейнер визуала для transform-tween'ов (melee telegraph
@@ -208,7 +208,7 @@ func _face_player(delta: float) -> void:
 	to_player.y = 0.0
 	if to_player.length_squared() < 0.0001:
 		return
-	var target_yaw: float = atan2(to_player.x, to_player.z) + FACE_YAW_OFFSET
+	var target_yaw: float = atan2(to_player.x, to_player.z)
 	rotation.y = lerp_angle(rotation.y, target_yaw, delta * TURN_SPEED)
 
 
