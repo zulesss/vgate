@@ -20,7 +20,7 @@ var current_speed: float = 0.0
 var drain_timer: float = 0.0
 var is_draining: bool = false
 var i_frames_remaining: float = 0.0
-var is_alive: bool = true
+var is_alive: bool = false  # Default false: VelocityGate dormant в меню. reset_for_run() флипает в true при старте run'а, end_run() возвращает false при возврате в меню.
 
 
 func max_speed_at_cap() -> float:
@@ -86,6 +86,21 @@ func force_kill() -> void:
 		is_draining = false
 		Events.drain_stopped.emit()
 	Events.player_died.emit()
+
+
+# Возврат в меню (не смерть): тушим run-state, не эмитим player_died.
+# Используется main_menu.gd._ready() после возврата из gameplay'а через
+# pause → MAIN MENU, credits → MAIN MENU, или любой другой path.
+# Идемпотентен: повторные вызовы no-op.
+func end_run() -> void:
+	is_alive = false
+	velocity_cap = RESPAWN_CAP
+	current_speed = 0.0
+	drain_timer = 0.0
+	if is_draining:
+		is_draining = false
+		Events.drain_stopped.emit()
+	i_frames_remaining = 0.0
 
 
 func _physics_process(delta: float) -> void:

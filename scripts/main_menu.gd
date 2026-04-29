@@ -24,6 +24,8 @@ func _ready() -> void:
 	# Глушим явно, чтобы меню было тихим.
 	MusicDirector.stop_all()
 	Sfx.stop_all_loops()
+	# Velocity Gate в dormant state — иначе drain в меню → player_died через ~8с.
+	VelocityGate.end_run()
 	start_btn.pressed.connect(_on_start)
 	settings_btn.pressed.connect(_on_settings)
 	credits_btn.pressed.connect(_on_credits)
