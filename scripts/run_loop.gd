@@ -16,6 +16,11 @@ class_name RunLoop extends Node
 
 
 func _ready() -> void:
+	# Первый старт run'а: reset_for_run() флипает VelocityGate.is_alive=true и
+	# эмитит run_started — Player input разлоч'ивается, Sfx/MusicDirector
+	# стартуют loop'ы. До ca9e4e5 дефолт is_alive=true маскировал это, но
+	# теперь VelocityGate dormant by default → нужен явный init.
+	VelocityGate.reset_for_run()
 	Events.run_restart_requested.connect(_on_restart)
 
 
