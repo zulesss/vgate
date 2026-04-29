@@ -69,6 +69,10 @@ var _shooter_spawn_proto: AudioStream
 # Smoothed heartbeat volume — чтобы не дёргалось от мгновенных hit/kill изменений sr.
 var _heartbeat_vol_current: float = HEARTBEAT_MUTE_DB
 
+# DEBUG (temporary, see commit message): track threshold crossings to print only on
+# audible/inaudible transitions instead of every frame.
+var _heartbeat_was_audible: bool = false
+
 # Process_mode ALWAYS, чтобы pause-меню не ломало death-fade tween'ы. Heartbeat
 # loop тоже должен жить пока tree.paused = true (для feel'а: pause не должна
 # превращать heartbeat в startle при resume).
@@ -140,6 +144,13 @@ func _process(delta: float) -> void:
 	_heartbeat_vol_current = move_toward(_heartbeat_vol_current, target_vol, step)
 	_heartbeat_player.volume_db = _heartbeat_vol_current
 
+	# DEBUG: only print on threshold crossings (audible↔inaudible).
+	var is_audible: bool = cap_ratio < HEARTBEAT_CAP_HIGH
+	if is_audible != _heartbeat_was_audible:
+		_heartbeat_was_audible = is_audible
+		var state_str: String = "on" if is_audible else "off"
+		print("[AUDIO] sfx.gd | heartbeat AUDIBLE %s (cap_ratio=%.2f, pitch=%.3f, vol=%.1f)" % [state_str, cap_ratio, target_pitch, _heartbeat_vol_current])
+
 
 # ────── Event listeners
 
@@ -152,6 +163,7 @@ func _on_player_hit(_penalty: int) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
 	if p != null:
 		_hit_player.global_position = p.global_position
+	print("[AUDIO] sfx.gd | player_hit | hit_impact.ogg")
 	_hit_player.play()
 
 
@@ -160,6 +172,7 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 		return
 	if _kill_player != null and _kill_player.stream != null:
 		_kill_player.pitch_scale = randf_range(0.96, 1.04)  # ±4%
+		print("[AUDIO] sfx.gd | enemy_killed | kill_confirm.ogg + duck Music/Ambient")
 		_kill_player.play()
 	# Duck Music/Ambient bus — independent tween'ы.
 	_duck_bus(_music_bus_idx, _music_base_db, KILL_DUCK_MUSIC_DB, KILL_DUCK_MUSIC_MS)
@@ -168,15 +181,18 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 
 func _on_drain_started() -> void:
 	if _drain_player != null and _drain_player.stream != null and not _drain_player.playing:
+		print("[AUDIO] sfx.gd | drain_started | drain_warning.ogg LOOP START")
 		_drain_player.play()
 
 
 func _on_drain_stopped() -> void:
 	if _drain_player != null and _drain_player.playing:
+		print("[AUDIO] sfx.gd | drain_stopped | drain_warning.ogg LOOP STOP")
 		_drain_player.stop()
 
 
 func _on_player_died() -> void:
+	print("[AUDIO] sfx.gd | player_died | SFX bus mute, heartbeat fade")
 	# Глушим SFX bus немедленно — gun/hit decay не должен болтаться поверх death-state.
 	# Bus-mute через AudioServer chunk'ает все SFX players разом (cleaner чем per-player stop).
 	if _sfx_bus_idx >= 0:
@@ -194,10 +210,12 @@ func _on_player_died() -> void:
 
 
 func _on_run_started() -> void:
+	print("[AUDIO] sfx.gd | run_started | heartbeat LOOP RESTART, ambient LOOP RESTART")
 	# Un-mute SFX bus, рестартанём heartbeat loop, перезапустим ambient.
 	if _sfx_bus_idx >= 0:
 		AudioServer.set_bus_mute(_sfx_bus_idx, false)
 	_heartbeat_vol_current = HEARTBEAT_MUTE_DB
+	_heartbeat_was_audible = false
 	if _heartbeat_player != null and not _heartbeat_player.playing:
 		_heartbeat_player.volume_db = HEARTBEAT_MUTE_DB
 		_heartbeat_player.play()
@@ -226,6 +244,8 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	if enemy is Node3D:
 		player.global_position = (enemy as Node3D).global_position
 	player.finished.connect(player.queue_free)
+	var spawn_name: String = "shooter_spawn.ogg" if is_shooter else "melee_spawn.ogg"
+	print("[AUDIO] sfx.gd | enemy_spawned | %s" % spawn_name)
 	player.play()
 
 

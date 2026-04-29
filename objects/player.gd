@@ -76,6 +76,10 @@ var fov_controller: FovController
 # fov_controller). Не идут через Audio autoload pool: тот рандомит pitch 0.9-1.1
 # каждый раз, что конфликтует со спекой «детерминированные числа».
 var _kill_crack_player: AudioStreamPlayer
+
+# DEBUG (temporary): track footsteps pause-state to print only on transitions.
+var _footsteps_was_paused: bool = true
+
 # Dash whoosh: legacy path возвращён 2026-04-29 после F5-плейтеста. M5 ассет
 # `dash_whoosh.ogg` звучал как шорох-артефакт; pre-M5 jump_b.ogg + pitch shift
 # +200 cents даёт чистый whoosh. Asset в `assets/audio/sfx/` оставлен на диске
@@ -188,11 +192,18 @@ func _process(delta):
 		if abs(velocity.x) > 1 or abs(velocity.z) > 1:
 			sound_footsteps.stream_paused = false
 
+	# DEBUG: print only on pause-state transitions, not every frame.
+	if sound_footsteps.stream_paused != _footsteps_was_paused:
+		_footsteps_was_paused = sound_footsteps.stream_paused
+		var fs_state: String = "PAUSE" if _footsteps_was_paused else "RESUME"
+		print("[AUDIO] player.gd | footsteps %s" % fs_state)
+
 	# Landing after jump or falling
 
 	camera.position.y = lerp(camera.position.y, 0.0, delta * 5)
 
 	if is_on_floor() and gravity > 1 and !previously_floored: # Landed
+		print("[AUDIO] player.gd | land | land.ogg")
 		Audio.play("sounds/land.ogg")
 		camera.position.y = -0.1
 	
@@ -288,6 +299,7 @@ func handle_gravity(delta):
 # Jumping
 
 func action_jump():
+	print("[AUDIO] player.gd | jump | jump_a/b/c.ogg pool")
 	Audio.play("sounds/jump_a.ogg, sounds/jump_b.ogg, sounds/jump_c.ogg")
 	gravity = - jump_strength
 	jumps_remaining -= 1
@@ -298,6 +310,7 @@ func action_shoot():
 	if Input.is_action_pressed("shoot"):
 		if !blaster_cooldown.is_stopped(): return # Cooldown for shooting
 
+		print("[AUDIO] player.gd | shoot | %s" % weapon.sound_shoot)
 		Audio.play(weapon.sound_shoot)
 		
 		# Set muzzle flash position, play animation
@@ -355,6 +368,7 @@ func action_weapon_toggle():
 		weapon_index = wrap(weapon_index + 1, 0, weapons.size())
 		initiate_change_weapon(weapon_index)
 
+		print("[AUDIO] player.gd | weapon_toggle | weapon_change.ogg")
 		Audio.play("sounds/weapon_change.ogg")
 
 # Initiates the weapon changing animation (tween)
@@ -496,6 +510,7 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	if fov_controller != null:
 		fov_controller.kick(15.0, 180, "ease_out_cubic")
 	if _kill_crack_player != null:
+		print("[AUDIO] player.gd | kill_crack | enemy_destroy.ogg")
 		_kill_crack_player.play()
 
 
@@ -514,6 +529,7 @@ func _on_dash_started() -> void:
 	_camera_push_remaining = _camera_push_total
 	camera.position.z = -DASH_PUSH_DISTANCE
 	if _dash_whoosh_player != null:
+		print("[AUDIO] player.gd | dash | jump_b.ogg pitch=%.3f" % DASH_WHOOSH_PITCH)
 		_dash_whoosh_player.play()
 
 
