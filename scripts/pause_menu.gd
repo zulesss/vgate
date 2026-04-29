@@ -8,12 +8,17 @@ class_name PauseMenu extends CanvasLayer
 # смысла). Гард: VelocityGate.is_alive — единственный signal жив или нет.
 
 const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
+const SETTINGS_SCENE := "res://scenes/settings_menu.tscn"
 
 @onready var panel: Control = $Panel
 @onready var resume_btn: Button = $Panel/Center/VBox/ResumeButton
 @onready var restart_btn: Button = $Panel/Center/VBox/RestartButton
+@onready var settings_btn: Button = $Panel/Center/VBox/SettingsButton
 @onready var menu_btn: Button = $Panel/Center/VBox/MainMenuButton
 @onready var quit_btn: Button = $Panel/Center/VBox/QuitButton
+
+# Tracking текущей открытой settings-overlay'и (из pause). null если закрыта.
+var _settings_overlay: Node = null
 
 
 func _ready() -> void:
@@ -21,6 +26,7 @@ func _ready() -> void:
 	panel.visible = false
 	resume_btn.pressed.connect(_on_resume)
 	restart_btn.pressed.connect(_on_restart)
+	settings_btn.pressed.connect(_on_settings)
 	menu_btn.pressed.connect(_on_main_menu)
 	quit_btn.pressed.connect(_on_quit)
 
@@ -33,6 +39,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("mouse_capture_exit"):
 		# Не открываем pause если игрок мёртв (death-screen активен).
 		if not VelocityGate.is_alive:
+			return
+		# Settings overlay (layer=50) поверх — она ловит Esc первой и set_input_as_handled.
+		# Здесь defense-in-depth: даже если что-то порядок прохода поломает, не
+		# триггерим pause toggle пока overlay активен.
+		if _settings_overlay != null and is_instance_valid(_settings_overlay):
 			return
 		_toggle()
 		get_viewport().set_input_as_handled()
@@ -56,6 +67,30 @@ func _close() -> void:
 	panel.visible = false
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _on_settings() -> void:
+	# Открываем settings_menu как overlay (layer=50 поверх pause's layer=40).
+	# Скрываем pause panel пока settings открыт — две модальности не должны
+	# рисоваться одновременно. На tree_exited overlay'и возвращаем panel.
+	var scene: PackedScene = load(SETTINGS_SCENE)
+	if scene == null:
+		return
+	var overlay := scene.instantiate()
+	# Set is_overlay ДО add_child (до _ready), чтобы _on_back взял правильный path.
+	if "is_overlay" in overlay:
+		overlay.is_overlay = true
+	add_child(overlay)
+	_settings_overlay = overlay
+	overlay.tree_exited.connect(_on_settings_closed)
+	panel.visible = false
+
+
+func _on_settings_closed() -> void:
+	# Pause всё ещё активен (tree.paused = true), просто возвращаем panel и фокус.
+	_settings_overlay = null
+	panel.visible = true
+	resume_btn.grab_focus()
 
 
 func _on_resume() -> void:

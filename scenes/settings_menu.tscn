@@ -1,0 +1,167 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0vgtsetmenu01"]
+
+[ext_resource type="Script" path="res://scripts/settings_menu.gd" id="1_smenu"]
+
+[sub_resource type="Theme" id="Theme_smenu"]
+default_font_size = 26
+
+[node name="SettingsMenu" type="CanvasLayer"]
+layer = 50
+script = ExtResource("1_smenu")
+
+[node name="Panel" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_smenu")
+
+[node name="Background" type="ColorRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Center" type="CenterContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Center"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Center/VBox"]
+layout_mode = 2
+text = "AUDIO"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 64
+
+[node name="TitleSpacer" type="Control" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="MasterRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Panel/Center/VBox/MasterRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "MASTER"
+theme_override_font_sizes/font_size = 26
+
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/MasterRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Value" type="Label" parent="Panel/Center/VBox/MasterRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="MusicRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Panel/Center/VBox/MusicRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "MUSIC"
+theme_override_font_sizes/font_size = 26
+
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/MusicRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Value" type="Label" parent="Panel/Center/VBox/MusicRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "0%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="SfxRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Panel/Center/VBox/SfxRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "SFX"
+theme_override_font_sizes/font_size = 26
+
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/SfxRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Value" type="Label" parent="Panel/Center/VBox/SfxRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="AmbientRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Panel/Center/VBox/AmbientRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "AMBIENT"
+theme_override_font_sizes/font_size = 26
+
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/AmbientRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Value" type="Label" parent="Panel/Center/VBox/AmbientRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "0%"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="Spacer" type="Control" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="Panel/Center/VBox"]
+layout_mode = 2
+focus_mode = 2
+text = "BACK"
