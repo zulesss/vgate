@@ -16,7 +16,7 @@ script = ExtResource("1_shoot")
 shape = SubResource("Shape_shooter_body")
 
 [node name="Visual" parent="." instance=ExtResource("2_visual")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.975, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.475, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5

@@ -31,6 +31,18 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 @export var lunge_speed: float = 0.0
 @export var lunge_window: float = 0.0
 
+# Face-player rotation speed (rad/s). Применяется во всех движущихся state'ах
+# и во время attack windup'а (telegraph должен смотреть на игрока). ~8 rad/s
+# = полный оборот за ~0.78с — достаточно быстро для shooter-strafe-tracking,
+# но не snap-щёлкает у melee при resposition'е игрока. IDLE/dying/spawning
+# не крутятся (early-return в _physics_process).
+const TURN_SPEED := 8.0
+# Quaternius enemy rigs (melee, shooter) смотрят в +Z направлении (eyelids
+# и body-extents в +Z). Godot 3D convention: forward = -Z. Поэтому к
+# atan2(to_player.x, to_player.z) добавляем PI чтобы модель развернулась
+# лицом к игроку, а не спиной.
+const FACE_YAW_OFFSET := PI
+
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 # visual_root: контейнер визуала для transform-tween'ов (melee telegraph
 # scale.y bump). Для GLB-инстансов (M5) — нода "Visual" (instance из tscn).
@@ -176,7 +188,28 @@ func _physics_process(delta: float) -> void:
 		var loop_name := _anim_for_state(state)
 		if loop_name != &"":
 			_set_loop_anim(loop_name)
+	# Face-player ДО _apply_movement: rotation независим от velocity. Крутим
+	# во время CHASE / REPOSITION / ATTACK-windup (telegraph должен смотреть
+	# на игрока). IDLE намеренно тоже крутится — "стоит как стоял" работает
+	# плохо когда враг детектит игрока за спиной (detection_radius 35) и
+	# должен повернуться чтобы начать chase. Cost: ~ничего, lerp-cheap.
+	_face_player(delta)
 	_apply_movement(delta)
+
+
+# Smooth-rotate тело CharacterBody3D вокруг Y-axis к игроку. Visual ребёнок
+# крутится вместе. Анимации Run/Idle проигрываются в local-space модели —
+# rotation.y body не ломает skinned-mesh pose. Обнуляем Y компонент vector'а
+# чтобы враг не наклонял голову при разной высоте игрока.
+func _face_player(delta: float) -> void:
+	if _player == null:
+		return
+	var to_player: Vector3 = _player.global_position - global_position
+	to_player.y = 0.0
+	if to_player.length_squared() < 0.0001:
+		return
+	var target_yaw: float = atan2(to_player.x, to_player.z) + FACE_YAW_OFFSET
+	rotation.y = lerp_angle(rotation.y, target_yaw, delta * TURN_SPEED)
 
 
 # Подклассы переопределяют для добавления Reposition state. По дефолту: Idle / Chase / Attack.
