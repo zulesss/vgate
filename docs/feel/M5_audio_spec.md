@@ -93,6 +93,7 @@ VelocityGate.speed_ratio() на момент сигнала и выбирает 
 > **Updated 2026-04-29 (iter 4):** /9 (≈10 BPM peak), pause = stream_paused via PAUSABLE process_mode (flip earlier decision).
 > **Updated 2026-04-29 (iter 5):** /18 (≈5 BPM peak, sub-bass rumble), linear ease вместо quadratic, in-range volume floor −36 dB → heartbeat audible через весь cap 50→10 (плато t² делало звук неслышимым на cap 30-50).
 > **Updated 2026-04-29 (iter 6):** +3 dB across (≈+30% perceived) — floor −36 → −33, peak −12 → −9.
+> **Updated 2026-04-29 (iter 7):** +3 dB more (cumulative +6 dB from iter 5) — floor −33 → −30, peak −9 → −6.
 
 > **Updated 2026-04-28:** mapping переключён со `speed_ratio` на `cap_ratio = velocity_cap / 100`.
 > Speed_ratio mapping выдавал max BPM/volume при старте игры (player stationary, current_speed=0
