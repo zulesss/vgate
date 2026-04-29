@@ -64,7 +64,6 @@ var _heartbeat_player: AudioStreamPlayer
 var _drain_player: AudioStreamPlayer
 var _ambient_player: AudioStreamPlayer
 var _melee_spawn_proto: AudioStream
-var _shooter_spawn_proto: AudioStream
 
 # Smoothed heartbeat volume — чтобы не дёргалось от мгновенных hit/kill изменений sr.
 var _heartbeat_vol_current: float = HEARTBEAT_MUTE_DB
@@ -104,7 +103,6 @@ func _ready() -> void:
 		_loop_stream(_ambient_player.stream)
 	# Spawn audio через 3D-инстансы создаём per-spawn (positional). Только prototype'ы.
 	_melee_spawn_proto = _load_or_null(SFX_PATH + "melee_spawn.ogg")
-	_shooter_spawn_proto = _load_or_null(SFX_PATH + "shooter_spawn.ogg")
 
 	# Heartbeat loop стартует сразу, volume = mute → станет слышен только на низком sr.
 	_heartbeat_player.play()
@@ -228,24 +226,21 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	# на позиции врага. После finished — удаляем.
 	if not is_instance_valid(enemy):
 		return
-	var is_shooter: bool = enemy.has_method("_kill_type") and enemy.call("_kill_type") == "shooter"
-	var stream := _shooter_spawn_proto if is_shooter else _melee_spawn_proto
-	if stream == null:
+	if _melee_spawn_proto == null:
 		return
 	var player := AudioStreamPlayer3D.new()
-	player.stream = stream
+	player.stream = _melee_spawn_proto
 	player.bus = "SFX"
-	player.unit_size = 14.0 if is_shooter else 16.0
-	player.volume_db = -10.0 if is_shooter else -2.0
-	player.pitch_scale = randf_range(0.92, 1.08) if is_shooter else randf_range(0.95, 1.05)
+	player.unit_size = 16.0
+	player.volume_db = -2.0
+	player.pitch_scale = randf_range(0.95, 1.05)
 	# Add как child enemy чтобы освобождался при queue_free вместе с врагом
 	# (обычно spawn-звук < 200мс — успевает сыграть до того, как игрок убил спавнящегося).
 	enemy.add_child(player)
 	if enemy is Node3D:
 		player.global_position = (enemy as Node3D).global_position
 	player.finished.connect(player.queue_free)
-	var spawn_name: String = "shooter_spawn.ogg" if is_shooter else "melee_spawn.ogg"
-	print("[AUDIO] sfx.gd | enemy_spawned | %s" % spawn_name)
+	print("[AUDIO] sfx.gd | enemy_spawned | melee_spawn.ogg")
 	player.play()
 
 
