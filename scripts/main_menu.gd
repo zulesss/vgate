@@ -6,8 +6,10 @@ class_name MainMenu extends Control
 
 const ARENA_SCENE := "res://scenes/main.tscn"
 const CREDITS_SCENE := "res://scenes/credits.tscn"
+const SETTINGS_SCENE := "res://scenes/settings_menu.tscn"
 
 @onready var start_btn: Button = $Center/VBox/StartButton
+@onready var settings_btn: Button = $Center/VBox/SettingsButton
 @onready var credits_btn: Button = $Center/VBox/CreditsButton
 @onready var quit_btn: Button = $Center/VBox/QuitButton
 
@@ -18,6 +20,7 @@ func _ready() -> void:
 	# наследуется автоматически — set'им явно.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	start_btn.pressed.connect(_on_start)
+	settings_btn.pressed.connect(_on_settings)
 	credits_btn.pressed.connect(_on_credits)
 	quit_btn.pressed.connect(_on_quit)
 	start_btn.grab_focus()
@@ -25,6 +28,12 @@ func _ready() -> void:
 
 func _on_start() -> void:
 	get_tree().change_scene_to_file(ARENA_SCENE)
+
+
+func _on_settings() -> void:
+	# Standalone scene: settings_menu.gd._on_back() вернёт назад в main menu
+	# через change_scene_to_file. is_overlay по умолчанию false.
+	get_tree().change_scene_to_file(SETTINGS_SCENE)
 
 
 func _on_credits() -> void:

@@ -47,9 +47,10 @@ const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
 const HEARTBEAT_VOL_SMOOTH_S := 0.4
 
-# Ground-state for ducking (init'ится в _ready'е после применения bus_layout).
-var _music_base_db: float = -3.0
-var _ambient_base_db: float = -12.0
+# Bus indices кешируем, base_db больше не кешируем — читаем live из AudioSettings
+# в момент duck'а. Пользователь может изменить volume slider'ом во время duck'а
+# (M6 settings menu), и tween должен возвращаться к свежему base'у. Cache-инвалидация
+# через signal — лишняя сложность ради того же результата.
 var _music_bus_idx: int = -1
 var _ambient_bus_idx: int = -1
 var _sfx_bus_idx: int = -1
@@ -81,10 +82,6 @@ func _ready() -> void:
 	_music_bus_idx = AudioServer.get_bus_index("Music")
 	_ambient_bus_idx = AudioServer.get_bus_index("Ambient")
 	_sfx_bus_idx = AudioServer.get_bus_index("SFX")
-	if _music_bus_idx >= 0:
-		_music_base_db = AudioServer.get_bus_volume_db(_music_bus_idx)
-	if _ambient_bus_idx >= 0:
-		_ambient_base_db = AudioServer.get_bus_volume_db(_ambient_bus_idx)
 
 	# Слоты. Dash whoosh откатан в objects/player.gd (legacy jump_b.ogg + pitch
 	# +200 cents) после F5-плейтеста 2026-04-29 — M5 dash_whoosh.ogg ассет звучал
@@ -172,9 +169,11 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 		_kill_player.pitch_scale = randf_range(0.96, 1.04)  # ±4%
 		print("[AUDIO] sfx.gd | enemy_killed | kill_confirm.ogg + duck Music/Ambient")
 		_kill_player.play()
-	# Duck Music/Ambient bus — independent tween'ы.
-	_duck_bus(_music_bus_idx, _music_base_db, KILL_DUCK_MUSIC_DB, KILL_DUCK_MUSIC_MS)
-	_duck_bus(_ambient_bus_idx, _ambient_base_db, KILL_DUCK_AMBIENT_DB, KILL_DUCK_AMBIENT_MS)
+	# Duck Music/Ambient bus — independent tween'ы. Base_db читаем live из
+	# AudioSettings: если юзер выкрутил slider — duck вернётся к свежему base'у,
+	# а не к тому, что было на старте сцены.
+	_duck_bus(_music_bus_idx, AudioSettings.get_volume_db("Music"), KILL_DUCK_MUSIC_DB, KILL_DUCK_MUSIC_MS)
+	_duck_bus(_ambient_bus_idx, AudioSettings.get_volume_db("Ambient"), KILL_DUCK_AMBIENT_DB, KILL_DUCK_AMBIENT_MS)
 
 
 func _on_drain_started() -> void:

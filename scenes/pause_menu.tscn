@@ -63,6 +63,11 @@ layout_mode = 2
 focus_mode = 2
 text = "RESTART"
 
+[node name="SettingsButton" type="Button" parent="Panel/Center/VBox"]
+layout_mode = 2
+focus_mode = 2
+text = "SETTINGS"
+
 [node name="MainMenuButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
