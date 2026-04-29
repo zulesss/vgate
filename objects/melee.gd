@@ -58,6 +58,13 @@ func _play_telegraph() -> void:
 		_material.emission = FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
 
+	# Hit-flash decay target: пока windup активен, decay из white-spike
+	# возвращает emission к telegraph color, а не к base — чтобы hit во
+	# время windup'а не "сбрасывал" telegraph color на нейтральный.
+	_telegraph_active = true
+	_telegraph_color = FLASH_EMISSION_COLOR
+	_telegraph_energy = FLASH_EMISSION_ENERGY
+
 	if visual_root != null:
 		# Tween на scale.y остаётся как третий слой telegraph-читаемости —
 		# AnimationPlayer Charge изменяет skinned-mesh pose, но bump визуально
@@ -100,6 +107,8 @@ func _end_telegraph() -> void:
 	if _material != null:
 		_material.emission = _base_emission_color
 		_material.emission_energy_multiplier = _base_emission_energy
+
+	_telegraph_active = false
 
 	if visual_root != null:
 		if _telegraph_tween != null and _telegraph_tween.is_valid():

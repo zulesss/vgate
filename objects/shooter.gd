@@ -130,6 +130,11 @@ func _play_telegraph() -> void:
 		_material.emission_enabled = true
 		_material.emission = FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
+	# Hit-flash decay target: пока windup активен, decay возвращает emission
+	# к telegraph color (жёлтый), а не к base.
+	_telegraph_active = true
+	_telegraph_color = FLASH_EMISSION_COLOR
+	_telegraph_energy = FLASH_EMISSION_ENERGY
 	if _telegraph_audio != null:
 		print("[AUDIO] shooter.gd | windup_telegraph | blaster.ogg")
 		_telegraph_audio.play()
@@ -141,6 +146,7 @@ func _end_telegraph() -> void:
 	if _material != null:
 		_material.emission = _base_emission_color
 		_material.emission_energy_multiplier = _base_emission_energy
+	_telegraph_active = false
 
 
 func _kill_type() -> String:

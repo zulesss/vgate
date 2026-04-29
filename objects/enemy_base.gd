@@ -85,6 +85,22 @@ var _base_emission_color: Color = Color.BLACK
 var _base_emission_energy: float = 0.0
 var _material: StandardMaterial3D = null
 
+# Hit flash (M5): белая вспышка emission'а при damage'е. Snap-in к peak,
+# decay 80мс out-expo назад к base или к telegraph state (если враг в windup'е).
+# Подклассы melee/shooter выставляют _telegraph_active+color+energy в своих
+# _play_telegraph(), сбрасывают _telegraph_active в _end_telegraph(). Это
+# нужно чтобы flash decay возвращался к activnomu telegraph color, а не к
+# базовому — иначе hit во время windup'а мигает враг "к нейтральному" и
+# ломает читаемость telegraph'а.
+const HIT_FLASH_COLOR := Color(1.0, 1.0, 1.0)
+const HIT_FLASH_ENERGY := 4.0
+const HIT_FLASH_DURATION := 0.08  # 80мс decay (см. docs/feel/M5_hit_flash_spec.md §2)
+
+var _flash_tween: Tween = null
+var _telegraph_active: bool = false
+var _telegraph_color: Color = Color.BLACK
+var _telegraph_energy: float = 0.0
+
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -374,6 +390,10 @@ func damage(amount) -> void:
 	if is_dying:
 		return
 	hp -= int(amount)
+	# Hit flash ДО die()-check: flash должен играть и на kill, и на обычный
+	# hit. На kill: 80мс flash успевает завершиться внутри death-anim window
+	# (max 0.6с до queue_free).
+	_play_hit_flash()
 	if hp <= 0:
 		is_dying = true
 		die()
@@ -385,6 +405,46 @@ func damage(amount) -> void:
 	# (Игрок видит windup, успевает уклониться — это feel-приоритет.)
 	if not _is_winding_up:
 		_play_oneshot(_hit_anim_name())
+
+
+# White emission spike + 80мс out-expo decay. Decay target: base emission,
+# либо текущий telegraph state если _telegraph_active. Kill-and-replace
+# tween — multi-hit (shotgun spread=3 в один кадр) даёт один peak + единый
+# decay вместо мерцания. Spawn-fade — skip (см. spec §5: на полупрозрачном
+# спавнящемся враге flash смотрится странно и ломает spawn neutrality).
+func _play_hit_flash() -> void:
+	if is_spawning:
+		return
+	if _material == null:
+		return
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+	# Snap-in: мгновенно на peak, без tween на вход (любой ease-in смазывает
+	# момент контакта).
+	_material.emission_enabled = true
+	_material.emission = HIT_FLASH_COLOR
+	_material.emission_energy_multiplier = HIT_FLASH_ENERGY
+	# Decay target: к telegraph state если активен windup, иначе к base.
+	var target_color: Color = _base_emission_color
+	var target_energy: float = _base_emission_energy
+	if _telegraph_active:
+		target_color = _telegraph_color
+		target_energy = _telegraph_energy
+	_flash_tween = create_tween().set_parallel(true)
+	(
+		_flash_tween
+		. tween_property(_material, "emission", target_color, HIT_FLASH_DURATION)
+		. set_trans(Tween.TRANS_EXPO)
+		. set_ease(Tween.EASE_OUT)
+	)
+	(
+		_flash_tween
+		. tween_property(
+			_material, "emission_energy_multiplier", target_energy, HIT_FLASH_DURATION
+		)
+		. set_trans(Tween.TRANS_EXPO)
+		. set_ease(Tween.EASE_OUT)
+	)
 
 
 # Подкласс возвращает имя hit-анимации в своём rig'е. Default пусто — база
