@@ -43,12 +43,14 @@ const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
 # Updated 2026-04-29 (iter 5): pitch /18 (≈5 BPM peak, ~3.5 октавы вниз — sub-bass
 # rumble), linear ease вместо quadratic, floor -36 dB → heartbeat audible через весь
 # cap 50→10 (плато t² на mid-cap делало звук неслышимым на 30-50).
+# Updated 2026-04-29 (iter 6): +3 dB across (≈+30% perceived) — юзер просил
+# heartbeat громче. Floor -36 → -33, peak -12 → -9.
 const HEARTBEAT_CAP_HIGH := 0.50
 const HEARTBEAT_CAP_LOW := 0.10
 const HEARTBEAT_PITCH_LOW := 1.0 / 18.0
 const HEARTBEAT_PITCH_HIGH := 1.5 / 18.0
-const HEARTBEAT_VOL_HIGH_DB := -12.0
-const HEARTBEAT_VOL_FLOOR_DB := -36.0  # in-range volume floor — audible plateau на cap=HIGH
+const HEARTBEAT_VOL_HIGH_DB := -9.0
+const HEARTBEAT_VOL_FLOOR_DB := -33.0  # in-range volume floor — audible plateau на cap=HIGH
 const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
 const HEARTBEAT_VOL_SMOOTH_S := 0.4
