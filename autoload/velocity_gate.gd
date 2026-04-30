@@ -43,6 +43,12 @@ func apply_hit(penalty: int) -> void:
 		return
 	velocity_cap = maxf(0.0, velocity_cap - float(penalty))
 	i_frames_remaining = I_FRAMES_AFTER_HIT
+	if velocity_cap <= 0.0:
+		# Симметрия с drain phase: cap = 0 = смерть, независимо от источника падения cap'а.
+		# Hit-to-zero раньше оставлял игрока замороженным (max_speed=0) пока drain не добивал
+		# через 2.5с tolerance. force_kill идемпотентен → safe вне зависимости от race'ов.
+		force_kill()
+		return
 	Events.player_hit.emit(penalty)
 
 
