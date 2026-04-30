@@ -91,6 +91,23 @@ const DASH_PUSH_MS := 200          # ease-out
 var _camera_push_remaining: float = 0.0  # секунд до восстановления к 0
 var _camera_push_total: float = 0.0      # для нормализации t в ease-out
 
+# Dash Relief (M7 nice-to-have, docs/feel/M7_polish_spec.md §Эффект 4).
+# Mode A (Normal) при speed_ratio ≥ DASH_RELIEF_THRESHOLD на момент dash_started:
+#   лёгкий cyan trail (CPUParticles3D), без аудио-выдоха.
+# Mode B (Relief) при speed_ratio < DASH_RELIEF_THRESHOLD:
+#   яркий relief trail (GPUParticles3D) + FOV exhale −3° + delayed audio check.
+# Аудио-выдох играется через POST_DASH_CHECK_SECONDS после dash_started ТОЛЬКО
+# если ratio поднялся выше threshold (dash «спас») — иначе нет облегчения.
+const DASH_RELIEF_THRESHOLD := 0.40
+const POST_DASH_CHECK_SECONDS := 0.5
+const DASH_RELIEF_FOV_EXHALE := -3.0
+const DASH_RELIEF_FOV_RETURN_MS := 400  # ease-out возврат к 0
+var _was_relief_dash: bool = false  # set true в Mode B; читается в timeout
+
+# Heavy Breath integration: TODO M7 пакет 1 — когда breath audio будет интегрирован
+# в audio-менеджере, добавить fade-out 1.2s в _on_dash_started Mode B (spec §Эффект
+# 4 → Audio response). Сейчас breath не существует — заглушка ниже.
+
 @onready var head = $Head
 @onready var camera = $Head/Camera
 @onready var raycast = $Head/Camera/RayCast
@@ -98,6 +115,10 @@ var _camera_push_total: float = 0.0      # для нормализации t в 
 @onready var container = $Head/Camera/SubViewportContainer/SubViewport/CameraItem/Container
 @onready var sound_footsteps = $SoundFootsteps
 @onready var blaster_cooldown = $Cooldown
+@onready var _dash_trail_normal: CPUParticles3D = $DashTrailNormal
+@onready var _dash_trail_relief: GPUParticles3D = $DashTrailRelief
+@onready var _post_dash_check_timer: Timer = $PostDashCheckTimer
+@onready var _exhale_player: AudioStreamPlayer = $ExhalePlayer
 
 @export var crosshair: TextureRect
 
@@ -149,6 +170,11 @@ func _ready():
 
 	if not Events.dash_started.is_connected(_on_dash_started):
 		Events.dash_started.connect(_on_dash_started)
+
+	# Post-dash exhale check: 0.5с после dash_started, в Mode B играет audio только
+	# если ratio к этому моменту > threshold (dash «спас»).
+	if not _post_dash_check_timer.timeout.is_connected(_on_post_dash_check_timeout):
+		_post_dash_check_timer.timeout.connect(_on_post_dash_check_timeout)
 
 func _process(delta):
 	# Handle functions
@@ -525,6 +551,46 @@ func _on_dash_started() -> void:
 	camera.position.z = -DASH_PUSH_DISTANCE
 	if _dash_whoosh_player != null:
 		_dash_whoosh_player.play()
+
+	# M7 Dash Relief: режим выбирается по speed_ratio в момент старта dash'а.
+	# >= threshold → Mode A (normal trail, без выдоха). < threshold → Mode B
+	# (relief trail + FOV exhale + отложенный audio-check). Boundary >= для A,
+	# < для B — нет double-fire на 0.40 ровно.
+	var ratio_at_start: float = VelocityGate.speed_ratio()
+	if ratio_at_start >= DASH_RELIEF_THRESHOLD:
+		_was_relief_dash = false
+		if _dash_trail_normal != null:
+			_dash_trail_normal.restart()
+			_dash_trail_normal.emitting = true
+	else:
+		_was_relief_dash = true
+		if _dash_trail_relief != null:
+			_dash_trail_relief.restart()
+			_dash_trail_relief.emitting = true
+		# FOV exhale: signed kick — magnitude=-3 даёт мгновенное смещение −3° от
+		# текущего FOV, ease_out возвращает к 0 за DASH_RELIEF_FOV_RETURN_MS. Это
+		# поверх dash +12° stretch'а — двухтактный «вдох-выдох» ритм. [PIVOT]
+		if fov_controller != null:
+			fov_controller.kick(DASH_RELIEF_FOV_EXHALE, DASH_RELIEF_FOV_RETURN_MS, "ease_out")
+		# Schedule post-dash exhale audio check.
+		if _post_dash_check_timer != null:
+			_post_dash_check_timer.start()
+		# TODO M7 пакет 1: fade-out heavy breath audio (1.2s) если активен.
+		# Сейчас heavy breath ещё не интегрирован — заглушка.
+
+
+func _on_post_dash_check_timeout() -> void:
+	# Только Mode B расписывает таймер; защита на случай гонки если был перезапуск.
+	if not _was_relief_dash:
+		return
+	if not VelocityGate.is_alive:
+		return
+	# Dash «спас» — текущий ratio выше threshold через 0.5с после старта. Играем
+	# короткий выдох (jump_b.ogg, pitch -100 cents = 0.944, -6 dB — настроено в
+	# .tscn). Если ratio остался ниже — облегчения нет, exhale не играет.
+	if VelocityGate.speed_ratio() > DASH_RELIEF_THRESHOLD:
+		if _exhale_player != null:
+			_exhale_player.play()
 
 
 # Spec §1 (revised 2026-04-27): single-axis cap → base FOV.

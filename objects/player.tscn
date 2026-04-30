@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://dl2ed4gkybggf"]
+[gd_scene load_steps=17 format=3 uid="uid://dl2ed4gkybggf"]
 
 [ext_resource type="Script" uid="uid://cu47grjp072jk" path="res://objects/player.gd" id="1_ffboj"]
 [ext_resource type="Resource" uid="uid://cu2gtxlcmbb34" path="res://weapons/blaster-repeater.tres" id="2_6epbw"]
@@ -8,10 +8,46 @@
 [ext_resource type="SpriteFrames" uid="uid://dbv3sy5qjatnl" path="res://sprites/burst_animation.tres" id="4_m6ukc"]
 [ext_resource type="AudioStream" uid="uid://cydjn1ct3hps2" path="res://sounds/walking.ogg" id="5_ics1s"]
 [ext_resource type="PackedScene" uid="uid://cn6hoalfinmgs" path="res://assets/models/quaternius/player_robot.gltf" id="6_visual"]
+[ext_resource type="AudioStream" uid="uid://5raj3p7xaecq" path="res://sounds/jump_b.ogg" id="7_dash_exhale"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_gdq8c"]
 radius = 0.3
 height = 1.0
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_relief"]
+emission_shape = 1
+emission_sphere_radius = 0.18
+direction = Vector3(0, 0, 1)
+spread = 35.0
+initial_velocity_min = 1.5
+initial_velocity_max = 3.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.06
+scale_max = 0.14
+color = Color(0.85, 0.95, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_relief"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.7, 0.95, 1, 1)
+emission_enabled = true
+emission = Color(0.6, 0.9, 1, 1)
+emission_energy_multiplier = 1.8
+billboard_mode = 1
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="QuadMesh_relief"]
+material = SubResource("StandardMaterial3D_relief")
+size = Vector2(0.18, 0.18)
+
+[sub_resource type="Gradient" id="Gradient_normal"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.4, 0.8, 1, 0.6, 0.4, 0.8, 1, 0)
+
+[sub_resource type="Curve" id="Curve_normal_scale"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.3), 0.0, 0.0, 0, 0]
+point_count = 2
 
 [node name="Player" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
@@ -84,3 +120,42 @@ one_shot = true
 [node name="Visual" parent="." instance=ExtResource("6_visual")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 visible = false
+
+[node name="DashTrailNormal" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+emitting = false
+amount = 8
+lifetime = 0.35
+one_shot = true
+explosiveness = 0.4
+emission_shape = 1
+emission_sphere_radius = 0.15
+direction = Vector3(0, 0, 1)
+spread = 25.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.8
+initial_velocity_max = 1.6
+scale_amount_min = 0.08
+scale_amount_max = 0.12
+scale_amount_curve = SubResource("Curve_normal_scale")
+color_ramp = SubResource("Gradient_normal")
+
+[node name="DashTrailRelief" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+emitting = false
+amount = 16
+lifetime = 0.5
+one_shot = true
+explosiveness = 0.5
+process_material = SubResource("ParticleProcessMaterial_relief")
+draw_pass_1 = SubResource("QuadMesh_relief")
+
+[node name="PostDashCheckTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="ExhalePlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_dash_exhale")
+volume_db = -6.0
+pitch_scale = 0.944
+bus = &"SFX"
