@@ -16,6 +16,9 @@ const INTERVAL_FLOOR := 0.8           # абсолютный минимум ме
 # в main для production playtest'а. M4 numbers в docs/systems/M4_spawn_numbers.md остаются LOCKED.
 const DEBUG_FAST_SPAWN := false
 const DEBUG_SPAWN_INTERVAL := 0.4
+# DEBUG: skip Phase 0 (60с tutorial где swarm weight=0%) — для quick QA свармлингов.
+# True = первый swarm group может спавниться с 0с. ВЕРНУТЬ false перед production playtest.
+const DEBUG_SWARM_FROM_START := true
 const ENEMY_CAP := 20                 # level-designer prevails (override от systems'овских 25)
 const MAX_LIVE_SHOOTERS := 4          # hard cap; шестой стрелок крадёт agency
 const MAX_LIVE_SWARMLINGS := 8        # M8 sub-cap (docs/systems/M8_swarmling_numbers §1).
@@ -216,6 +219,8 @@ func _weighted_pick(candidates: Array[Marker3D], weights: Array[int]) -> Marker3
 func _current_type_weights() -> Array:
 	# [melee, shooter, swarmling] для текущей фазы run_time.
 	var t := _run_time
+	if DEBUG_SWARM_FROM_START and t < TYPE_PHASE_BOUNDARIES[0]:
+		return TYPE_WEIGHTS_PHASE_1
 	if t < TYPE_PHASE_BOUNDARIES[0]:
 		return TYPE_WEIGHTS_PHASE_0
 	if t < TYPE_PHASE_BOUNDARIES[1]:
