@@ -48,6 +48,11 @@ func _process(delta: float) -> void:
 		return
 	if not VelocityGate.is_alive:
 		return
+	# Pause guard: на pause player заморожен у нижнего speed_ratio → pressure=1.0 →
+	# intensity ramp воспринимается как "вторая музыка стартует". Замораживаем
+	# текущее _intensity.volume_db до un-pause.
+	if get_tree().paused:
+		return
 	# Composite pressure
 	var p1: float = 1.0 - VelocityGate.speed_ratio()
 	var p2: float = clampf(float(_live_enemy_count) / ENEMY_DENSITY_NORMALIZER, 0.0, 1.0)
