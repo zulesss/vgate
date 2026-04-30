@@ -131,9 +131,9 @@ func _ready():
 	# Reuse существующего enemy_destroy.ogg. Spec: 0 dB, без pitch mod.
 	_kill_crack_player = AudioStreamPlayer.new()
 	_kill_crack_player.name = "KillCrackPlayer"
+	_kill_crack_player.bus = &"SFX"
 	_kill_crack_player.stream = load("res://sounds/enemy_destroy.ogg")
 	_kill_crack_player.volume_db = 0.0
-	_kill_crack_player.bus = "SFX"
 	add_child(_kill_crack_player)
 
 	# Dash whoosh (legacy, §1.4 spec note 2026-04-29). jump_b.ogg + pitch_scale
@@ -141,10 +141,10 @@ func _ready():
 	# _on_dash_started ниже.
 	_dash_whoosh_player = AudioStreamPlayer.new()
 	_dash_whoosh_player.name = "DashWhooshPlayer"
+	_dash_whoosh_player.bus = &"SFX"
 	_dash_whoosh_player.stream = load("res://sounds/jump_b.ogg")
 	_dash_whoosh_player.pitch_scale = DASH_WHOOSH_PITCH
 	_dash_whoosh_player.volume_db = 0.0
-	_dash_whoosh_player.bus = "SFX"
 	add_child(_dash_whoosh_player)
 
 	if not Events.enemy_killed.is_connected(_on_enemy_killed):

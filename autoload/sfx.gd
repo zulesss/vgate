@@ -265,8 +265,8 @@ func _on_enemy_spawned(enemy: Node) -> void:
 	if _melee_spawn_proto == null:
 		return
 	var player := AudioStreamPlayer3D.new()
+	player.bus = &"SFX"
 	player.stream = _melee_spawn_proto
-	player.bus = "SFX"
 	player.unit_size = 16.0
 	player.volume_db = -2.0
 	player.pitch_scale = randf_range(0.95, 1.05)
@@ -284,7 +284,7 @@ func _on_enemy_spawned(enemy: Node) -> void:
 
 func _make_2d(file_name: String, vol_db: float) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
-	p.bus = "SFX"
+	p.bus = &"SFX"
 	p.volume_db = vol_db
 	p.stream = _load_or_null(SFX_PATH + file_name)
 	add_child(p)
@@ -293,7 +293,7 @@ func _make_2d(file_name: String, vol_db: float) -> AudioStreamPlayer:
 
 func _make_3d(file_name: String, vol_db: float, unit_size: float) -> AudioStreamPlayer3D:
 	var p := AudioStreamPlayer3D.new()
-	p.bus = "SFX"
+	p.bus = &"SFX"
 	p.volume_db = vol_db
 	p.unit_size = unit_size
 	p.stream = _load_or_null(SFX_PATH + file_name)
@@ -306,7 +306,7 @@ func _make_ambient(file_name: String, vol_db: float) -> AudioStreamPlayer:
 	# heartbeat'ом (после press START в главном меню). См. рефакторинг
 	# "silent main menu" 2026-04-29.
 	var p := AudioStreamPlayer.new()
-	p.bus = "Ambient"
+	p.bus = &"Ambient"
 	p.volume_db = vol_db
 	p.stream = _load_or_null(AMBIENT_PATH + file_name)
 	add_child(p)

@@ -127,7 +127,7 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 
 func _setup_player(file_name: String, vol_db: float) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
-	p.bus = "Music"
+	p.bus = &"Music"
 	p.volume_db = vol_db
 	var path := MUSIC_PATH + file_name
 	if ResourceLoader.exists(path):

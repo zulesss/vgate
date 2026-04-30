@@ -44,9 +44,9 @@ func _ready() -> void:
 	# отчётливо, дальний тише.
 	_telegraph_audio = AudioStreamPlayer3D.new()
 	_telegraph_audio.name = "TelegraphAudio"
+	_telegraph_audio.bus = &"SFX"
 	_telegraph_audio.stream = load("res://sounds/enemy_attack.ogg")
 	_telegraph_audio.unit_size = 5.0
-	_telegraph_audio.bus = "SFX"
 	add_child(_telegraph_audio)
 
 

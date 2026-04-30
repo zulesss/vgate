@@ -41,9 +41,9 @@ func _ready() -> void:
 
 	_telegraph_audio = AudioStreamPlayer3D.new()
 	_telegraph_audio.name = "TelegraphAudio"
+	_telegraph_audio.bus = &"SFX"
 	_telegraph_audio.stream = load("res://sounds/blaster.ogg")
 	_telegraph_audio.unit_size = 8.0
-	_telegraph_audio.bus = "SFX"
 	add_child(_telegraph_audio)
 
 	_schedule_next_reposition()
