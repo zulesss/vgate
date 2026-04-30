@@ -57,6 +57,12 @@ func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
 	# chain тоже nope. Защищает от race с force_kill→enemy_killed одного кадра.
 	if not VelocityGate.is_alive:
 		return
+	# Window-expiry race: если timer истёк, но _on_window_timeout ещё не отработал
+	# (signal ordering — emit enemy_killed может попасть раньше timeout callback'а
+	# в том же frame'е), reset counter тут же. Иначе stale count → ложный tier
+	# trigger на изолированном kill'е после долгого простоя.
+	if _window_timer.is_stopped() or _window_timer.time_left <= 0.0:
+		_kill_count = 0
 	_kill_count += 1
 	_window_timer.start()  # restart на каждый kill — окно "от последнего kill"
 

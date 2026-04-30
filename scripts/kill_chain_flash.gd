@@ -31,9 +31,8 @@ var _active_tween: Tween
 
 
 func _ready() -> void:
-	# Always — flash должен играть даже если main paused (хотя на pause kills не
-	# случаются, защита от edge race'а).
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Default PAUSABLE — kill_chain_triggered на pause не emit'ится (KillChain Timer
+	# pausable), tween не нужен на паузе.
 	rect.modulate.a = 0.0
 	Events.kill_chain_triggered.connect(_on_chain_triggered)
 
