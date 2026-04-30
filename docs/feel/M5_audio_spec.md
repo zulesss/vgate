@@ -157,46 +157,47 @@ feel множественных спавнов. Звук идентичен pre-
 
 ### Pressure metric
 
-Рекомендация: **composite max из двух** источников.
+> **Updated 2026-04-30:** speed_ratio component убран из формулы — низкоскоростной tension
+> уже покрыт heartbeat'ом (§1.5, cap-based mapping), музыка дублировала. Run-time safety
+> gate тоже убран: intensity теперь строго управляется количеством живых врагов.
 
 ```
-pressure = max(
-    1.0 - VelocityGate.speed_ratio(),        # momentary: замедлился — давление
-    clampf(live_enemy_count / 20.0, 0.0, 1.0) # arena density
-)
+pressure = clamp(live_enemy_count / 20.0, 0.0, 1.0)   # arena density only
 ```
 
-Почему не одиночные метрики:
+Почему именно density:
 
-- `1.0 - speed_ratio()` реагирует быстро но volatile: player сделал dash → pressure
-  упала на кадр. Intensity layer скачет → раздражает.
-- `live_enemy_count / 20` стабильна но инертна: на t=0 с 1 врагом intensity = 0.05
-  даже если игрок умирает.
+- `live_enemy_count / 20` стабильна, не дёргается на dash/kill-burst фреймах. Intensity
+  layer не скачет → не раздражает.
+- `1.0 - speed_ratio()` дублирует heartbeat (низкий cap → heartbeat нарастает) — два
+  audio-слоя на один и тот же сигнал = mush. Heartbeat быстрее и физиологичнее реагирует
+  на cap-эрозию, чем music layer; пусть он и держит этот канал.
 - `run_time / 600` — линейный рост без связи с действием, нарушает "управляемую панику"
-  (тема игры — реактивность, не inevitable crescendo). Исключить как primary driver.
+  (тема игры — реактивность, не inevitable crescendo). Исключён как primary driver
+  и как safety-gate.
 
-Composite max берёт лучшее из обоих: density даёт стабильный baseline, speed_ratio добавляет
-reactivity на опасные моменты.
+Окно сглаживания: tween pressure за 2.5 сек (linear lerp per-frame). Это предотвращает
+jumpy музыку при кратких изменениях enemy_count (kill-burst, wave-spawn). 2.5 сек —
+минимум для "не раздражающего" перехода в music mixing (DJ rule of thumb: <2 сек = jarring).
 
-Окно сглаживания: tween pressure за 2.5 сек ease-in-out (не linear). Это предотвращает
-jumpy музыку при кратких dash/kill-burst изменениях speed_ratio. 2.5 сек — минимум
-для "не раздражающего" перехода в music mixing (DJ rule of thumb: <2 сек = jarring).
-
-### Volume mapping
+### Volume mapping — crossfade base ↔ intensity
 
 | Слой | Volume при pressure=0 | Volume при pressure=1 | Кривая |
 |---|---|---|---|
-| Base loop | 0 dB (всегда) | 0 dB (не меняется) | — |
-| Intensity layer | −INF (silent, StreamPlayer.volume_db = −80) | 0 dB | ease-in (квадратичная) |
+| Base loop | 0 dB | −80 dB (silent) | ease-in (зеркально к intensity) |
+| Intensity layer | −80 dB (silent) | 0 dB | ease-in (квадратичная) |
+
+**Crossfade поведение:** base и intensity ramp'ятся симметрично. Когда intensity нарастает
+с −80 dB к 0 dB, base параллельно затухает с 0 dB к −80 dB. Слои не звучат одновременно —
+это плавная подмена, не наложение второго слоя поверх первого. Eased значение одно (квадрат
+сглаженной pressure), оба `volume_db` пишутся из одного `lerpf` вызова с инвертированным
+порядком концов.
 
 Intensity layer использует ease-in (квадратичная): при низком pressure он почти не слышен
 (long plateau у нуля), нарастает резче в верхней части. Это соответствует gameplay-кривой —
 бОльшую часть времени игрок держит среднее давление, intensity приходит в экстремальных
-ситуациях.
-
-Первый вход intensity: feel_spec §4 говорит "time_elapsed > 120 сек → tween-in за 30 сек".
-Это остаётся как safety-gate: даже при нулевом давлении intensity включается после 2 минут
-(игрок не может быть "расслаблен" бесконечно — это жанровый сигнал).
+ситуациях. Base затухает по той же кривой, поэтому plateau симметричный — на низком pressure
+играет только base, как и было.
 
 ### Технически: AudioStreamPlayer, не шина
 

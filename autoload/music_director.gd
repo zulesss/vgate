@@ -1,17 +1,17 @@
 class_name MusicDirectorBus extends Node
 
-# M5 adaptive music — 2 layers (base + intensity), composite pressure metric.
+# M5 adaptive music — 2 layers (base + intensity), enemy-density pressure metric.
 # Источник чисел: docs/feel/M5_audio_spec.md §2.
 #
-# pressure = max(1.0 - speed_ratio, live_enemy_count / 20)
-# tween 2.5с ease-in-out smoothing → intensity volume mapping ease-in (квадратичная)
-# −80 dB (silent) → 0 dB через quadratic curve. Run-time safety gate: после 120с
-# minimum pressure = 0.5.
+# pressure = clamp(live_enemy_count / 20, 0, 1)
+# tween 2.5с smoothing → intensity volume mapping ease-in (квадратичная)
+# −80 dB (silent) → 0 dB через quadratic curve. Crossfade: base ramp'ится вниз
+# симметрично с intensity вверх — слои не звучат параллельно, плавная подмена.
+# Speed_ratio из формулы убран — низкоскоростной tension покрыт heartbeat'ом
+# (sfx.gd, см. spec §1.5), музыка не дублирует.
 
 const MUSIC_PATH := "res://assets/audio/music/"
 const SMOOTH_TIME_S := 2.5
-const RUN_TIME_SAFETY_GATE := 120.0
-const SAFETY_GATE_MIN_PRESSURE := 0.5
 const ENEMY_DENSITY_NORMALIZER := 20.0
 const INTENSITY_MAX_DB := 0.0
 const INTENSITY_MIN_DB := -80.0
@@ -48,19 +48,15 @@ func _process(delta: float) -> void:
 		return
 	if not VelocityGate.is_alive:
 		return
-	# Pause guard: на pause player заморожен у нижнего speed_ratio → pressure=1.0 →
-	# intensity ramp воспринимается как "вторая музыка стартует". Замораживаем
-	# текущее _intensity.volume_db до un-pause.
+	# Pause guard: замораживаем текущие volume_db обоих слоёв до un-pause —
+	# pressure не должна дрейфовать пока игра на pause.
 	if get_tree().paused:
 		return
-	# Composite pressure
-	var p1: float = 1.0 - VelocityGate.speed_ratio()
-	var p2: float = clampf(float(_live_enemy_count) / ENEMY_DENSITY_NORMALIZER, 0.0, 1.0)
-	var pressure_target: float = maxf(p1, p2)
 
-	# Run-time safety gate (>120с — minimum 0.5)
-	if ScoreState.run_time > RUN_TIME_SAFETY_GATE:
-		pressure_target = maxf(pressure_target, SAFETY_GATE_MIN_PRESSURE)
+	# Pressure = только плотность врагов. Низкоскоростной tension покрыт heartbeat'ом
+	# (sfx.gd) — музыка не дублирует. Без safety gate'а — intensity строго от
+	# количества живых врагов.
+	var pressure_target: float = clampf(float(_live_enemy_count) / ENEMY_DENSITY_NORMALIZER, 0.0, 1.0)
 
 	# Tween smooth: linear interpolation per-frame (delta / SMOOTH_TIME). Не используем
 	# create_tween() per-кадр — lerpf достаточно. ease-in-out не критично для медленного
@@ -68,10 +64,11 @@ func _process(delta: float) -> void:
 	var alpha: float = clampf(delta / SMOOTH_TIME_S, 0.0, 1.0)
 	_pressure_smooth = lerpf(_pressure_smooth, pressure_target, alpha)
 
-	# Quadratic ease-in volume mapping (см. spec §2)
+	# Quadratic ease-in mapping. Crossfade: intensity ↑ + base ↓ симметрично, чтобы
+	# слои не звучали параллельно — плавная подмена.
 	var eased: float = _pressure_smooth * _pressure_smooth
-	var target_db: float = lerpf(INTENSITY_MIN_DB, INTENSITY_MAX_DB, eased)
-	_intensity.volume_db = target_db
+	_intensity.volume_db = lerpf(INTENSITY_MIN_DB, INTENSITY_MAX_DB, eased)
+	_base.volume_db = lerpf(INTENSITY_MAX_DB, INTENSITY_MIN_DB, eased)
 
 
 func _on_run_started() -> void:
