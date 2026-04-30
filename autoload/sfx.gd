@@ -26,6 +26,8 @@ const KILL_DUCK_AMBIENT_DB := -4.0
 const KILL_DUCK_AMBIENT_MS := 120
 
 const HEARTBEAT_FADE_DEATH_SECONDS := 0.6
+const AMBIENT_FADE_DEATH_SECONDS := 1.8
+const AMBIENT_DEFAULT_DB := -12.0  # base loop volume — совпадает со spec §1.7
 
 # Heartbeat кривая. quadratic ease-in по cap_ratio (velocity_cap / CAP_CEILING):
 #   cap_ratio ≥ 0.50 → mute (cap высокий, опасности нет)
@@ -107,7 +109,7 @@ func _ready() -> void:
 	_drain_player = _make_2d("drain_warning.ogg", -14.0)
 	if _drain_player.stream != null:
 		_loop_stream(_drain_player.stream)
-	_ambient_player = _make_ambient("scifi_drone.ogg", -12.0)
+	_ambient_player = _make_ambient("scifi_drone.ogg", AMBIENT_DEFAULT_DB)
 	if _ambient_player.stream != null:
 		_loop_stream(_ambient_player.stream)
 	# Spawn audio через 3D-инстансы создаём per-spawn (positional). Только prototype'ы.
@@ -215,6 +217,12 @@ func _on_player_died() -> void:
 	tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tw.tween_property(_heartbeat_player, "volume_db", HEARTBEAT_MUTE_DB, HEARTBEAT_FADE_DEATH_SECONDS)
 	tw.tween_callback(_heartbeat_player.stop)
+	# Ambient fade out 1.8с (= death animation, spec §3). Tween и stop по завершении.
+	if _ambient_player != null and _ambient_player.playing:
+		var amb_tw := create_tween()
+		amb_tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		amb_tw.tween_property(_ambient_player, "volume_db", HEARTBEAT_MUTE_DB, AMBIENT_FADE_DEATH_SECONDS)
+		amb_tw.tween_callback(_ambient_player.stop)
 
 
 func _on_run_started() -> void:
@@ -227,8 +235,12 @@ func _on_run_started() -> void:
 	if _heartbeat_player != null and not _heartbeat_player.playing:
 		_heartbeat_player.volume_db = HEARTBEAT_MUTE_DB
 		_heartbeat_player.play()
-	if _ambient_player != null and not _ambient_player.playing:
-		_ambient_player.play()
+	# Ambient: reset volume_db ДО play(), иначе после death-fade останется -80
+	# и следующий run будет тихим.
+	if _ambient_player != null:
+		_ambient_player.volume_db = AMBIENT_DEFAULT_DB
+		if not _ambient_player.playing:
+			_ambient_player.play()
 
 
 func stop_all_loops() -> void:

@@ -374,6 +374,9 @@ func damage(amount) -> void:
 	if is_dying:
 		return
 	hp -= int(amount)
+	# Audible feedback per hit (включая killing blow — legacy enemy.gd:31 поведение).
+	# Pool в scripts/audio.gd сидит на SFX bus (commit 9bca5e5) — слайдер SFX покрывает.
+	Audio.play("sounds/enemy_hurt.ogg")
 	if hp <= 0:
 		is_dying = true
 		die()
