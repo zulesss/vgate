@@ -96,10 +96,10 @@ var _camera_push_total: float = 0.0      # для нормализации t в 
 #   лёгкий cyan trail (CPUParticles3D), без аудио-выдоха.
 # Mode B (Relief) при speed_ratio < DASH_RELIEF_THRESHOLD:
 #   яркий relief trail (GPUParticles3D) + FOV exhale −3° + delayed audio check.
-# Аудио-выдох играется через POST_DASH_CHECK_SECONDS после dash_started ТОЛЬКО
-# если ratio поднялся выше threshold (dash «спас») — иначе нет облегчения.
+# Аудио-выдох играется через 0.5с (PostDashCheckTimer.wait_time в .tscn) после
+# dash_started ТОЛЬКО если ratio поднялся выше threshold (dash «спас») — иначе
+# нет облегчения.
 const DASH_RELIEF_THRESHOLD := 0.40
-const POST_DASH_CHECK_SECONDS := 0.5
 const DASH_RELIEF_FOV_EXHALE := -3.0
 const DASH_RELIEF_FOV_RETURN_MS := 400  # ease-out возврат к 0
 var _was_relief_dash: bool = false  # set true в Mode B; читается в timeout
@@ -560,13 +560,11 @@ func _on_dash_started() -> void:
 	if ratio_at_start >= DASH_RELIEF_THRESHOLD:
 		_was_relief_dash = false
 		if _dash_trail_normal != null:
-			_dash_trail_normal.restart()
-			_dash_trail_normal.emitting = true
+			_dash_trail_normal.restart()  # restart() reactivates one_shot emit
 	else:
 		_was_relief_dash = true
 		if _dash_trail_relief != null:
 			_dash_trail_relief.restart()
-			_dash_trail_relief.emitting = true
 		# FOV exhale: signed kick — magnitude=-3 даёт мгновенное смещение −3° от
 		# текущего FOV, ease_out возвращает к 0 за DASH_RELIEF_FOV_RETURN_MS. Это
 		# поверх dash +12° stretch'а — двухтактный «вдох-выдох» ритм. [PIVOT]
