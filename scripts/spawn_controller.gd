@@ -14,7 +14,7 @@ const INTERVAL_FLOOR := 0.8           # абсолютный минимум ме
 # DEBUG: fast spawn для тестирования feel-эффектов (Kill Chain etc.).
 # True = override interval на ~0.4с независимо от run_time. ВЕРНУТЬ false перед merge'ем
 # в main для production playtest'а. M4 numbers в docs/systems/M4_spawn_numbers.md остаются LOCKED.
-const DEBUG_FAST_SPAWN := true
+const DEBUG_FAST_SPAWN := false
 const DEBUG_SPAWN_INTERVAL := 0.4
 const ENEMY_CAP := 20                 # level-designer prevails (override от systems'овских 25)
 const MAX_LIVE_SHOOTERS := 4          # hard cap; шестой стрелок крадёт agency
