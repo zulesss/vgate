@@ -12,6 +12,7 @@ class_name ScoreStateNode extends Node
 const SAVE_PATH := "user://vgate_progress.cfg"
 const BASE_MELEE := 100
 const BASE_SHOOTER := 150
+const BASE_SWARMLING := 50
 const TIME_MULT_DENOMINATOR := 300.0
 const IN_FORM_CAP_THRESHOLD := 80.0
 const IN_FORM_BONUS := 1.25
@@ -46,7 +47,11 @@ func _on_run_started() -> void:
 func _on_enemy_killed(_restore: int, _pos: Vector3, type: String) -> void:
 	if not VelocityGate.is_alive:
 		return
-	var base := BASE_SHOOTER if type == "shooter" else BASE_MELEE
+	var base: int = BASE_MELEE
+	if type == "shooter":
+		base = BASE_SHOOTER
+	elif type == "swarmling":
+		base = BASE_SWARMLING
 	var time_mult: float = 1.0 + run_time / TIME_MULT_DENOMINATOR
 	var bonus_mult: float = IN_FORM_BONUS if VelocityGate.velocity_cap >= IN_FORM_CAP_THRESHOLD else 1.0
 	current_score += int(base * time_mult * bonus_mult)

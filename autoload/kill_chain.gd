@@ -26,7 +26,15 @@ const TIER_1_THRESHOLD := 3
 const TIER_2_THRESHOLD := 5
 const TIER_3_THRESHOLD := 7
 
+# M8: swarmling kills count as 0.5 per spec (docs/systems/M8_swarmling_numbers.md
+# §1 CHAIN_COUNTER_WEIGHT). Float aggregator → int(floor) для tier checks.
+# 4 swarmling kills = +2 chain, 6 = +3 (триггерит tier 1). Mixed: 5 swarm + 1
+# melee = 0.5*5 + 1.0 = 3.5 → floor 3 = tier 1.
+const SWARMLING_CHAIN_WEIGHT := 0.5
+const DEFAULT_CHAIN_WEIGHT := 1.0
+
 var _kill_count: int = 0
+var _kill_count_float: float = 0.0
 var _window_timer: Timer
 # Sustained streak (tier 7+) — true пока counter ≥ 7 в активном окне. Idempotent
 # guard для одноразового entry-emit'а: повторные kill'ы при ≥7 не реэмитят entered.
@@ -58,7 +66,7 @@ func _ready() -> void:
 	Events.run_started.connect(_on_run_started)
 
 
-func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
+func _on_enemy_killed(_restore: int, pos: Vector3, type: String) -> void:
 	# Death-frame guard: kill burst уже не должен играть (sfx/player проверяют is_alive),
 	# chain тоже nope. Защищает от race с force_kill→enemy_killed одного кадра.
 	if not VelocityGate.is_alive:
@@ -69,7 +77,12 @@ func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
 	# trigger на изолированном kill'е после долгого простоя.
 	if _window_timer.is_stopped() or _window_timer.time_left <= 0.0:
 		_kill_count = 0
-	_kill_count += 1
+		_kill_count_float = 0.0
+	# M8: swarmling weight = 0.5, остальные = 1.0. Float aggregator —
+	# источник правды; int _kill_count = floor(float) для tier checks.
+	var weight: float = SWARMLING_CHAIN_WEIGHT if type == "swarmling" else DEFAULT_CHAIN_WEIGHT
+	_kill_count_float += weight
+	_kill_count = int(_kill_count_float)
 	_window_timer.start()  # restart на каждый kill — окно "от последнего kill"
 
 	var tier: int = _calculate_tier(_kill_count)
@@ -86,17 +99,20 @@ func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
 
 func _on_window_timeout() -> void:
 	_kill_count = 0
+	_kill_count_float = 0.0
 	_end_streak_if_active()
 
 
 func _on_player_died() -> void:
 	_kill_count = 0
+	_kill_count_float = 0.0
 	_window_timer.stop()
 	_end_streak_if_active()
 
 
 func _on_run_started() -> void:
 	_kill_count = 0
+	_kill_count_float = 0.0
 	_window_timer.stop()
 	_end_streak_if_active()
 
