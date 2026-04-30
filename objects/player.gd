@@ -212,8 +212,15 @@ func _process(delta):
 
 func _input(event):
 	if event is InputEventMouseMotion and mouse_captured:
-		input_mouse = event.relative / mouse_sensitivity
+		input_mouse = event.relative / _effective_mouse_sensitivity()
 		handle_rotation(event.relative.x, event.relative.y, false)
+
+
+# Effective divisor: base 700 / multiplier(0.5..2.0). Multiplier=1.0 → 700 (legacy
+# behavior), 2.0 → 350 (faster), 0.5 → 1400 (slower). Multiplier clamp'нут в
+# AudioSettings к MIN..MAX (>0), divide-by-zero невозможен.
+func _effective_mouse_sensitivity() -> float:
+	return mouse_sensitivity / AudioSettings.get_mouse_sensitivity_multiplier()
 
 func handle_controls(delta):
 	# Mouse capture (всегда активно — даже под input_locked, чтобы можно было освободить курсор).
@@ -271,7 +278,7 @@ func handle_rotation(xRot: float, yRot: float, isController: bool, delta: float 
 		camera.rotation.x = lerp_angle(camera.rotation.x, rotation_target.x, delta * 25)
 		rotation.y = lerp_angle(rotation.y, rotation_target.y, delta * 25)
 	else:
-		rotation_target += (Vector3(-yRot, -xRot, 0) / mouse_sensitivity)
+		rotation_target += (Vector3(-yRot, -xRot, 0) / _effective_mouse_sensitivity())
 		rotation_target.x = clamp(rotation_target.x, deg_to_rad(-90), deg_to_rad(90))
 		camera.rotation.x = rotation_target.x;
 		rotation.y = rotation_target.y;

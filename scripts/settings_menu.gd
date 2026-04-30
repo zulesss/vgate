@@ -17,15 +17,18 @@ const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 
 var is_overlay: bool = false
 
-@onready var master_slider: HSlider = $Panel/Center/VBox/MasterRow/Slider
-@onready var music_slider: HSlider = $Panel/Center/VBox/MusicRow/Slider
-@onready var sfx_slider: HSlider = $Panel/Center/VBox/SfxRow/Slider
-@onready var ambient_slider: HSlider = $Panel/Center/VBox/AmbientRow/Slider
+@onready var master_slider: HSlider = $Panel/Center/VBox/Tabs/AUDIO/MasterRow/Slider
+@onready var music_slider: HSlider = $Panel/Center/VBox/Tabs/AUDIO/MusicRow/Slider
+@onready var sfx_slider: HSlider = $Panel/Center/VBox/Tabs/AUDIO/SfxRow/Slider
+@onready var ambient_slider: HSlider = $Panel/Center/VBox/Tabs/AUDIO/AmbientRow/Slider
 
-@onready var master_value: Label = $Panel/Center/VBox/MasterRow/Value
-@onready var music_value: Label = $Panel/Center/VBox/MusicRow/Value
-@onready var sfx_value: Label = $Panel/Center/VBox/SfxRow/Value
-@onready var ambient_value: Label = $Panel/Center/VBox/AmbientRow/Value
+@onready var master_value: Label = $Panel/Center/VBox/Tabs/AUDIO/MasterRow/Value
+@onready var music_value: Label = $Panel/Center/VBox/Tabs/AUDIO/MusicRow/Value
+@onready var sfx_value: Label = $Panel/Center/VBox/Tabs/AUDIO/SfxRow/Value
+@onready var ambient_value: Label = $Panel/Center/VBox/Tabs/AUDIO/AmbientRow/Value
+
+@onready var mouse_sens_slider: HSlider = $Panel/Center/VBox/Tabs/CONTROLS/MouseSensRow/Slider
+@onready var mouse_sens_value: Label = $Panel/Center/VBox/Tabs/CONTROLS/MouseSensRow/Value
 
 @onready var back_btn: Button = $Panel/Center/VBox/BackButton
 
@@ -50,6 +53,12 @@ func _ready() -> void:
 	music_slider.value_changed.connect(_on_music_changed)
 	sfx_slider.value_changed.connect(_on_sfx_changed)
 	ambient_slider.value_changed.connect(_on_ambient_changed)
+
+	# Mouse sens (Controls tab). Init ДО connect — иначе value_changed выстрелит и
+	# перезатрёт persisted value default'ом из tscn (1.0).
+	mouse_sens_slider.value = AudioSettings.get_mouse_sensitivity_multiplier()
+	_update_mouse_sens_label(mouse_sens_slider.value)
+	mouse_sens_slider.value_changed.connect(_on_mouse_sens_changed)
 
 	back_btn.pressed.connect(_on_back)
 
@@ -89,8 +98,17 @@ func _on_ambient_changed(v: float) -> void:
 	_update_value_label(ambient_value, v)
 
 
+func _on_mouse_sens_changed(v: float) -> void:
+	AudioSettings.set_mouse_sensitivity_multiplier(v)
+	_update_mouse_sens_label(v)
+
+
 func _update_value_label(label: Label, linear: float) -> void:
 	label.text = "%d%%" % int(round(linear * 100.0))
+
+
+func _update_mouse_sens_label(v: float) -> void:
+	mouse_sens_value.text = "%.2fx" % v
 
 
 func _on_back() -> void:

@@ -17,6 +17,7 @@ class_name AudioSettingsNode extends Node
 
 const SAVE_PATH := "user://vgate_settings.cfg"
 const SECTION := "audio"
+const INPUT_SECTION := "input"
 const BUS_NAMES := ["Master", "Music", "SFX", "Ambient"]
 const MUTE_THRESHOLD := 0.001
 const MUTE_DB := -80.0
@@ -24,12 +25,20 @@ const MUTE_DB := -80.0
 # slider drag'е (value_changed firing 60Hz).
 const SAVE_DEBOUNCE_SEC := 0.3
 
+# Mouse sensitivity multiplier. 1.0 = base (текущее поведение player.gd с divisor 700),
+# 0.5 = в 2 раза медленнее, 2.0 = в 2 раза быстрее. Player.gd читает через
+# get_mouse_sensitivity_multiplier() и делит base divisor на multiplier.
+const MOUSE_SENS_MIN := 0.5
+const MOUSE_SENS_MAX := 2.0
+const MOUSE_SENS_DEFAULT := 1.0
+
 # Signal — emit'ится после каждого set_volume. sfx.gd слушает чтобы инвалидировать
 # свой duck base_db кеш.
 signal volumes_changed(bus_name: String, new_linear: float)
 
 var _volumes: Dictionary = {}  # bus_name -> linear float
 var _bus_indices: Dictionary = {}  # bus_name -> int (cached AudioServer idx)
+var _mouse_sensitivity_multiplier: float = MOUSE_SENS_DEFAULT
 var _save_timer: Timer
 
 
@@ -55,6 +64,14 @@ func _ready() -> void:
 			_volumes[bus_name] = clampf(db_to_linear(base_db), 0.0, 1.0)
 		else:
 			_volumes[bus_name] = clampf(float(stored), 0.0, 1.0)
+
+	# Load mouse sensitivity multiplier из той же cfg, [input] секция. Используем
+	# has_section_key — get_value с default'ом null в Godot 4.6 ругается ERROR при
+	# отсутствующей секции (в отличие от просто отсутствующего key в существующей
+	# секции). Audio loop выше работает потому что [audio] всегда существует.
+	if load_err == OK and cf.has_section_key(INPUT_SECTION, "mouse_sensitivity_multiplier"):
+		var stored_sens: Variant = cf.get_value(INPUT_SECTION, "mouse_sensitivity_multiplier")
+		_mouse_sensitivity_multiplier = clampf(float(stored_sens), MOUSE_SENS_MIN, MOUSE_SENS_MAX)
 
 	_apply_all()
 	# Save back только если файла не было — фиксируем seeded defaults.
@@ -95,6 +112,16 @@ func set_volume(bus_name: String, linear: float) -> void:
 		_save_timer.start()
 
 
+func get_mouse_sensitivity_multiplier() -> float:
+	return _mouse_sensitivity_multiplier
+
+
+func set_mouse_sensitivity_multiplier(value: float) -> void:
+	_mouse_sensitivity_multiplier = clampf(value, MOUSE_SENS_MIN, MOUSE_SENS_MAX)
+	if _save_timer != null:
+		_save_timer.start()
+
+
 func _apply_all() -> void:
 	for bus_name: String in BUS_NAMES:
 		_apply_one(bus_name, _volumes[bus_name])
@@ -119,4 +146,5 @@ func _save_to_disk() -> void:
 	cf.load(SAVE_PATH)
 	for bus_name: String in BUS_NAMES:
 		cf.set_value(SECTION, bus_name.to_lower(), _volumes[bus_name])
+	cf.set_value(INPUT_SECTION, "mouse_sensitivity_multiplier", _mouse_sensitivity_multiplier)
 	cf.save(SAVE_PATH)

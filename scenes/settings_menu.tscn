@@ -42,7 +42,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Panel/Center/VBox"]
 layout_mode = 2
-text = "AUDIO"
+text = "SETTINGS"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -53,18 +53,26 @@ theme_override_font_sizes/font_size = 64
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
-[node name="MasterRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+[node name="Tabs" type="TabContainer" parent="Panel/Center/VBox"]
+custom_minimum_size = Vector2(640, 360)
+layout_mode = 2
+
+[node name="AUDIO" type="VBoxContainer" parent="Panel/Center/VBox/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="MasterRow" type="HBoxContainer" parent="Panel/Center/VBox/Tabs/AUDIO"]
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="Panel/Center/VBox/MasterRow"]
+[node name="Label" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/MasterRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "MASTER"
 theme_override_font_sizes/font_size = 26
 
-[node name="Slider" type="HSlider" parent="Panel/Center/VBox/MasterRow"]
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/Tabs/AUDIO/MasterRow"]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 4
@@ -72,25 +80,25 @@ focus_mode = 2
 max_value = 1.0
 step = 0.01
 
-[node name="Value" type="Label" parent="Panel/Center/VBox/MasterRow"]
+[node name="Value" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/MasterRow"]
 custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
-[node name="MusicRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+[node name="MusicRow" type="HBoxContainer" parent="Panel/Center/VBox/Tabs/AUDIO"]
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="Panel/Center/VBox/MusicRow"]
+[node name="Label" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/MusicRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "MUSIC"
 theme_override_font_sizes/font_size = 26
 
-[node name="Slider" type="HSlider" parent="Panel/Center/VBox/MusicRow"]
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/Tabs/AUDIO/MusicRow"]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 4
@@ -98,25 +106,25 @@ focus_mode = 2
 max_value = 1.0
 step = 0.01
 
-[node name="Value" type="Label" parent="Panel/Center/VBox/MusicRow"]
+[node name="Value" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/MusicRow"]
 custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 text = "0%"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
-[node name="SfxRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+[node name="SfxRow" type="HBoxContainer" parent="Panel/Center/VBox/Tabs/AUDIO"]
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="Panel/Center/VBox/SfxRow"]
+[node name="Label" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/SfxRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "SFX"
 theme_override_font_sizes/font_size = 26
 
-[node name="Slider" type="HSlider" parent="Panel/Center/VBox/SfxRow"]
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/Tabs/AUDIO/SfxRow"]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 4
@@ -124,25 +132,25 @@ focus_mode = 2
 max_value = 1.0
 step = 0.01
 
-[node name="Value" type="Label" parent="Panel/Center/VBox/SfxRow"]
+[node name="Value" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/SfxRow"]
 custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 text = "100%"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
-[node name="AmbientRow" type="HBoxContainer" parent="Panel/Center/VBox"]
+[node name="AmbientRow" type="HBoxContainer" parent="Panel/Center/VBox/Tabs/AUDIO"]
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Label" type="Label" parent="Panel/Center/VBox/AmbientRow"]
+[node name="Label" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/AmbientRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "AMBIENT"
 theme_override_font_sizes/font_size = 26
 
-[node name="Slider" type="HSlider" parent="Panel/Center/VBox/AmbientRow"]
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/Tabs/AUDIO/AmbientRow"]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_vertical = 4
@@ -150,12 +158,153 @@ focus_mode = 2
 max_value = 1.0
 step = 0.01
 
-[node name="Value" type="Label" parent="Panel/Center/VBox/AmbientRow"]
+[node name="Value" type="Label" parent="Panel/Center/VBox/Tabs/AUDIO/AmbientRow"]
 custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
 text = "0%"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
+
+[node name="CONTROLS" type="VBoxContainer" parent="Panel/Center/VBox/Tabs"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="MouseSensRow" type="HBoxContainer" parent="Panel/Center/VBox/Tabs/CONTROLS"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/MouseSensRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "MOUSE SENS"
+theme_override_font_sizes/font_size = 26
+
+[node name="Slider" type="HSlider" parent="Panel/Center/VBox/Tabs/CONTROLS/MouseSensRow"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="Value" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/MouseSensRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="BindingsSpacer" type="Control" parent="Panel/Center/VBox/Tabs/CONTROLS"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="BindingsHeader" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS"]
+layout_mode = 2
+text = "CONTROLS"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="BindingsList" type="GridContainer" parent="Panel/Center/VBox/Tabs/CONTROLS"]
+layout_mode = 2
+theme_override_constants/h_separation = 40
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="MoveAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "MOVE"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="MoveKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "WASD"
+theme_override_font_sizes/font_size = 22
+
+[node name="LookAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "LOOK"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="LookKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "MOUSE"
+theme_override_font_sizes/font_size = 22
+
+[node name="ShootAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "SHOOT"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="ShootKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "LMB"
+theme_override_font_sizes/font_size = 22
+
+[node name="JumpAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "JUMP"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="JumpKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "SPACE"
+theme_override_font_sizes/font_size = 22
+
+[node name="DashAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "DASH"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="DashKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "SHIFT"
+theme_override_font_sizes/font_size = 22
+
+[node name="WeaponAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "WEAPON TOGGLE"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="WeaponKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "E"
+theme_override_font_sizes/font_size = 22
+
+[node name="PauseAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "PAUSE"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="PauseKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "ESC"
+theme_override_font_sizes/font_size = 22
 
 [node name="Spacer" type="Control" parent="Panel/Center/VBox"]
 custom_minimum_size = Vector2(0, 24)
