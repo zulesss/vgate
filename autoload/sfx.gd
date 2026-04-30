@@ -242,7 +242,9 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	if not VelocityGate.is_alive:
 		return
 	if _kill_player != null and _kill_player.stream != null:
-		# M7 Kill Chain: tier 1 → +5% pitch, tier 2/3 → +10% pitch (poверх ±4% jitter).
+		# M7 Kill Chain: tier 1 → +5% pitch, tier 2 → +10% pitch (poверх ±4% jitter).
+		# Tier 7+ (3) — no boost: streak переведён на sustained semantics 2026-04-30,
+		# per-kill audio escalation на 7+ убрана вместе с camera/FOV jolts.
 		# peek_tier_after_next_kill() читает предстоящий tier ДО того как KillChain
 		# обработает enemy_killed (порядок connect: Sfx раньше KillChain в project.godot,
 		# так что Sfx идёт первым в Events emit-loop'е).
@@ -253,8 +255,6 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 				pitch_boost = 1.05
 			2:
 				pitch_boost = 1.10
-			3:
-				pitch_boost = 1.10  # tier 3 spec: +10% (равно tier 2)
 		_kill_player.pitch_scale = randf_range(0.96, 1.04) * pitch_boost
 		_kill_player.play()
 	# Duck Music/Ambient bus — independent tween'ы. Base_db читаем live из

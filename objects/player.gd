@@ -106,28 +106,32 @@ const DASH_RELIEF_FOV_EXHALE := -3.0
 const DASH_RELIEF_FOV_RETURN_MS := 400  # ease-out возврат к 0
 var _was_relief_dash: bool = false  # set true в Mode B; читается в timeout
 
-# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3) — additive feel-effects
-# поверх kill burst'а на tier 1/2/3. Эффекты ПОВЕРХ kill burst через 50ms задержку
-# (kill burst отрабатывает первым, потом chain) — feel-spec §«Взаимодействие с kill burst».
+# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3, revised 2026-04-30).
+# Tier 1/2 — additive feel-effects (FOV punch + camera roll) поверх kill burst'а
+# через 50ms задержку. Tier 7+ переведён на sustained semantics (см. ниже
+# _on_kill_chain_streak_*) после плейтеста: per-kill jolts (FOV punch +15°,
+# camera shake) на 7+ читались как «дёрганые», sustained FOV +10° + cap ceiling
+# +10 = «in the zone» ощущение пока стрик активен.
 const CHAIN_DELAY_S := 0.05  # пропуск kill burst frame'а перед chain effects
 # FOV punch per tier (additive к kill burst +15°)
 const CHAIN_FOV_T1 := 8.0
 const CHAIN_FOV_T2 := 12.0
-const CHAIN_FOV_T3 := 15.0
 const CHAIN_FOV_RETURN_T1_MS := 250
 const CHAIN_FOV_RETURN_T2_MS := 300
-const CHAIN_FOV_RETURN_T3_MS := 350
 # Camera roll ±deg → возврат
 const CHAIN_ROLL_T1 := 1.5
 const CHAIN_ROLL_T2 := 2.5
 const CHAIN_ROLL_KICK_S := 0.10  # время до пика (snap-ish)
 const CHAIN_ROLL_RETURN_T1_S := 0.20
 const CHAIN_ROLL_RETURN_T2_S := 0.25
-# Tier 3 camera shake
-const CHAIN_SHAKE_T3_AMPLITUDE := 0.04   # units (4 "px" в spec — на arena scale 0.04u разумно)
-const CHAIN_SHAKE_T3_DECAY_S := 0.25
-var _chain_shake_remaining: float = 0.0
-var _chain_shake_amplitude: float = 0.0  # initial для нормализации decay
+
+# Tier 7+ sustained streak. Entry: ramp to +10° за 0.3с ease-out, hold пока стрик
+# активен. Exit: ramp обратно к 0 за 0.4с. Cap ceiling +10 параллельно через
+# VelocityGate.set_ceiling_boost (apply_kill_restore берёт effective ceiling).
+const STREAK_FOV_OFFSET := 10.0
+const STREAK_FOV_RAMP_IN_S := 0.3
+const STREAK_FOV_RAMP_OUT_S := 0.4
+const STREAK_CEILING_BOOST := 10.0
 
 # Heavy Breath integration: TODO M7 пакет 1 — когда breath audio будет интегрирован
 # в audio-менеджере, добавить fade-out 1.2s в _on_dash_started Mode B (spec §Эффект
@@ -199,9 +203,13 @@ func _ready():
 	if not _post_dash_check_timer.timeout.is_connected(_on_post_dash_check_timeout):
 		_post_dash_check_timer.timeout.connect(_on_post_dash_check_timeout)
 
-	# M7 Kill Chain: listener для camera/FOV эффектов поверх kill burst'а.
+	# M7 Kill Chain: tier 1/2 per-kill kick + tier 7+ sustained streak entry/exit.
 	if not Events.kill_chain_triggered.is_connected(_on_kill_chain_triggered):
 		Events.kill_chain_triggered.connect(_on_kill_chain_triggered)
+	if not Events.kill_chain_streak_entered.is_connected(_on_kill_chain_streak_entered):
+		Events.kill_chain_streak_entered.connect(_on_kill_chain_streak_entered)
+	if not Events.kill_chain_streak_exited.is_connected(_on_kill_chain_streak_exited):
+		Events.kill_chain_streak_exited.connect(_on_kill_chain_streak_exited)
 
 func _process(delta):
 	# Handle functions
@@ -546,19 +554,6 @@ func _tick_feel(delta: float) -> void:
 		if _camera_push_remaining <= 0.0:
 			camera.position.z = 0.0  # snap to baseline (no drift)
 
-	# M7 Kill Chain tier 3 shake. Camera3D.h_offset/v_offset аддитивны к position
-	# (Godot 4 docs) — не конфликтует с landing dip (camera.position.y) или dash push
-	# (camera.position.z). Decay от full amplitude к 0 за CHAIN_SHAKE_T3_DECAY_S.
-	if _chain_shake_remaining > 0.0:
-		_chain_shake_remaining = maxf(0.0, _chain_shake_remaining - delta)
-		var shake_t: float = _chain_shake_remaining / CHAIN_SHAKE_T3_DECAY_S  # 1.0 → 0.0
-		var shake_amp: float = _chain_shake_amplitude * shake_t
-		camera.h_offset = randf_range(-shake_amp, shake_amp)
-		camera.v_offset = randf_range(-shake_amp, shake_amp)
-		if _chain_shake_remaining <= 0.0:
-			camera.h_offset = 0.0
-			camera.v_offset = 0.0
-
 
 # Kill burst (§2 Iter 1, MUST). FOV +15° punch ease-out-cubic 180 мс + audio crack
 # в frame 0. Hit-stop (Iter 2) и time-dilation (Iter 3) отложены до результата
@@ -613,9 +608,8 @@ func _on_dash_started() -> void:
 		_was_relief_dash = false
 
 
-# M7 Kill Chain handler. Tier 1/2/3 — additive FOV punch через fov_controller.kick(),
-# camera roll через tween на camera.rotation.z, tier 3 ещё и camera shake через
-# h_offset/v_offset (не конфликтует с camera.position.y/z которые заняты landing/dash).
+# M7 Kill Chain handler (tier 1/2 only). Tier 7+ обрабатывается через
+# _on_kill_chain_streak_entered/exited ниже (sustained state, не per-kill jolt).
 # Delay 50ms — kill burst (FOV +15°, hit-stop) уже отыграл, chain накладывается «вторым слоем».
 func _on_kill_chain_triggered(tier: int, _hit_pos: Vector3) -> void:
 	if not VelocityGate.is_alive:
@@ -636,25 +630,35 @@ func _on_kill_chain_triggered(tier: int, _hit_pos: Vector3) -> void:
 		2:
 			fov_mag = CHAIN_FOV_T2
 			fov_ms = CHAIN_FOV_RETURN_T2_MS
-		3:
-			fov_mag = CHAIN_FOV_T3
-			fov_ms = CHAIN_FOV_RETURN_T3_MS
 		_:
 			return
 	if fov_controller != null:
 		fov_controller.kick(fov_mag, fov_ms, "ease_out_cubic")
 
-	# Camera roll — ±direction рандомно, чтобы каждый chain trigger не выглядел
-	# идентично. Tier 1/2 only; tier 3 заменяет roll на shake (читается агрессивнее).
-	if tier <= 2:
-		var roll_mag: float = (CHAIN_ROLL_T1 if tier == 1 else CHAIN_ROLL_T2)
-		var roll_return: float = (CHAIN_ROLL_RETURN_T1_S if tier == 1 else CHAIN_ROLL_RETURN_T2_S)
-		var roll_dir: float = 1.0 if (randi() % 2) == 0 else -1.0
-		_kick_camera_roll(deg_to_rad(roll_mag * roll_dir), CHAIN_ROLL_KICK_S, roll_return)
-	else:
-		# Tier 3 shake — apply'ится в _tick_feel через h/v_offset.
-		_chain_shake_remaining = CHAIN_SHAKE_T3_DECAY_S
-		_chain_shake_amplitude = CHAIN_SHAKE_T3_AMPLITUDE
+	# Camera roll — ±direction рандомно, чтобы каждый chain trigger не выглядел идентично.
+	var roll_mag: float = (CHAIN_ROLL_T1 if tier == 1 else CHAIN_ROLL_T2)
+	var roll_return: float = (CHAIN_ROLL_RETURN_T1_S if tier == 1 else CHAIN_ROLL_RETURN_T2_S)
+	var roll_dir: float = 1.0 if (randi() % 2) == 0 else -1.0
+	_kick_camera_roll(deg_to_rad(roll_mag * roll_dir), CHAIN_ROLL_KICK_S, roll_return)
+
+
+# M7 Kill Chain Tier 7+ streak entry/exit handlers. Sustained higher FOV +
+# cap ceiling boost пока стрик активен. Идемпотентность entered/exited —
+# kill_chain.gd флагом _streak_active.
+func _on_kill_chain_streak_entered(_hit_pos: Vector3) -> void:
+	if not VelocityGate.is_alive:
+		return
+	VelocityGate.set_ceiling_boost(STREAK_CEILING_BOOST)
+	if fov_controller != null:
+		fov_controller.set_sustained_offset(STREAK_FOV_OFFSET, STREAK_FOV_RAMP_IN_S)
+
+
+func _on_kill_chain_streak_exited() -> void:
+	# Не гардим is_alive: streak_exited может прилететь от player_died handler'а
+	# в kill_chain.gd, и тогда мы должны очистить state даже если is_alive=false.
+	VelocityGate.clear_ceiling_boost()
+	if fov_controller != null:
+		fov_controller.clear_sustained_offset(STREAK_FOV_RAMP_OUT_S)
 
 
 # Camera roll kick: tween rotation.z до peak за kick_s, потом обратно к 0 за return_s.

@@ -18,7 +18,16 @@ signal enemy_spawned(enemy: Node)                                             # 
 signal score_changed(new_score: int)                                          # current_score обновился (kill applied)
 signal high_score_loaded(score: int)                                          # ConfigFile прочитан, best_score готов к показу
 
-# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3). Tier 1=3 kills, 2=5, 3=7+ в окне 3с.
+# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3). Tier 1=3 kills, 2=5 в окне 3с.
 # Emit'ится KillChain autoload'ом каждый kill в chain — listeners (player camera/FOV, sfx pitch,
-# music intensity, KillChainFlash overlay) применяют additive feel поверх kill burst'а.
+# KillChainFlash overlay) применяют additive feel поверх kill burst'а.
+# Tier 7+ (3) больше НЕ emit'ит kill_chain_triggered — заменён на sustained streak semantics
+# ниже (kill_chain_streak_entered / kill_chain_streak_exited) после плейтеста: per-kill jolts
+# на 7+ были «дёрганые», sustained state читается чище.
 signal kill_chain_triggered(tier: int, hit_pos: Vector3)
+
+# M7 Kill Chain Streak (Tier 7+ sustained). Entered эмитится один раз когда counter впервые
+# ≥7; пока стрик активен (каждый kill в окне 3с подтверждает) — sustained higher FOV +
+# cap ceiling boost. Exited эмитится при window timeout / death / run_started.
+signal kill_chain_streak_entered(hit_pos: Vector3)
+signal kill_chain_streak_exited()

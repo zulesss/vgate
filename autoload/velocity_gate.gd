@@ -21,6 +21,11 @@ var drain_timer: float = 0.0
 var is_draining: bool = false
 var i_frames_remaining: float = 0.0
 var is_alive: bool = false  # Default false: VelocityGate dormant в меню. reset_for_run() флипает в true при старте run'а, end_run() возвращает false при возврате в меню.
+# Kill Chain Tier 7+ sustained: разрешает effective ceiling = CAP_CEILING + ceiling_boost
+# на время активного стрика. Read через apply_kill_restore (clamp вместо CAP_CEILING).
+# Set'ит KillChain через set_ceiling_boost() на streak_entered, clear_ceiling_boost() на
+# streak_exited (clamp velocity_cap обратно к CAP_CEILING если был выше).
+var ceiling_boost: float = 0.0
 
 
 func max_speed_at_cap() -> float:
@@ -55,7 +60,10 @@ func apply_hit(penalty: int) -> void:
 func apply_kill_restore(pos: Vector3, type: String = "melee") -> void:
 	if not is_alive:
 		return
-	velocity_cap = minf(CAP_CEILING, velocity_cap + float(KILL_RESTORE))
+	# Effective ceiling = CAP_CEILING + ceiling_boost (Kill Chain Tier 7+ sustained
+	# приподнимает потолок, позволяя cap > 100 пока streak активен).
+	var effective_ceiling: float = CAP_CEILING + ceiling_boost
+	velocity_cap = minf(effective_ceiling, velocity_cap + float(KILL_RESTORE))
 	# Kill = выдох. Если игрок был под threshold — ratio после kill подскакивает,
 	# drain сбрасывается на следующем tick через нормальный путь в _physics_process.
 	# Дополнительно явно стопаем drain если он был активен — feel'у это критично:
@@ -75,6 +83,7 @@ func reset_for_run() -> void:
 	is_draining = false
 	i_frames_remaining = 0.0
 	is_alive = true
+	ceiling_boost = 0.0  # Свежий run без residual streak boost'а от прошлой смерти
 	# Lifecycle hook (M4): listeners (SpawnController, ScoreState, RunHud) зануляют
 	# своё состояние на этом сигнале. Emit ПОСЛЕ reset state'а — listeners читают
 	# уже свежий VelocityGate (например ScoreState проверяет velocity_cap для in-form bonus).
@@ -88,6 +97,7 @@ func force_kill() -> void:
 		return
 	is_alive = false
 	velocity_cap = 0.0
+	ceiling_boost = 0.0  # Streak оборван смертью; KillChain.player_died тоже emit'ит exit, но идемпотентно safe
 	if is_draining:
 		is_draining = false
 		Events.drain_stopped.emit()
@@ -107,6 +117,22 @@ func end_run() -> void:
 		is_draining = false
 		Events.drain_stopped.emit()
 	i_frames_remaining = 0.0
+	ceiling_boost = 0.0
+
+
+# Kill Chain Tier 7+ entry: приподнимает effective ceiling. apply_kill_restore сразу
+# подхватит на следующем kill'е через минимум(CAP_CEILING + boost, ...).
+func set_ceiling_boost(boost: float) -> void:
+	ceiling_boost = maxf(0.0, boost)
+
+
+# Kill Chain Tier 7+ exit: возвращает потолок к CAP_CEILING. Если cap был приподнят
+# выше CAP_CEILING во время стрика — clamp обратно к 100. Это intended: мы не
+# «забираем» накопленное, а возвращаем нормальный потолок (next kill restore не
+# поднимет выше 100 как обычно).
+func clear_ceiling_boost() -> void:
+	ceiling_boost = 0.0
+	velocity_cap = minf(velocity_cap, CAP_CEILING)
 
 
 func _physics_process(delta: float) -> void:

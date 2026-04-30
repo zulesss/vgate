@@ -1,22 +1,25 @@
 class_name KillChainTracker extends Node
 
-# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3).
-# 3+ kills за 3 сек → emit kill_chain_triggered с tier (1/2/3) и позицией. Listeners
-# (player camera/FOV, sfx pitch, music intensity, KillChainFlash overlay) применяют
-# additive feel поверх kill burst'а.
+# M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3, revised 2026-04-30).
+# 3+ kills за 3 сек → tier-based реакция:
+#   - Tier 1/2 (≥3 / ≥5): per-kill kick через Events.kill_chain_triggered.
+#   - Tier 7+: sustained state. Entry signal один раз при первом достижении counter≥7;
+#     subsequent kills продолжают подтверждать стрик (refresh window timer) но
+#     kill_chain_triggered НЕ эмитится. Exit signal на window timeout / death / run_started.
+#
+# Pivot после плейтеста: per-kill jolts (FOV punch +15°, camera shake, warm flash) на
+# tier 7+ читались как «дёрганые». Sustained FOV +10° + cap ceiling +10 = больше «in
+# the zone» меньше «вибрация».
 #
 # Архитектура:
 #   - Counter инкрементируется на каждый Events.enemy_killed
 #   - Timer (3 сек, one-shot, restart per kill) — когда истекает, counter=0
-#   - Tier определяется по counter: ≥7 → 3, ≥5 → 2, ≥3 → 1, иначе no-op
-#   - Tier 7+: повторно срабатывает на каждый kill пока counter ≥ 7 (не "сработало один раз")
+#   - _streak_active: idempotent flag для tier 7+ entry/exit emit'а
 #
 # Edge cases:
 #   - Pause: Timer pausable (default process_mode), chain паузится с игрой
-#   - Death: counter=0, Timer.stop, no-op до run_started
-#   - Run started: reset
-#
-# TODO post-iter1: chord stab / particle burst для tier 2/3 (skipped per brief — asset/visual gate).
+#   - Death: counter=0, Timer.stop, streak_exited если был active
+#   - Run started: reset, streak_exited если был active
 
 const CHAIN_WINDOW_SEC := 3.0
 const TIER_1_THRESHOLD := 3
@@ -25,6 +28,9 @@ const TIER_3_THRESHOLD := 7
 
 var _kill_count: int = 0
 var _window_timer: Timer
+# Sustained streak (tier 7+) — true пока counter ≥ 7 в активном окне. Idempotent
+# guard для одноразового entry-emit'а: повторные kill'ы при ≥7 не реэмитят entered.
+var _streak_active: bool = false
 
 
 # Peek для listener'ов которым нужно ЗНАТЬ предстоящий tier ДО того как сам KillChain
@@ -67,26 +73,45 @@ func _on_enemy_killed(_restore: int, pos: Vector3, _type: String) -> void:
 	_window_timer.start()  # restart на каждый kill — окно "от последнего kill"
 
 	var tier: int = _calculate_tier(_kill_count)
-	if tier > 0:
+	# Tier 7+: sustained semantics. Не эмитим kill_chain_triggered (listeners
+	# tier 1/2 only), вместо этого entry-signal один раз. Subsequent kills при
+	# counter ≥ 7 просто рефрешат окно и держат стрик.
+	if tier == 3:
+		if not _streak_active:
+			_streak_active = true
+			Events.kill_chain_streak_entered.emit(pos)
+	elif tier > 0:
 		Events.kill_chain_triggered.emit(tier, pos)
 
 
 func _on_window_timeout() -> void:
 	_kill_count = 0
+	_end_streak_if_active()
 
 
 func _on_player_died() -> void:
 	_kill_count = 0
 	_window_timer.stop()
+	_end_streak_if_active()
 
 
 func _on_run_started() -> void:
 	_kill_count = 0
 	_window_timer.stop()
+	_end_streak_if_active()
 
 
-# Tier mapping. Tier 3 (7+) повторно стреляет на каждый kill пока counter ≥ 7 — это
-# "максимальная эскалация держится на каждом kill", per spec.
+# Idempotent: повторные вызовы no-op'нутся. Используется на window timeout / death /
+# run_started — одна точка управления streak_exited emit'ом.
+func _end_streak_if_active() -> void:
+	if _streak_active:
+		_streak_active = false
+		Events.kill_chain_streak_exited.emit()
+
+
+# Tier mapping. Tier 3 (7+) повторно "регистрируется" на каждый kill пока counter ≥ 7,
+# но per-kill emit идёт только для tier 1/2 — tier 3 обрабатывается через streak
+# entry/exit semantics в _on_enemy_killed.
 static func _calculate_tier(count: int) -> int:
 	if count >= TIER_3_THRESHOLD:
 		return 3
