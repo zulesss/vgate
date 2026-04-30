@@ -242,7 +242,20 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	if not VelocityGate.is_alive:
 		return
 	if _kill_player != null and _kill_player.stream != null:
-		_kill_player.pitch_scale = randf_range(0.96, 1.04)  # ±4%
+		# M7 Kill Chain: tier 1 → +5% pitch, tier 2/3 → +10% pitch (poверх ±4% jitter).
+		# peek_tier_after_next_kill() читает предстоящий tier ДО того как KillChain
+		# обработает enemy_killed (порядок connect: Sfx раньше KillChain в project.godot,
+		# так что Sfx идёт первым в Events emit-loop'е).
+		var pitch_boost: float = 1.0
+		var tier: int = KillChain.peek_tier_after_next_kill()
+		match tier:
+			1:
+				pitch_boost = 1.05
+			2:
+				pitch_boost = 1.10
+			3:
+				pitch_boost = 1.10  # tier 3 spec: +10% (равно tier 2)
+		_kill_player.pitch_scale = randf_range(0.96, 1.04) * pitch_boost
 		_kill_player.play()
 	# Duck Music/Ambient bus — independent tween'ы. Base_db читаем live из
 	# AudioSettings: если юзер выкрутил slider — duck вернётся к свежему base'у,

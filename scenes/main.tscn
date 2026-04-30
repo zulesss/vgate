@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://vgatemainm0"]
+[gd_scene load_steps=23 format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://b0vgtdebughud01" path="res://scenes/debug_hud.tscn" id="3_dhud"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://scripts/run_loop.gd" id="11_runloop"]
 [ext_resource type="Texture2D" path="res://assets/skybox/empty_warehouse_01_1k.exr" id="12_skyhdri"]
 [ext_resource type="PackedScene" uid="uid://b0vgtpausemnu01" path="res://scenes/pause_menu.tscn" id="13_pmenu"]
+[ext_resource type="PackedScene" uid="uid://b0vgtkillchain01" path="res://scenes/kill_chain_flash.tscn" id="14_kcflash"]
 
 [sub_resource type="PanoramaSkyMaterial" id="SkyMat_main"]
 panorama = ExtResource("12_skyhdri")
@@ -191,6 +192,8 @@ pivot_offset = Vector2(64, 64)
 [node name="DebugHud" parent="." instance=ExtResource("3_dhud")]
 
 [node name="RunHud" parent="." instance=ExtResource("9_runhud")]
+
+[node name="KillChainFlash" parent="." instance=ExtResource("14_kcflash")]
 
 [node name="VignetteLayer" type="CanvasLayer" parent="."]
 layer = 20
