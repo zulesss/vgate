@@ -11,6 +11,11 @@ class_name SpawnController extends Node
 const RAMP_K := 0.005                 # interval = max(FLOOR, BASE / (1 + t * K))
 const RAMP_BASE := 4.0
 const INTERVAL_FLOOR := 0.8           # абсолютный минимум между двумя spawn'ами
+# DEBUG: fast spawn для тестирования feel-эффектов (Kill Chain etc.).
+# True = override interval на ~0.4с независимо от run_time. ВЕРНУТЬ false перед merge'ем
+# в main для production playtest'а. M4 numbers в docs/systems/M4_spawn_numbers.md остаются LOCKED.
+const DEBUG_FAST_SPAWN := true
+const DEBUG_SPAWN_INTERVAL := 0.4
 const ENEMY_CAP := 20                 # level-designer prevails (override от systems'овских 25)
 const MAX_LIVE_SHOOTERS := 4          # hard cap; шестой стрелок крадёт agency
 const MIN_SPAWN_DISTANCE := 12.0      # < 12u от player'а — skip
@@ -85,7 +90,11 @@ func _process(delta: float) -> void:
 		_point_cooldowns[k] = max(0.0, float(_point_cooldowns[k]) - delta)
 
 	_spawn_timer += delta
-	var interval: float = max(INTERVAL_FLOOR, RAMP_BASE / (1.0 + _run_time * RAMP_K))
+	var interval: float
+	if DEBUG_FAST_SPAWN:
+		interval = DEBUG_SPAWN_INTERVAL
+	else:
+		interval = max(INTERVAL_FLOOR, RAMP_BASE / (1.0 + _run_time * RAMP_K))
 	if _spawn_timer < interval:
 		return
 	if _live_enemies >= ENEMY_CAP:
