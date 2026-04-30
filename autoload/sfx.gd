@@ -198,13 +198,11 @@ func _process(delta: float) -> void:
 	# Kill-fade — orthogonal: пока tween глушит, state-machine не трогает volume,
 	# по callback'у tween'а флаг сбрасывается, и если cap всё ещё low — _process
 	# реактивирует breath с MUTE_DB и заfade'ит обратно (см. _on_breath_kill_fade_done).
-	if _breath_player == null or not _breath_kill_fading:
+	if not _breath_kill_fading:
 		if not _breath_active and cap_ratio < BREATH_THRESHOLD:
 			_breath_active = true
 			_breath_vol_current = BREATH_MUTE_DB
-			if _breath_player != null:
-				_breath_player.volume_db = BREATH_MUTE_DB
-				_breath_player.play()  # randomizer сам выберет sample
+			_breath_player.play()  # randomizer сам выберет sample
 		elif _breath_active and cap_ratio > BREATH_HYSTERESIS_HIGH:
 			_breath_active = false
 			# плавно глушим ниже, не cut
@@ -219,12 +217,11 @@ func _process(delta: float) -> void:
 		else:
 			target_breath_vol = BREATH_MUTE_DB
 		_breath_vol_current = move_toward(_breath_vol_current, target_breath_vol, breath_step)
-		if _breath_player != null:
-			_breath_player.volume_db = _breath_vol_current
-			# Stop player когда полностью затих после деактивации — чтобы finished
-			# callback не реcтартовал mute'd loop.
-			if not _breath_active and _breath_vol_current <= BREATH_MUTE_DB + 0.5 and _breath_player.playing:
-				_breath_player.stop()
+		_breath_player.volume_db = _breath_vol_current
+		# Stop player когда полностью затих после деактивации — чтобы finished
+		# callback не реcтартовал mute'd loop.
+		if not _breath_active and _breath_vol_current <= BREATH_MUTE_DB + 0.5 and _breath_player.playing:
+			_breath_player.stop()
 
 
 # ────── Event listeners
