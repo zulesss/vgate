@@ -21,7 +21,7 @@
 | **GROUP_SIZE_MAX** | 4 | Identity locked |
 | **MAX_LIVE_SWARMLINGS** | 8 | **Отдельный sub-cap**, НЕ общий с melee. Логика: при ENEMY_CAP=20 без sub-cap один group-spawn 4 + wave через 2с + wave через 2с = 12 swarmlings без ни одного melee/shooter = identity ломается (рой заполняет всё). Sub-cap=8 = max 2 полных группы одновременно. Выше — новый spawn блокируется до смерти существующих |
 | **SCALE_MULTIPLIER** | 0.55 | 0.5–0.7 диапазон из задания. 0.55 = читаемо "явно мельче melee" но не микроскопически. Меньше 0.5 — теряется в 3D-пространстве при > 3 штук. Больше 0.65 — перестаёт читаться как "другой тип", похоже на melee |
-| **CHAIN_COUNTER_WEIGHT** | 0.5 | LOCKED by game-designer. 4 kills = +2 к chain counter (floor) |
+| **CHAIN_COUNTER_WEIGHT** | 0.25 | LOCKED по playtest M8 — group=4 spawn, 4 swarm kills = +1 chain (floor); ранее было 0.5 — давал inflation +2/wipe |
 
 ---
 
@@ -57,8 +57,8 @@ Swarmling не нужен в первые 60-90 секунд — игрок ещ
 **[HIGH] Cap overflow при поздней игре (t > 300с).**
 При weight=50% swarm-events + interval=0.8с (минимум): теоретически каждые 0.8с попытка spawn group. Sub-cap=8 ограничивает, но при быстром kill rate (игрок убивает по 1 swarmling/сек) они могут respawn быстрее melee/shooter → arena заполняется только swarmlings. Mitigation: sub-cap=8 жёсткий. Дополнительно отслеживать `swarm_events_in_last_5s ≤ 2` (cooldown на сам тип события).
 
-**[HIGH] Kill chain inflation.**
-При spawn group=4 + sub-cap=8 = 2 groups постоянно. Kill rate 1 swarmling/сек × CHAIN_WEIGHT=0.5 = 0.5 chain/сек = tier-up каждые 4с при chain threshold=2. Если chain tier дают существенные бонусы — постоянный tier 2-3 от royclearance = inflation. Mitigation: chain decay при отсутствии kills должен быть быстрее чем swarm kill rate. Проверить: chain decay rate vs swarm_killspeed в playtest M8.
+**[RESOLVED] Kill chain inflation.** 
+Изначально CHAIN_WEIGHT=0.5 давал +2 chain на каждое clearance группы 4 swarmlings — инфляция reward signal'а до tier 1 каждые 4с. Решено снижением weight до 0.25 (2026-04-30): 4 swarm kills = +1 chain. Mixed kills (свармы + melee/shooter) теперь честно балансируются: 4 swarm + 1 melee = 2.0 chain (ниже tier 1=3 порога), что соответствует феел-весу.
 
 **[MEDIUM] Contact без windup = invisible threat при лаге / frame drop.**
 При 60fps контакт обнаруживается раз в 16мс — нормально. При spike до 20fps — контакт может срабатывать с задержкой 50мс × 2 = пропущен, потом двойной. Cooldown=1.8с защищает от double-hit, но нужна проверка: `last_hit_time[swarmling_id]` per-enemy, не global.

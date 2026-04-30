@@ -26,11 +26,11 @@ const TIER_1_THRESHOLD := 3
 const TIER_2_THRESHOLD := 5
 const TIER_3_THRESHOLD := 7
 
-# M8: swarmling kills count as 0.5 per spec (docs/systems/M8_swarmling_numbers.md
-# §1 CHAIN_COUNTER_WEIGHT). Float aggregator → int(floor) для tier checks.
-# 4 swarmling kills = +2 chain, 6 = +3 (триггерит tier 1). Mixed: 5 swarm + 1
-# melee = 0.5*5 + 1.0 = 3.5 → floor 3 = tier 1.
-const SWARMLING_CHAIN_WEIGHT := 0.5
+# M8: swarmling kills count as 0.25 per spec (docs/systems/M8_swarmling_numbers.md
+# §1, обновлено 2026-04-30 после playtest'а — group=4 при weight=0.5 давало
+# inflation +2 chain каждое clearance'е, теперь 4 swarmling kills = +1 chain (floor),
+# 8 = +2, mixed 4 swarm + 1 melee = 0.25*4 + 1.0 = 2.0 → floor 2 (ниже tier 1=3).
+const SWARMLING_CHAIN_WEIGHT := 0.25
 const DEFAULT_CHAIN_WEIGHT := 1.0
 
 var _kill_count: int = 0
