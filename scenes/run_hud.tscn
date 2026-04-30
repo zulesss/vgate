@@ -1,8 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://b0vgtrunhud001"]
+[gd_scene load_steps=4 format=3 uid="uid://b0vgtrunhud001"]
 
 [ext_resource type="Script" path="res://scripts/run_hud.gd" id="1_runhud"]
 
+[sub_resource type="SystemFont" id="SystemFont_mono"]
+font_names = PackedStringArray("Consolas", "Menlo", "DejaVu Sans Mono", "monospace")
+
 [sub_resource type="Theme" id="Theme_hud"]
+default_font = SubResource("SystemFont_mono")
 default_font_size = 26
 
 [node name="RunHud" type="CanvasLayer"]
@@ -15,18 +19,20 @@ anchor_top = 0.0
 anchor_bottom = 0.0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 240.0
+offset_right = 280.0
 offset_bottom = 60.0
 theme = SubResource("Theme_hud")
 theme_override_constants/margin_left = 0
 theme_override_constants/margin_top = 0
+mouse_filter = 2
 
 [node name="TimerLabel" type="Label" parent="TopLeft"]
 layout_mode = 2
-text = "00:00"
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "[ 00:00 ]"
+theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+mouse_filter = 2
 
 [node name="TopRight" type="MarginContainer" parent="."]
 anchors_preset = 1
@@ -34,20 +40,22 @@ anchor_left = 1.0
 anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 0.0
-offset_left = -240.0
+offset_left = -280.0
 offset_top = 16.0
 offset_right = -16.0
 offset_bottom = 60.0
 grow_horizontal = 0
 theme = SubResource("Theme_hud")
+mouse_filter = 2
 
 [node name="ScoreLabel" type="Label" parent="TopRight"]
 layout_mode = 2
-text = "0"
+text = "[ 0 ]"
 horizontal_alignment = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+mouse_filter = 2
 
 [node name="BottomCenter" type="MarginContainer" parent="."]
 anchors_preset = 7
@@ -56,24 +64,89 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -200.0
-offset_top = -52.0
+offset_top = -60.0
 offset_right = 200.0
 offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
+theme = SubResource("Theme_hud")
+mouse_filter = 2
 
-[node name="CapBar" type="ProgressBar" parent="BottomCenter"]
+[node name="VBox" type="VBoxContainer" parent="BottomCenter"]
 layout_mode = 2
-custom_minimum_size = Vector2(400, 12)
+theme_override_constants/separation = 4
+mouse_filter = 2
+
+[node name="DashRow" type="Control" parent="BottomCenter/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 6)
+mouse_filter = 2
+
+[node name="DashFill" type="ColorRect" parent="BottomCenter/VBox/DashRow"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+anchor_right = 0.0
+grow_vertical = 2
+color = Color(0.478, 0.906, 0.906, 1)
+mouse_filter = 2
+
+[node name="CapRow" type="HBoxContainer" parent="BottomCenter/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+mouse_filter = 2
+
+[node name="CapTitle" type="Label" parent="BottomCenter/VBox/CapRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(50, 0)
+text = "CAP"
+theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+mouse_filter = 2
+
+[node name="CapBarContainer" type="Control" parent="BottomCenter/VBox/CapRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 12)
+mouse_filter = 2
+
+[node name="CapBar" type="ProgressBar" parent="BottomCenter/VBox/CapRow/CapBarContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 max_value = 100.0
 value = 80.0
 show_percentage = false
+mouse_filter = 2
 
-[node name="Fill" type="ColorRect" parent="BottomCenter/CapBar"]
+[node name="Fill" type="ColorRect" parent="BottomCenter/VBox/CapRow/CapBarContainer/CapBar"]
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
 anchor_right = 0.8
 grow_vertical = 2
 color = Color(0.3, 0.85, 0.4, 1)
+mouse_filter = 2
+
+[node name="ThresholdTick" type="ColorRect" parent="BottomCenter/VBox/CapRow/CapBarContainer/CapBar"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.3
+anchor_right = 0.3
+offset_left = 0.0
+offset_top = -2.0
+offset_right = 1.0
+offset_bottom = 14.0
+color = Color(0.478, 0.906, 0.906, 0.7)
+mouse_filter = 2
+
+[node name="CapValue" type="Label" parent="BottomCenter/VBox/CapRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(50, 0)
+text = "80"
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
 mouse_filter = 2
