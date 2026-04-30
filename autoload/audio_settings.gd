@@ -65,6 +65,13 @@ func _ready() -> void:
 			_volumes[bus_name] = clampf(float(stored), 0.0, 1.0)
 
 	_apply_all()
+	print("[AUDIO-DIAG] state after _apply_all | volumes=%s | bus_db=[Master=%.1f Music=%.1f SFX=%.1f Ambient=%.1f]" % [
+		str(_volumes),
+		AudioServer.get_bus_volume_db(_bus_indices.get("Master", -1)) if _bus_indices.get("Master", -1) >= 0 else 0.0,
+		AudioServer.get_bus_volume_db(_bus_indices.get("Music", -1)) if _bus_indices.get("Music", -1) >= 0 else 0.0,
+		AudioServer.get_bus_volume_db(_bus_indices.get("SFX", -1)) if _bus_indices.get("SFX", -1) >= 0 else 0.0,
+		AudioServer.get_bus_volume_db(_bus_indices.get("Ambient", -1)) if _bus_indices.get("Ambient", -1) >= 0 else 0.0,
+	])
 	# Save back только если файла не было — фиксируем seeded defaults.
 	if load_err != OK:
 		_save_to_disk()
@@ -114,6 +121,11 @@ func _apply_one(bus_name: String, linear: float) -> void:
 		return
 	var db: float = MUTE_DB if linear <= MUTE_THRESHOLD else linear_to_db(linear)
 	AudioServer.set_bus_volume_db(idx, db)
+	print("[AUDIO-DIAG] _apply_one | bus=%s idx=%d linear=%.3f db=%.1f | now bus_db=%.1f bus_muted=%s" % [
+		bus_name, idx, linear, db,
+		AudioServer.get_bus_volume_db(idx),
+		AudioServer.is_bus_mute(idx),
+	])
 
 
 func _save_to_disk() -> void:
