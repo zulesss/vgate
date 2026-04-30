@@ -39,6 +39,14 @@ func _ready() -> void:
 	for bus_name: String in BUS_NAMES:
 		_bus_indices[bus_name] = AudioServer.get_bus_index(bus_name)
 
+	print("[AUDIO] audio_settings.gd | bus_layout state | total=%d | indices: Master=%d Music=%d SFX=%d Ambient=%d" % [
+		AudioServer.bus_count,
+		_bus_indices.get("Master", -1),
+		_bus_indices.get("Music", -1),
+		_bus_indices.get("SFX", -1),
+		_bus_indices.get("Ambient", -1),
+	])
+
 	# Load existing cfg, либо seed defaults из текущего bus_layout.
 	var cf := ConfigFile.new()
 	var load_err := cf.load(SAVE_PATH)
