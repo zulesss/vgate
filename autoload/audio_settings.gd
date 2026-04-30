@@ -119,8 +119,13 @@ func _apply_one(bus_name: String, linear: float) -> void:
 	var idx: int = _bus_indices.get(bus_name, -1)
 	if idx < 0:
 		return
-	var db: float = MUTE_DB if linear <= MUTE_THRESHOLD else linear_to_db(linear)
+	var muted: bool = linear <= MUTE_THRESHOLD
+	var db: float = MUTE_DB if muted else linear_to_db(linear)
 	AudioServer.set_bus_volume_db(idx, db)
+	# Explicit set_bus_mute — -80 dB на volume_db в Godot 4.6 не всегда полностью
+	# глушит, особенно если параллельные системы (sfx.gd) тоже manipulate'ят bus mute.
+	# Mute-флаг гарантирует абсолютную тишину на bus'е.
+	AudioServer.set_bus_mute(idx, muted)
 	print("[AUDIO-DIAG] _apply_one | bus=%s idx=%d linear=%.3f db=%.1f | now bus_db=%.1f bus_muted=%s" % [
 		bus_name, idx, linear, db,
 		AudioServer.get_bus_volume_db(idx),

@@ -227,9 +227,12 @@ func _on_player_died() -> void:
 
 func _on_run_started() -> void:
 	print("[AUDIO] sfx.gd | run_started | heartbeat LOOP RESTART, ambient LOOP RESTART")
-	# Un-mute SFX bus, рестартанём heartbeat loop, перезапустим ambient.
+	# Очищаем death-time mute через AudioSettings re-apply — если user-slider на 0,
+	# AudioSettings.set_volume сам выставит mute=true обратно. Если slider > 0 —
+	# bus вернётся к slider'овскому volume + mute=false. Этот path уважает single
+	# source of truth (AudioSettings) вместо direct unmute.
 	if _sfx_bus_idx >= 0:
-		AudioServer.set_bus_mute(_sfx_bus_idx, false)
+		AudioSettings.set_volume("SFX", AudioSettings.get_volume("SFX"))
 	_heartbeat_vol_current = HEARTBEAT_MUTE_DB
 	_heartbeat_was_audible = false
 	if _heartbeat_player != null and not _heartbeat_player.playing:
