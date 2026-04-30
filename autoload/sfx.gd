@@ -59,6 +59,19 @@ const HEARTBEAT_MUTE_DB := -80.0
 # tween smooth volume на дискретных hit/kill событиях (200мс по spec)
 const HEARTBEAT_VOL_SMOOTH_S := 0.4
 
+# Heavy breath (M7 polish_spec §1). Aspirated дыхание поверх heartbeat при low cap.
+# Spec'ом разнесён с heartbeat по spectrum (heartbeat 300-1500 Hz, breath 800-4000 Hz)
+# и по volume balance (breath peak -10 dB vs heartbeat peak -6 dB) — heartbeat ведущий.
+const BREATH_THRESHOLD := 0.25      # активация: cap_ratio < 0.25
+const BREATH_HYSTERESIS_HIGH := 0.30  # деактивация: cap_ratio > 0.30 (избежать дёрганья)
+const BREATH_VOL_FLOOR_DB := -22.0  # на пороге активации (cap≈25)
+const BREATH_VOL_PEAK_DB := -10.0   # на cap=0 [PIVOT — feel-iter после hands-on]
+const BREATH_FADE_IN_S := 1.2       # ease-in-quad ramp на активации
+const BREATH_FADE_KILL_S := 0.8     # выдох облегчения на enemy_killed
+const BREATH_FADE_DEATH_S := 0.3    # быстрый отрезающий fade на death
+const BREATH_MUTE_DB := -80.0
+const BREATH_PITCH_VARIANCE := 0.05  # ±5% [PIVOT]
+
 # Bus indices кешируем, base_db больше не кешируем — читаем live из AudioSettings
 # в момент duck'а. Пользователь может изменить volume slider'ом во время duck'а
 # (M6 settings menu), и tween должен возвращаться к свежему base'у. Cache-инвалидация
@@ -80,6 +93,14 @@ var _melee_spawn_proto: AudioStream
 
 # Smoothed heartbeat volume — чтобы не дёргалось от мгновенных hit/kill изменений sr.
 var _heartbeat_vol_current: float = HEARTBEAT_MUTE_DB
+
+# Heavy breath state. _breath_active — cap-driven с hysteresis (state-machine в _process).
+# _breath_kill_fading — orthogonal suppression на enemy_killed (tween глушит, потом
+# state-machine может реактивировать если cap всё ещё низкий).
+var _breath_player: AudioStreamPlayer
+var _breath_active: bool = false
+var _breath_kill_fading: bool = false
+var _breath_vol_current: float = BREATH_MUTE_DB
 
 # Process_mode ALWAYS, чтобы pause-меню не ломало death-fade tween'ы. Heartbeat
 # player'у явный PAUSABLE override ставим в _ready (юзер flip'нул feel-decision
@@ -110,6 +131,29 @@ func _ready() -> void:
 		_loop_stream(_ambient_player.stream)
 	# Spawn audio через 3D-инстансы создаём per-spawn (positional). Только prototype'ы.
 	_melee_spawn_proto = _load_or_null(SFX_PATH + "melee_spawn.ogg")
+
+	# Heavy breath — AudioStreamRandomizer 3 sample'а + ±5% pitch (M7 polish §1).
+	# NO_REPEATS — не дважды один и тот же sample подряд (важно для иммерсии).
+	# Bus SFX, PROCESS_MODE_PAUSABLE — silent на pause, как heartbeat.
+	var randomizer := AudioStreamRandomizer.new()
+	randomizer.playback_mode = AudioStreamRandomizer.PLAYBACK_RANDOM_NO_REPEATS
+	randomizer.random_pitch = BREATH_PITCH_VARIANCE
+	var b1 := _load_or_null(SFX_PATH + "breath_1.ogg")
+	var b2 := _load_or_null(SFX_PATH + "breath_2.ogg")
+	var b3 := _load_or_null(SFX_PATH + "breath_3.ogg")
+	if b1 != null:
+		randomizer.add_stream(-1, b1)  # -1 = append
+	if b2 != null:
+		randomizer.add_stream(-1, b2)
+	if b3 != null:
+		randomizer.add_stream(-1, b3)
+	_breath_player = AudioStreamPlayer.new()
+	_breath_player.bus = &"SFX"
+	_breath_player.volume_db = BREATH_MUTE_DB
+	_breath_player.stream = randomizer
+	_breath_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_breath_player)
+	_breath_player.finished.connect(_on_breath_finished)
 
 	# Heartbeat loop стартует только на Events.run_started — главное меню должно
 	# быть тихим. См. _on_run_started ниже.
@@ -148,6 +192,40 @@ func _process(delta: float) -> void:
 	_heartbeat_vol_current = move_toward(_heartbeat_vol_current, target_vol, step)
 	_heartbeat_player.volume_db = _heartbeat_vol_current
 
+	# Heavy breath state-machine (cap-driven с hysteresis) + smooth volume.
+	#   - inactive → activate when cap_ratio < BREATH_THRESHOLD (0.25)
+	#   - active → deactivate when cap_ratio > BREATH_HYSTERESIS_HIGH (0.30)
+	# Kill-fade — orthogonal: пока tween глушит, state-machine не трогает volume,
+	# по callback'у tween'а флаг сбрасывается, и если cap всё ещё low — _process
+	# реактивирует breath с MUTE_DB и заfade'ит обратно (см. _on_breath_kill_fade_done).
+	if _breath_player == null or not _breath_kill_fading:
+		if not _breath_active and cap_ratio < BREATH_THRESHOLD:
+			_breath_active = true
+			_breath_vol_current = BREATH_MUTE_DB
+			if _breath_player != null:
+				_breath_player.volume_db = BREATH_MUTE_DB
+				_breath_player.play()  # randomizer сам выберет sample
+		elif _breath_active and cap_ratio > BREATH_HYSTERESIS_HIGH:
+			_breath_active = false
+			# плавно глушим ниже, не cut
+
+		var breath_step: float = delta / BREATH_FADE_IN_S * absf(BREATH_VOL_PEAK_DB - BREATH_MUTE_DB)
+		var target_breath_vol: float
+		if _breath_active:
+			# ease-in-quad: percieved ramp плавнее на низкой cap'е (мягкий старт).
+			var bt: float = clampf((BREATH_THRESHOLD - cap_ratio) / BREATH_THRESHOLD, 0.0, 1.0)
+			var bt_eased: float = bt * bt
+			target_breath_vol = lerpf(BREATH_VOL_FLOOR_DB, BREATH_VOL_PEAK_DB, bt_eased)
+		else:
+			target_breath_vol = BREATH_MUTE_DB
+		_breath_vol_current = move_toward(_breath_vol_current, target_breath_vol, breath_step)
+		if _breath_player != null:
+			_breath_player.volume_db = _breath_vol_current
+			# Stop player когда полностью затих после деактивации — чтобы finished
+			# callback не реcтартовал mute'd loop.
+			if not _breath_active and _breath_vol_current <= BREATH_MUTE_DB + 0.5 and _breath_player.playing:
+				_breath_player.stop()
+
 
 # ────── Event listeners
 
@@ -174,6 +252,16 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	# а не к тому, что было на старте сцены.
 	_duck_bus(_music_bus_idx, AudioSettings.get_volume_db("Music"), KILL_DUCK_MUSIC_DB, KILL_DUCK_MUSIC_MS)
 	_duck_bus(_ambient_bus_idx, AudioSettings.get_volume_db("Ambient"), KILL_DUCK_AMBIENT_DB, KILL_DUCK_AMBIENT_MS)
+
+	# Heavy breath: kill = выдох облегчения. Плавно fade-out 0.8с.
+	# После tween'а state-machine может реактивировать если cap всё ещё < threshold.
+	if _breath_active and not _breath_kill_fading and _breath_player != null:
+		_breath_kill_fading = true
+		var btw := create_tween()
+		btw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		btw.set_ease(Tween.EASE_OUT)
+		btw.tween_method(_set_breath_vol, _breath_vol_current, BREATH_MUTE_DB, BREATH_FADE_KILL_S)
+		btw.tween_callback(_on_breath_kill_fade_done)
 
 
 func _on_drain_started() -> void:
@@ -207,6 +295,15 @@ func _on_player_died() -> void:
 		amb_tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 		amb_tw.tween_property(_ambient_player, "volume_db", HEARTBEAT_MUTE_DB, AMBIENT_FADE_DEATH_SECONDS)
 		amb_tw.tween_callback(_ambient_player.stop)
+	# Heavy breath death fade — короткий 0.3с до тишины (быстро отрезать, не тянуть).
+	if _breath_player != null and _breath_player.playing:
+		var bdtw := create_tween()
+		bdtw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		bdtw.tween_property(_breath_player, "volume_db", BREATH_MUTE_DB, BREATH_FADE_DEATH_S)
+		bdtw.tween_callback(_breath_player.stop)
+	_breath_active = false
+	_breath_vol_current = BREATH_MUTE_DB
+	_breath_kill_fading = false
 
 
 func _on_run_started() -> void:
@@ -226,6 +323,15 @@ func _on_run_started() -> void:
 		_ambient_player.volume_db = AMBIENT_DEFAULT_DB
 		if not _ambient_player.playing:
 			_ambient_player.play()
+	# Heavy breath reset — на новый run начинаем с inactive/MUTE. _process сам
+	# заактивирует если cap_ratio упадёт в trigger зону.
+	_breath_active = false
+	_breath_kill_fading = false
+	_breath_vol_current = BREATH_MUTE_DB
+	if _breath_player != null:
+		_breath_player.volume_db = BREATH_MUTE_DB
+		if _breath_player.playing:
+			_breath_player.stop()
 
 
 func stop_all_loops() -> void:
@@ -238,7 +344,12 @@ func stop_all_loops() -> void:
 		_drain_player.stop()
 	if _ambient_player != null and _ambient_player.playing:
 		_ambient_player.stop()
+	if _breath_player != null and _breath_player.playing:
+		_breath_player.stop()
 	_heartbeat_vol_current = HEARTBEAT_MUTE_DB
+	_breath_active = false
+	_breath_kill_fading = false
+	_breath_vol_current = BREATH_MUTE_DB
 
 
 func _on_enemy_spawned(enemy: Node) -> void:
@@ -326,3 +437,28 @@ func _set_bus_db(value: float, bus_idx: int) -> void:
 	if bus_idx < 0:
 		return
 	AudioServer.set_bus_volume_db(bus_idx, value)
+
+
+func _set_breath_vol(value: float) -> void:
+	# Tween-callback target — синхронизируем _breath_vol_current чтобы _process
+	# подхватил после kill-fade без рывков.
+	_breath_vol_current = value
+	if _breath_player != null:
+		_breath_player.volume_db = value
+
+
+func _on_breath_kill_fade_done() -> void:
+	# Snap player в clean off-state. _process на следующем кадре переактивирует
+	# fresh с MUTE_DB → cap-driven target, если cap всё ещё low.
+	_breath_kill_fading = false
+	if _breath_player != null and _breath_player.playing:
+		_breath_player.stop()
+	_breath_active = false
+	_breath_vol_current = BREATH_MUTE_DB
+
+
+func _on_breath_finished() -> void:
+	# AudioStreamRandomizer на финише отдаёт finished signal — рестартуем чтобы
+	# получить следующий случайный sample. Только если active и не в kill-fade.
+	if _breath_active and not _breath_kill_fading and _breath_player != null:
+		_breath_player.play()
