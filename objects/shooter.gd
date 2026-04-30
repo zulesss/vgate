@@ -132,7 +132,6 @@ func _play_telegraph() -> void:
 		_material.emission = FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = FLASH_EMISSION_ENERGY
 	if _telegraph_audio != null:
-		print("[AUDIO] shooter.gd | windup_telegraph | blaster.ogg")
 		_telegraph_audio.play()
 	# Animation: Charging (one-shot windup pose).
 	_play_oneshot(&"Charging")

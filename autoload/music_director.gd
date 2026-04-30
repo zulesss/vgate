@@ -82,12 +82,10 @@ func _on_run_started() -> void:
 	if _base != null:
 		_base.volume_db = INTENSITY_MAX_DB
 		if not _base.playing and _base.stream != null:
-			print("[AUDIO] music_director.gd | run_started_replay_base | dos88_base.ogg")
 			_base.play()
 	if _intensity != null:
 		_intensity.volume_db = INTENSITY_MIN_DB
 		if not _intensity.playing and _intensity.stream != null:
-			print("[AUDIO] music_director.gd | run_started_replay_intensity | dos88_intensity.ogg")
 			_intensity.play()
 
 
@@ -102,7 +100,6 @@ func stop_all() -> void:
 		_base.stop()
 	if _intensity != null and _intensity.playing:
 		_intensity.stop()
-	print("[AUDIO] music_director.gd | stop_all | both layers stopped")
 
 
 func _on_player_died() -> void:

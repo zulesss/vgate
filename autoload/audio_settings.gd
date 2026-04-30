@@ -39,14 +39,6 @@ func _ready() -> void:
 	for bus_name: String in BUS_NAMES:
 		_bus_indices[bus_name] = AudioServer.get_bus_index(bus_name)
 
-	print("[AUDIO] audio_settings.gd | bus_layout state | total=%d | indices: Master=%d Music=%d SFX=%d Ambient=%d" % [
-		AudioServer.bus_count,
-		_bus_indices.get("Master", -1),
-		_bus_indices.get("Music", -1),
-		_bus_indices.get("SFX", -1),
-		_bus_indices.get("Ambient", -1),
-	])
-
 	# Load existing cfg, либо seed defaults из текущего bus_layout.
 	var cf := ConfigFile.new()
 	var load_err := cf.load(SAVE_PATH)
@@ -65,13 +57,6 @@ func _ready() -> void:
 			_volumes[bus_name] = clampf(float(stored), 0.0, 1.0)
 
 	_apply_all()
-	print("[AUDIO-DIAG] state after _apply_all | volumes=%s | bus_db=[Master=%.1f Music=%.1f SFX=%.1f Ambient=%.1f]" % [
-		str(_volumes),
-		AudioServer.get_bus_volume_db(_bus_indices.get("Master", -1)) if _bus_indices.get("Master", -1) >= 0 else 0.0,
-		AudioServer.get_bus_volume_db(_bus_indices.get("Music", -1)) if _bus_indices.get("Music", -1) >= 0 else 0.0,
-		AudioServer.get_bus_volume_db(_bus_indices.get("SFX", -1)) if _bus_indices.get("SFX", -1) >= 0 else 0.0,
-		AudioServer.get_bus_volume_db(_bus_indices.get("Ambient", -1)) if _bus_indices.get("Ambient", -1) >= 0 else 0.0,
-	])
 	# Save back только если файла не было — фиксируем seeded defaults.
 	if load_err != OK:
 		_save_to_disk()
@@ -126,11 +111,6 @@ func _apply_one(bus_name: String, linear: float) -> void:
 	# глушит, особенно если параллельные системы (sfx.gd) тоже manipulate'ят bus mute.
 	# Mute-флаг гарантирует абсолютную тишину на bus'е.
 	AudioServer.set_bus_mute(idx, muted)
-	print("[AUDIO-DIAG] _apply_one | bus=%s idx=%d linear=%.3f db=%.1f | now bus_db=%.1f bus_muted=%s" % [
-		bus_name, idx, linear, db,
-		AudioServer.get_bus_volume_db(idx),
-		AudioServer.is_bus_mute(idx),
-	])
 
 
 func _save_to_disk() -> void:
