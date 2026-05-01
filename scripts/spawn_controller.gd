@@ -18,7 +18,7 @@ const DEBUG_FAST_SPAWN := false
 const DEBUG_SPAWN_INTERVAL := 0.4
 # DEBUG: skip Phase 0 (60с tutorial где swarm weight=0%) — для quick QA свармлингов.
 # True = первый swarm group может спавниться с 0с. ВЕРНУТЬ false перед production playtest.
-const DEBUG_SWARM_FROM_START := true
+const DEBUG_SWARM_FROM_START := false
 const ENEMY_CAP := 20                 # level-designer prevails (override от systems'овских 25)
 const MAX_LIVE_SHOOTERS := 4          # hard cap; шестой стрелок крадёт agency
 const MAX_LIVE_SWARMLINGS := 8        # M8 sub-cap (docs/systems/M8_swarmling_numbers §1).
@@ -130,9 +130,6 @@ func _process(delta: float) -> void:
 		var available_swarm_slots: int = MAX_LIVE_SWARMLINGS - _live_swarmlings
 		var available_total_slots: int = ENEMY_CAP - _live_enemies
 		var allowed: int = mini(SWARMLING_GROUP_MAX, mini(available_swarm_slots, available_total_slots))
-		print("[SPAWN-DIAG] swarm_branch | available_swarm=%d available_total=%d allowed=%d (need >=%d)" % [
-			available_swarm_slots, available_total_slots, allowed, SWARMLING_GROUP_MIN
-		])
 		if allowed < SWARMLING_GROUP_MIN:
 			# Не можем spawn'нуть полную группу — fallback на melee/shooter этим тиком.
 			# Не отменяем сам тик: иначе spawn'ы вообще встанут пока swarm-cap не освободится.
@@ -257,18 +254,12 @@ func _pick_type(point: Marker3D) -> String:
 		# Defensive fallback на melee.
 		return "melee"
 
-	var chosen: String
 	var r: float = randf() * total
 	if r < melee_w:
-		chosen = "melee"
+		return "melee"
 	elif r < melee_w + shooter_w:
-		chosen = "shooter"
-	else:
-		chosen = "swarmling"
-	print("[SPAWN-DIAG] _pick_type | weights[m,sh,sw]=[%.2f,%.2f,%.2f] live[m+sh+sw]=%d shooters=%d swarms=%d → %s" % [
-		melee_w, shooter_w, swarm_w, _live_enemies, _live_shooters, _live_swarmlings, chosen
-	])
-	return chosen
+		return "shooter"
+	return "swarmling"
 
 
 # Вариант _pick_type без swarmling — используется когда выпал swarm, но group
@@ -321,7 +312,6 @@ func _spawn_single(point: Marker3D, type: String) -> void:
 # offset'ом — чтобы они не overlap'ились в физике. Stagger физический, не
 # временной (single tick) — identity группы как roy'я важнее individual telegraph'а.
 func _spawn_swarm_group(point: Marker3D, count: int) -> void:
-	print("[SPAWN-DIAG] _spawn_swarm_group | point=%s count=%d" % [point.name, count])
 	var base_pos := point.global_position
 	for i in count:
 		# Tiny ring offset (~0.5u radius) вокруг spawn-точки. capsule radius=0.25
@@ -335,11 +325,7 @@ func _spawn_swarm_group(point: Marker3D, count: int) -> void:
 
 func _instantiate_at(world_pos: Vector3, type: String) -> void:
 	var scene := _scene_for_type(type)
-	if type == "swarmling":
-		print("[SPAWN-DIAG] _instantiate_at | type=swarmling pos=%v scene=%s" % [world_pos, scene])
 	var enemy = scene.instantiate()
-	if type == "swarmling" and enemy != null:
-		print("[SPAWN-DIAG] swarmling instance created OK")
 	# is_spawning ставим ДО add_child — чтобы _physics_process на первом физкадре
 	# уже вернулся рано (enemy_base ловит флаг). Альтернатива (set_after_add) —
 	# гонка с физкадром между add_child и _ready'ем.
