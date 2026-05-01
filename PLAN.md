@@ -29,7 +29,7 @@
 | ✅ IN (полный слайс + расширения) | ❌ OUT (вырезано окончательно) |
 |---|---|
 | 2 арены: основная 40×40 + 1 vertical/multi-tier (M10) | 3+ арен |
-| 2 оружия: blaster + 1 доп (shotgun/railgun, M9) | 3+ оружий, кастомизация |
+| 1 оружие: blaster (M9 cut 2026-05-01) | 2+ оружий, кастомизация |
 | 3 типа врагов: melee, shooter + 1 доп (M8) | 4+ типов |
 | Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | **HP в классике, regen, armor** — конфликт с хуком |
 | Feel must (FOV double-axis, heartbeat, low-pass, bob fade, kill burst, dash feel) + nice-to-have (дыхание, motion blur, kill chain, dash relief — M7) | — |
@@ -165,16 +165,8 @@
 **Owners**: game-designer → systems-designer → godot-engineer
 **Exit**: 3 типа на арене, identity мгновенно различима, hook не сломан.
 
-### M9 — Weapon variety
-**Цель**: tactical variety без cognitive overload.
-- [ ] 1 доп оружие: shotgun (close-range high damage, slow) или railgun (long-range piercing, charge)
-- [ ] Weapon switch на 1/2 keys + mouse wheel
-- [ ] Visual через Kenney Blaster Kit (40 моделей CC0)
-- [ ] Balance vs blaster через systems-designer (TTK на врага per weapon)
-- [ ] Settings binding integration (M6)
-
-**Owners**: game-designer (выбор оружия) → systems-designer (баланс TTK) → godot-engineer
-**Exit**: оба оружия используются (не один доминирует), switch ощущается мгновенно.
+### M9 — Weapon variety ❌ CUT (2026-05-01)
+**Решение юзера**: скипаем. Blaster-only — фокус на том что есть. Tactical variety из weapon switch не оправдывает риск что один доминирует + cognitive load клавиш 1/2/wheel поверх dash/move/shoot.
 
 ### M10 — Дополнительная арена
 **Цель**: variety локации.
