@@ -7,7 +7,7 @@ class_name EnemySwarmling extends EnemyBase
 #
 # Отличия от Melee:
 #   - HP 3 (1-shot центральной пулей убивает)
-#   - move_speed 7.7 (≈ player walk при cap=96; всегда чуть быстрее или ровня)
+#   - move_speed 8.0 (parity с player walk при cap=100; never-outrun ниже 100)
 #   - attack_range 1.2 (capsule radius игрока + small margin)
 #   - attack_windup 0 (instant contact damage — no telegraph анимации)
 #   - attack_cooldown 1.8с (per-enemy, защита от tick-spam при sustained contact)
@@ -19,7 +19,7 @@ class_name EnemySwarmling extends EnemyBase
 
 func _ready() -> void:
 	max_hp = 3
-	move_speed = 7.7
+	move_speed = 8.0
 	attack_range = 1.2
 	attack_windup = 0.0
 	attack_cooldown = 1.8
@@ -59,7 +59,7 @@ func _resolve_attack() -> void:
 
 func _anim_for_state(s: int) -> StringName:
 	# Drone rig (Quaternius Ultimate Space Kit). IDLE → Flying_Idle (hover),
-	# CHASE / movement → Fast_Flying (rapid travel, fits swarmling speed 7.7).
+	# CHASE / movement → Fast_Flying (rapid travel, fits swarmling speed 8.0).
 	if s == State.CHASE:
 		return &"Fast_Flying"
 	return &"Flying_Idle"
