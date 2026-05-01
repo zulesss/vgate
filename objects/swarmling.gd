@@ -43,30 +43,31 @@ func _end_telegraph() -> void:
 	pass
 
 
-# Override: бьём напрямую без Attack one-shot'а (он бы прервался Run loop'ом
-# на следующем тике из-за windup=0). Hit-анимация на damage()→_play_oneshot
-# у игрока всё равно срабатывает — обратная связь для игрока остаётся.
+# Override: бьём напрямую без Attack one-shot'а (он бы прервался Fast_Flying
+# loop'ом на следующем тике из-за windup=0). Headbutt one-shot даёт визуальный
+# feedback контакта, потом drone возвращается в loop.
 func _resolve_attack() -> void:
 	if not is_dying and _player != null:
 		var dist := _distance_to_player()
 		if dist <= attack_range:
 			VelocityGate.apply_hit(attack_penalty)
+	_play_oneshot(&"Headbutt")
 	_attack_cooldown_remaining = attack_cooldown
 	# Не вызываем super._resolve_attack() — оно только повторно ставит cooldown.
 	# _is_winding_up уже flipped в false внутри _physics_process до вызова.
 
 
 func _anim_for_state(s: int) -> StringName:
-	# Placeholder rig (melee_robot) — переиспользуем тот же mapping что у Melee.
-	# После asset swap'а на отдельный swarmling rig — обновим override.
+	# Drone rig (Quaternius Ultimate Space Kit). IDLE → Flying_Idle (hover),
+	# CHASE / movement → Fast_Flying (rapid travel, fits swarmling speed 7.7).
 	if s == State.CHASE:
-		return &"Run"
-	return &"Idle"
+		return &"Fast_Flying"
+	return &"Flying_Idle"
 
 
 func _hit_anim_name() -> StringName:
-	return &"Hit"
+	return &"HitReact"
 
 
 func _death_anim_name() -> StringName:
-	return &"TurnOff"
+	return &"Death"
