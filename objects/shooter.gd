@@ -111,7 +111,7 @@ func _apply_movement(delta: float) -> void:
 	if state == State.REPOSITION and _has_reposition_target and nav_agent != null:
 		nav_agent.target_position = _reposition_target
 		if nav_agent.is_navigation_finished():
-			velocity = Vector3.ZERO
+			_set_planar_velocity(Vector3.ZERO, delta)
 			move_and_slide()
 			return
 		var nx: Vector3 = nav_agent.get_next_path_position()
@@ -119,7 +119,7 @@ func _apply_movement(delta: float) -> void:
 		d.y = 0.0
 		if d.length() > 0.001:
 			d = d.normalized()
-		velocity = d * move_speed
+		_set_planar_velocity(d * move_speed, delta)
 		move_and_slide()
 		return
 	super._apply_movement(delta)

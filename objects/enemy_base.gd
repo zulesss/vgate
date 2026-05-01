@@ -37,6 +37,11 @@ enum State { IDLE, CHASE, ATTACK, REPOSITION }
 # но не snap-щёлкает у melee при resposition'е игрока. IDLE/dying/spawning
 # не крутятся (early-return в _physics_process).
 const TURN_SPEED := 8.0
+# Gravity for CharacterBody3D enemies (u/s²). После M8 hard-collision (mask=7,
+# 812b05b) враги физически push'ат друг друга — без gravity вертикальный push
+# не гасится и swarm зависает в воздухе. Стандарт Godot CharacterBody3D template
+# = 9.8, мы кладём 30 — арена FPS-фпса, gravity feels right при коротких bounce'ах.
+const GRAVITY := 30.0
 # Quaternius enemy rigs (melee, shooter) смотрят в -Z направлении — совпадает
 # с Godot 3D convention (forward = -Z). atan2(to_player.x, to_player.z) даёт
 # yaw, при котором локальный -Z указывает на игрока, без offset'а.
@@ -156,7 +161,7 @@ func _physics_process(delta: float) -> void:
 	# SpawnController на run_started всё равно queue_free'нет всех — здесь только
 	# заморозка, не cleanup. velocity=ZERO + move_and_slide() гасит инерцию падения.
 	if not VelocityGate.is_alive:
-		velocity = Vector3.ZERO
+		_set_planar_velocity(Vector3.ZERO, delta)
 		move_and_slide()
 		return
 	if _player == null:
@@ -231,13 +236,27 @@ func _update_state() -> void:
 	state = State.CHASE
 
 
+# Set planar (XZ) velocity, accumulate gravity на Y. Все movement-paths
+# проходят через этот helper — иначе прямое `velocity = Vector3.ZERO` теряет
+# накопленную gravity и враги, push'нутые вверх hard-collision'ом, зависают
+# в воздухе. is_on_floor() reset'ит Y чтобы gravity не накапливалась
+# индефинитно при стоянии.
+func _set_planar_velocity(xz: Vector3, delta: float) -> void:
+	velocity.x = xz.x
+	velocity.z = xz.z
+	if is_on_floor():
+		velocity.y = 0.0
+	else:
+		velocity.y -= GRAVITY * delta
+
+
 func _apply_movement(_delta: float) -> void:
 	# Idle → стоп. Chase → к player через NavAgent. Windup: melee делает snap-lunge
 	# в финальные lunge_window секунд (direct direction к player.global_position,
 	# не через NavAgent — на 200мс пересчитывать path дорого, а в attack_range
 	# игрок почти всегда в LOS). Shooter имеет lunge_speed=0 → frozen как раньше.
 	if state == State.IDLE:
-		velocity = Vector3.ZERO
+		_set_planar_velocity(Vector3.ZERO, _delta)
 		move_and_slide()
 		return
 	if _is_winding_up:
@@ -250,15 +269,15 @@ func _apply_movement(_delta: float) -> void:
 			lunge_dir.y = 0.0
 			if lunge_dir.length() > 0.001:
 				lunge_dir = lunge_dir.normalized()
-				velocity = lunge_dir * lunge_speed
+				_set_planar_velocity(lunge_dir * lunge_speed, _delta)
 			else:
-				velocity = Vector3.ZERO
+				_set_planar_velocity(Vector3.ZERO, _delta)
 		else:
-			velocity = Vector3.ZERO
+			_set_planar_velocity(Vector3.ZERO, _delta)
 		move_and_slide()
 		return
 	if state != State.CHASE:
-		velocity = Vector3.ZERO
+		_set_planar_velocity(Vector3.ZERO, _delta)
 		move_and_slide()
 		return
 	if _player == null or nav_agent == null:
@@ -266,13 +285,13 @@ func _apply_movement(_delta: float) -> void:
 
 	# Если уже в attack_range — не лезем ближе (особенно для shooter'а).
 	if _distance_to_player() <= attack_range:
-		velocity = Vector3.ZERO
+		_set_planar_velocity(Vector3.ZERO, _delta)
 		move_and_slide()
 		return
 
 	nav_agent.target_position = _player.global_position
 	if nav_agent.is_navigation_finished():
-		velocity = Vector3.ZERO
+		_set_planar_velocity(Vector3.ZERO, _delta)
 		move_and_slide()
 		return
 
@@ -281,7 +300,7 @@ func _apply_movement(_delta: float) -> void:
 	dir.y = 0.0
 	if dir.length() > 0.001:
 		dir = dir.normalized()
-	velocity = dir * move_speed
+	_set_planar_velocity(dir * move_speed, _delta)
 	move_and_slide()
 
 
