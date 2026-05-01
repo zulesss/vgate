@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://b8m8swarm00001"]
+[gd_scene format=3 uid="uid://bxb0vb5dfk441"]
 
 [ext_resource type="Script" path="res://objects/swarmling.gd" id="1_swarmling"]
 [ext_resource type="PackedScene" uid="uid://baqan4xhqon2n" path="res://assets/models/quaternius/melee_robot.gltf" id="2_visual"]

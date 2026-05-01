@@ -34,6 +34,10 @@ KillChain="*res://autoload/kill_chain.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 
+[filesystem]
+
+import/blender/enabled=false
+
 [input]
 
 move_right={
