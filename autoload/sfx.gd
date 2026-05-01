@@ -241,22 +241,14 @@ func _on_player_hit(_penalty: int) -> void:
 func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
 	if not VelocityGate.is_alive:
 		return
-	if _kill_player != null and _kill_player.stream != null:
-		# M7 Kill Chain: tier 1 → +5% pitch, tier 2 → +10% pitch (poверх ±4% jitter).
-		# Tier 7+ (3) — no boost: streak переведён на sustained semantics 2026-04-30,
-		# per-kill audio escalation на 7+ убрана вместе с camera/FOV jolts.
-		# peek_tier_after_next_kill() читает предстоящий tier ДО того как KillChain
-		# обработает enemy_killed (порядок connect: Sfx раньше KillChain в project.godot,
-		# так что Sfx идёт первым в Events emit-loop'е).
-		var pitch_boost: float = 1.0
-		var tier: int = KillChain.peek_tier_after_next_kill()
-		match tier:
-			1:
-				pitch_boost = 1.05
-			2:
-				pitch_boost = 1.10
-		_kill_player.pitch_scale = randf_range(0.96, 1.04) * pitch_boost
-		_kill_player.play()
+	# kill_confirm.ogg отключён 2026-05-01 — он играл одновременно с player.gd
+	# _kill_crack_player (enemy_destroy.ogg) на том же сигнале Events.enemy_killed,
+	# double-leader перегружал kill момент. enemy_destroy crack тянет лидер микса.
+	# _kill_player field и _make_2d init в _ready оставлены для потенциального revert'а.
+	# KillChain.peek_tier_after_next_kill() / pitch boost — теперь dead code (no-op),
+	# не выпиливаем чтобы revert был тривиальным.
+	# Duck Music/Ambient ОСТАЁТСЯ — kill всё ещё главный feel-beat, ducking
+	# синхронизируется с enemy_destroy crack'ом.
 	# Duck Music/Ambient bus — independent tween'ы. Base_db читаем live из
 	# AudioSettings: если юзер выкрутил slider — duck вернётся к свежему base'у,
 	# а не к тому, что было на старте сцены.
