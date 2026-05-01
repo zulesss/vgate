@@ -1,23 +1,22 @@
 [gd_scene format=3 uid="uid://bxb0vb5dfk441"]
 
-[ext_resource type="Script" path="res://objects/swarmling.gd" id="1_swarmling"]
-[ext_resource type="PackedScene" path="res://assets/models/quaternius/drone.gltf" id="2_visual"]
+[ext_resource type="Script" uid="uid://cvvqi8d0la2pf" path="res://objects/swarmling.gd" id="1_swarmling"]
+[ext_resource type="PackedScene" uid="uid://c5v27txs42gye" path="res://assets/models/quaternius/drone.gltf" id="2_visual"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_swarmling_body"]
 radius = 0.25
 height = 0.85
 
-[node name="Swarmling" type="CharacterBody3D"]
+[node name="Swarmling" type="CharacterBody3D" unique_id=926167411]
 collision_layer = 4
-collision_mask = 1
 script = ExtResource("1_swarmling")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1054526381]
 shape = SubResource("Shape_swarmling_body")
 
-[node name="Visual" parent="." instance=ExtResource("2_visual")]
-transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, -0.7, 0)
+[node name="Visual" parent="." unique_id=56697203 instance=ExtResource("2_visual")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, -1.5056212, 0)
 
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=923353750]
 path_desired_distance = 0.5
 target_desired_distance = 0.5
