@@ -116,7 +116,7 @@ func _ready() -> void:
 	# +200 cents) после F5-плейтеста 2026-04-29 — M5 dash_whoosh.ogg ассет звучал
 	# артефактом. Файл оставлен на диске на случай будущей замены.
 	_hit_player = _make_3d("hit_impact.ogg", -6.0, 8.0)
-	_kill_player = _make_2d("kill_confirm.ogg", 0.0)
+	_kill_player = _make_2d("kill_confirm.ogg", -6.0)
 	_heartbeat_player = _make_2d("heartbeat_60bpm.ogg", HEARTBEAT_MUTE_DB)
 	# pause замораживает heartbeat (юзер flip'нул feel-decision 2026-04-29 — pause =
 	# full silence, including heartbeat). Явный PAUSABLE override т.к. родитель ALWAYS.

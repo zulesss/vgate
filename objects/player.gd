@@ -178,7 +178,7 @@ func _ready():
 	_kill_crack_player.name = "KillCrackPlayer"
 	_kill_crack_player.bus = &"SFX"
 	_kill_crack_player.stream = load("res://sounds/enemy_destroy.ogg")
-	_kill_crack_player.volume_db = 0.0
+	_kill_crack_player.volume_db = -6.0
 	add_child(_kill_crack_player)
 
 	# Dash whoosh (legacy, §1.4 spec note 2026-04-29). jump_b.ogg + pitch_scale
