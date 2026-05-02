@@ -409,6 +409,22 @@ mesh = SubResource("BoxMesh_mezRampNS")
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1993720167]
 navigation_mesh = SubResource("NavMesh_arena_c")
 
+[node name="NavLinkRampMezN" type="NavigationLink3D" parent="." unique_id=1900000001]
+start_position = Vector3(0, 0.05, -4)
+end_position = Vector3(0, 4.3, -11.5)
+
+[node name="NavLinkRampMezS" type="NavigationLink3D" parent="." unique_id=1900000002]
+start_position = Vector3(0, 0.05, 4)
+end_position = Vector3(0, 4.3, 11.5)
+
+[node name="NavLinkRampMezW" type="NavigationLink3D" parent="." unique_id=1900000003]
+start_position = Vector3(-4, 0.05, 0)
+end_position = Vector3(-11.5, 4.3, 0)
+
+[node name="NavLinkRampMezE" type="NavigationLink3D" parent="." unique_id=1900000004]
+start_position = Vector3(4, 0.05, 0)
+end_position = Vector3(11.5, 4.3, 0)
+
 [node name="NavBaker" type="Node" parent="." unique_id=544505158 node_paths=PackedStringArray("region")]
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
