@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://b7vg8boss0001" path="res://objects/boss.tscn" id="6_boss"]
 [ext_resource type="Script" path="res://scripts/journey_goal.gd" id="5_goal"]
 [ext_resource type="Script" path="res://scripts/journey_milestone.gd" id="7_milestone"]
+[ext_resource type="Script" path="res://objects/r4_entry_barrier.gd" id="8_r4barrier"]
 
 ; Materials per spec: corridors industrial dark, rooms slightly warmer/lighter — distinct
 ; visual rhythm corridor→room→corridor. Ceiling/walls same per zone.
@@ -28,6 +29,14 @@ albedo_color = Color(0.3, 0.95, 0.6, 1)
 emission_enabled = true
 emission = Color(0.3, 1.0, 0.6, 1)
 emission_energy_multiplier = 2.5
+
+; R4 entry barrier — HDR red emissive ("force-field / locked"). Распадается
+; visible=false когда non-R4 враги мертвы (см. r4_entry_barrier.gd).
+[sub_resource type="StandardMaterial3D" id="Mat_r4_barrier"]
+albedo_color = Color(2.0, 0.3, 0.3, 1)
+emission_enabled = true
+emission = Color(2.0, 0.3, 0.3, 1)
+emission_energy_multiplier = 1.5
 
 [sub_resource type="BoxShape3D" id="Goal_collision"]
 size = Vector3(4, 4, 3)
@@ -711,6 +720,18 @@ use_collision = true
 size = Vector3(11, 4, 0.5)
 material = SubResource("Mat_room")
 
+; Phased-progression barrier: блокирует C34→R4 entry (z=147, narrow 4u corridor)
+; пока player не убьёт всех non-R4 врагов. R4 враги тегнуты в группе "r4_phase"
+; и не counted. Скрипт polls each frame, открывает (visible+collision off) когда
+; non-R4 count == 0. Идемпотентно; reset на Events.run_started. Размер 4×4×0.5
+; = full inner-width коридора (x=-2..+2) × full ceiling height.
+[node name="R4EntryBarrier" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 147)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("Mat_r4_barrier")
+script = ExtResource("8_r4barrier")
+
 ; ─────────────────────────────────────────────────────────────────────────────
 ; PRE-PLACED DEFENDERS — instances живут как arena children (НЕ под Enemies
 ; parent в main.tscn где SpawnController оперирует). На run_started SpawnController
@@ -799,17 +820,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.9, 142.5)
 [node name="C34_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 140)
 
+; R4 defenders теги "r4_phase" — R4EntryBarrier игнорит их при non-R4 count'е.
+; "enemy" группа добавляется EnemyBase._ready'ем (runtime); "r4_phase" — scene-level.
 [node name="R4_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.9, 154)
+groups = ["r4_phase"]
 
 [node name="R4_Boss" parent="Defenders" instance=ExtResource("6_boss")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 156)
+groups = ["r4_phase"]
 
 [node name="R4_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.9, 152)
+groups = ["r4_phase"]
 
 [node name="R4_Shooter2" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.9, 152)
+groups = ["r4_phase"]
 
 ; ─────────────────────────────────────────────────────────────────────────────
 ; MILESTONE GATES — Pkg C rear-pursuer trigger Area3D'ы. Тонкие гейты на входах
