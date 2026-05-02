@@ -24,15 +24,27 @@ class_name RunLoop extends Node
 # DeathScreen показывает stats + sphere counter в "OBJECTIVE FAILED" виде —
 # discriminator от drain death через VelocityGate.get_alive_time() >= 120
 # (drain бы ударил раньше, alive_time < 120).
+#
+# M10 Journey (Arena C "Дорога"): третий objective type. Arena root в группе
+# "objective_journey" → отключаем timer logic (нет 120с лимита, нет spike phase).
+# Win-trigger — Area3D на финише уровня эмитит Events.journey_complete →
+# RunLoop ставит is_alive=false + emit run_won. Failure mode только drain
+# (cap → 0); никакого "objective failed" path'а — нет deadline'а. Score
+# formula для journey тоже отличается (см. ScoreState).
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0
+const ARENA_GROUP_JOURNEY := &"objective_journey"
 
 @export var player_path: NodePath
 @onready var player: Node = get_node_or_null(player_path)
 
 var _spike_active: bool = false
 var _won: bool = false
+# Set per-run в _on_run_started через group check на current arena. Если активна
+# journey arena — _process пропускает timer-based win/fail, и win triggers через
+# Events.journey_complete signal вместо t>=RUN_DURATION.
+var _is_journey: bool = false
 
 
 func _ready() -> void:
@@ -43,10 +55,17 @@ func _ready() -> void:
 	VelocityGate.reset_for_run()
 	Events.run_restart_requested.connect(_on_restart)
 	Events.run_started.connect(_on_run_started)
+	Events.journey_complete.connect(_on_journey_complete)
 
 
 func _process(_delta: float) -> void:
 	if not VelocityGate.is_alive or _won:
+		return
+	# Journey arena: нет timer'а вообще. Win triggered via journey_complete
+	# (player walked into goal Area3D), failure — только drain death (cap=0)
+	# который рутится через VelocityGate.player_died. Spike phase тоже отсутствует —
+	# давление только от pre-placed defenders + drain если игрок встанет.
+	if _is_journey:
 		return
 	var t: float = VelocityGate.get_alive_time()
 	# Spike phase step-up: t≥90 → threshold 0.30 → 0.45. Idempotent через
@@ -87,11 +106,25 @@ func _objective_met() -> bool:
 	return true
 
 
+# Journey win path: GoalTrigger Area3D в arena scene'е эмитит journey_complete
+# когда player_body вошёл в trigger volume. Mirror'ит timer-based win path: гард
+# _won + _is_journey, freeze is_alive, emit run_won.
+func _on_journey_complete() -> void:
+	if not _is_journey or _won or not VelocityGate.is_alive:
+		return
+	_won = true
+	VelocityGate.is_alive = false
+	Events.run_won.emit()
+
+
 func _on_run_started() -> void:
 	# Reset state на каждый new run: spike может тригернуться заново, win-flag
 	# сбрасывается чтобы restart после победы стартовал чистый.
 	_spike_active = false
 	_won = false
+	# Journey arena detection: arena root в группе ARENA_GROUP_JOURNEY → timer
+	# logic отключается. Same pattern как SphereDirector / MarkDirector active gate.
+	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 
 
 func _on_restart() -> void:

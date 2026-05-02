@@ -11,12 +11,19 @@ class_name ScoreStateNode extends Node
 # в gate'е), поэтому считается заново каждый _process для HUD'а. На death/win
 # фиксируется final_score для отображения. Old per-kill accumulation удалён.
 #
+# M10 Journey (Arena C "Дорога"): без timer'а, time_alive_normalized теряет
+# смысл (нет fixed run length). Для journey arena используем formula без time_norm:
+#   score = floor(kills × avg_cap)
+# Detection через group "objective_journey" на arena root — same pattern как
+# RunLoop / SpawnController.
+#
 # Persistence: high-score per arena в user://vgate_progress.cfg секция
 # [high_scores], key = arena name. Поддержка multiple arena (M10 ready).
 
 const SAVE_PATH := "user://vgate_progress.cfg"
 const RUN_DURATION := 120.0
 const DEFAULT_ARENA_KEY := "arena_b"
+const ARENA_GROUP_JOURNEY := &"objective_journey"
 
 var current_score: int = 0          # live derived value, обновляется каждый _process
 var best_score: int = 0             # best для текущей арены, читается из save
@@ -47,12 +54,21 @@ func _process(_delta: float) -> void:
 			Events.score_changed.emit(current_score)
 
 
-# M9: floor(kills × avg_cap × time_norm). Pure function — testable.
+# M9: floor(kills × avg_cap × time_norm). Journey: floor(kills × avg_cap)
+# (no time component — нет fixed run length у journey arena, time_norm
+# делал бы бесконечный multiplier ×1.0 с самого старта что бессмысленно).
+# Pure function — testable.
 func _compute_live_score() -> int:
 	var avg_cap: float = VelocityGate.get_avg_cap_over_run()
+	if _is_journey_arena():
+		return int(floor(float(kills) * avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	var t_norm: float = clampf(t_alive / RUN_DURATION, 0.0, 1.0)
 	return int(floor(float(kills) * avg_cap * t_norm))
+
+
+func _is_journey_arena() -> bool:
+	return not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 
 
 func _on_run_started() -> void:

@@ -80,6 +80,13 @@ var _player: Node3D = null
 # Existing enemies продолжают жить до natural death (kill / despawn по timer'у).
 # Reset на run_started через _on_run_started.
 var _enemies_paused: bool = false
+# M10 Journey (Arena C "Дорога"): pre-placed defenders, без dynamic spawn'а.
+# Set в _on_run_started если arena root в группе "objective_journey" — тогда
+# _enemies_paused=true сразу с run_started, controller noop'ает _process до
+# конца run'а. Existing-enemies cleanup (queue_free) тоже пропускается:
+# defenders живут в arena scene tree (не Enemies parent), reload арены через
+# restart их инстанцирует заново.
+const ARENA_GROUP_JOURNEY := &"objective_journey"
 
 var _melee_scene: PackedScene = preload("res://objects/melee.tscn")
 var _shooter_scene: PackedScene = preload("res://objects/shooter.tscn")
@@ -469,6 +476,11 @@ func _on_run_started() -> void:
 	_live_shooters = 0
 	_live_swarmlings = 0
 	_enemies_paused = false
+	# Journey arena: pre-placed defenders only, dynamic spawning отключаем
+	# через _enemies_paused=true с самого старта. Mirror existing pause path
+	# (objective_complete) — _process'ится early-return пока флаг true.
+	if not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty():
+		_enemies_paused = true
 	# Очистить любых живых врагов (M4 in-place restart). Parent = Enemies-нода;
 	# скрипт сам себя не free'ит (он же child Enemies, не EnemyBase).
 	if get_parent() != null:

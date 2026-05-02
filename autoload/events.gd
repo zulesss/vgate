@@ -52,3 +52,12 @@ signal objective_complete()
 # kill, потому что die() запускается из damage()→hp<=0 path'а). Listeners:
 # MarkDirector (counter++ + reroll) и RunHud (refresh HUNT label).
 signal mark_killed()
+
+# Journey objective (Arena C "Дорога"). Третий тип objective параллельно к
+# sphere/mark axis: arena в группе "objective_journey" → SpawnController
+# отключает dynamic spawn (pre-placed defenders only), Sphere/Mark director'ы
+# dormant. Win-trigger Area3D в конце уровня эмитит journey_complete на
+# body_entered группой "player". RunLoop ловит → win.
+# Failure режим — drain death (cap → 0). Timer fail отсутствует (run длится
+# пока игрок не дойдёт / не умрёт от drain).
+signal journey_complete()
