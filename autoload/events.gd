@@ -45,6 +45,7 @@ signal sphere_captured(world_pos: Vector3)
 signal sphere_expired(world_pos: Vector3)
 signal objective_complete()
 
+
 # Marked Enemy Hunt objective (Arena A "Камера"). Mutually exclusive со sphere
 # objective — арена через group ("objective_marked_hunt" или "objective_spheres")
 # выбирает active director.
@@ -61,10 +62,3 @@ signal mark_killed()
 # Failure режим — drain death (cap → 0). Timer fail отсутствует (run длится
 # пока игрок не дойдёт / не умрёт от drain).
 signal journey_complete()
-
-# Journey rear-pursuer waves. JourneyMilestone Area3D'ы (3 штуки в arena_c_journey
-# на R2/R3/R4 entries) emit'ят milestone_crossed(index) когда player пересекает
-# трешхолд. JourneyPursuer autoload подписан → instantiate'ит N свармлингов в
-# start corridor (z=5..10) — рой накатывает сзади. Idempotent: каждый index
-# fires ровно раз на run (трекается в pursuer'е, reset на run_started).
-signal milestone_crossed(index: int)

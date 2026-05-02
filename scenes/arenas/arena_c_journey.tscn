@@ -6,7 +6,6 @@
 [ext_resource type="PackedScene" uid="uid://bxb0vb5dfk441" path="res://objects/swarmling.tscn" id="4_swarmling"]
 [ext_resource type="Script" uid="uid://5jbg1akgrlfj" path="res://scripts/journey_goal.gd" id="5_goal"]
 [ext_resource type="PackedScene" path="res://objects/boss.tscn" id="6_boss"]
-[ext_resource type="Script" path="res://scripts/journey_milestone.gd" id="7_milestone"]
 [ext_resource type="Script" path="res://objects/r4_entry_barrier.gd" id="8_r4barrier"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_corridor"]
@@ -53,9 +52,6 @@ albedo_color = Color(2, 0.3, 0.3, 1)
 emission_enabled = true
 emission = Color(2, 0.3, 0.3, 1)
 emission_energy_multiplier = 1.5
-
-[sub_resource type="BoxShape3D" id="Milestone_gate"]
-size = Vector3(6, 4, 0.5)
 
 [sub_resource type="BoxShape3D" id="Goal_collision"]
 size = Vector3(4, 4, 3)
@@ -743,36 +739,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.9, 152)
 
 [node name="R4_Shooter2" parent="Defenders" unique_id=1592455700 instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.9, 152)
-
-[node name="MilestoneR2" type="Area3D" parent="." unique_id=1443309263]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 70)
-collision_layer = 0
-collision_mask = 2
-script = ExtResource("7_milestone")
-milestone_index = 2
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR2" unique_id=1925991072]
-shape = SubResource("Milestone_gate")
-
-[node name="MilestoneR3" type="Area3D" parent="." unique_id=890767958]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 111)
-collision_layer = 0
-collision_mask = 2
-script = ExtResource("7_milestone")
-milestone_index = 3
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR3" unique_id=1560656332]
-shape = SubResource("Milestone_gate")
-
-[node name="MilestoneR4" type="Area3D" parent="." unique_id=229238347]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 147)
-collision_layer = 0
-collision_mask = 2
-script = ExtResource("7_milestone")
-milestone_index = 4
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR4" unique_id=971195406]
-shape = SubResource("Milestone_gate")
 
 [node name="GoalTrigger" type="Area3D" parent="." unique_id=1118917493]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 161)
