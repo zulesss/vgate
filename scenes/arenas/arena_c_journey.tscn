@@ -54,13 +54,13 @@ size = Vector3(6, 1, 25)
 size = Vector3(16, 1, 16)
 
 [sub_resource type="BoxMesh" id="Box_floor_c23"]
-size = Vector3(6, 1, 25)
+size = Vector3(5, 1, 25)
 
 [sub_resource type="BoxMesh" id="Box_floor_r3"]
 size = Vector3(24, 1, 16)
 
 [sub_resource type="BoxMesh" id="Box_floor_c34"]
-size = Vector3(6, 1, 20)
+size = Vector3(4, 1, 20)
 
 [sub_resource type="BoxMesh" id="Box_floor_r4"]
 size = Vector3(18, 1, 18)
@@ -125,7 +125,7 @@ mesh = SubResource("Box_floor_r2")
 [node name="FloorC23" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 98.5)
 use_collision = true
-size = Vector3(6, 1, 25)
+size = Vector3(5, 1, 25)
 material = SubResource("Mat_corridor")
 
 [node name="NavMeshC23" type="MeshInstance3D" parent="FloorC23"]
@@ -145,7 +145,7 @@ mesh = SubResource("Box_floor_r3")
 [node name="FloorC34" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 137)
 use_collision = true
-size = Vector3(6, 1, 20)
+size = Vector3(4, 1, 20)
 material = SubResource("Mat_corridor")
 
 [node name="NavMeshC34" type="MeshInstance3D" parent="FloorC34"]
@@ -193,7 +193,7 @@ material = SubResource("Mat_ceiling")
 [node name="CeilC23" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 98.5)
 use_collision = true
-size = Vector3(6, 0.5, 25)
+size = Vector3(5, 0.5, 25)
 material = SubResource("Mat_ceiling")
 
 [node name="CeilR3" type="CSGBox3D" parent="."]
@@ -205,7 +205,7 @@ material = SubResource("Mat_ceiling")
 [node name="CeilC34" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 137)
 use_collision = true
-size = Vector3(6, 0.5, 20)
+size = Vector3(4, 0.5, 20)
 material = SubResource("Mat_ceiling")
 
 [node name="CeilR4" type="CSGBox3D" parent="."]
