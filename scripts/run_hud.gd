@@ -28,6 +28,7 @@ const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
 
 @onready var timer_label: Label = $TopLeft/VBox/TimerLabel
 @onready var sphere_label: Label = $TopLeft/VBox/SphereLabel
+@onready var hunt_label: Label = $TopLeft/VBox/HuntLabel
 @onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
@@ -48,15 +49,21 @@ const COLOR_HIGH := Color(0.30, 0.85, 0.40)   # >= 80 cap
 const SPHERE_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const SPHERE_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
 
+# Marked Hunt counter colors. Magenta до target (matches mark visual aura),
+# green на done. Target из MarkDirector.KILL_TARGET — single source of truth.
+const HUNT_COLOR_NORMAL := Color(1.0, 0.45, 0.85, 1)
+const HUNT_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
+
 var _player: Node = null
 
 
 func _ready() -> void:
 	Events.score_changed.connect(_on_score_changed)
 	Events.sphere_captured.connect(_on_sphere_captured)
+	Events.mark_killed.connect(_on_mark_killed)
 	Events.run_started.connect(_on_run_started)
 	score_label.text = "[ 0 ]"
-	_refresh_sphere_label()
+	_refresh_objective_labels()
 	# Player reference: нет explicit signal'а, читаем напрямую из группы "player"
 	# (выставляется в objects/player.gd). На случай если Player ещё не в дереве —
 	# resolve лениво в _process.
@@ -129,11 +136,33 @@ func _on_score_changed(score: int) -> void:
 
 
 func _on_sphere_captured(_pos: Vector3) -> void:
-	_refresh_sphere_label()
+	_refresh_objective_labels()
+
+
+func _on_mark_killed() -> void:
+	_refresh_objective_labels()
 
 
 func _on_run_started() -> void:
-	_refresh_sphere_label()
+	_refresh_objective_labels()
+
+
+func _refresh_objective_labels() -> void:
+	# Per-arena objective: один из director'ов active (run_started ставит _active
+	# по group check'у). Активный label видим, неактивный hidden — без dimmed
+	# варианта чтобы HUD не cluttered'ил.
+	if SphereDirector._active:
+		sphere_label.visible = true
+		hunt_label.visible = false
+		_refresh_sphere_label()
+	elif MarkDirector._active:
+		sphere_label.visible = false
+		hunt_label.visible = true
+		_refresh_hunt_label()
+	else:
+		# До run_started оба директора dormant. Hide — main_menu / pre-run state.
+		sphere_label.visible = false
+		hunt_label.visible = false
 
 
 func _refresh_sphere_label() -> void:
@@ -147,3 +176,16 @@ func _refresh_sphere_label() -> void:
 	else:
 		sphere_label.text = "%02d / %d" % [c, target]
 		sphere_label.modulate = SPHERE_COLOR_NORMAL
+
+
+func _refresh_hunt_label() -> void:
+	# Magenta до target ("HUNT 03 / 6"), green на target+ ("✓ HUNT 6+").
+	# Цвет коррелирует с emissive aura mark'а — instant association.
+	var k: int = MarkDirector.kills
+	var target: int = MarkDirector.KILL_TARGET
+	if k >= target:
+		hunt_label.text = "✓ HUNT %d" % k
+		hunt_label.modulate = HUNT_COLOR_DONE
+	else:
+		hunt_label.text = "HUNT %02d / %d" % [k, target]
+		hunt_label.modulate = HUNT_COLOR_NORMAL

@@ -49,7 +49,12 @@ func _on_run_won() -> void:
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	time_label.text = "Time: %.1f / 120" % t_alive
-	sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
+	# Active objective metric: sphere counter vs marked-kills counter. Один из
+	# director'ов active (set'ится в run_started через group check'у).
+	if MarkDirector._active:
+		sphere_label.text = "Marked Kills: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
+	else:
+		sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
 	score_label.text = "SCORE: %d" % ScoreState.final_score
 	best_label.text = "BEST: %d" % ScoreState.best_score
 

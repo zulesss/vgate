@@ -30,7 +30,17 @@ func _ready() -> void:
 
 
 func _on_run_started() -> void:
-	label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % SphereDirector.CAPTURE_TARGET
+	# Active director switches intro text per arena. _active set'ится в каждом
+	# director'е в _on_run_started ДО HUD/Intro listener'ов? — порядок connect'а
+	# не гарантирован, но autoload'ы регистрируются в project.godot order
+	# (Sphere до Mark до RunHud/Intro). VelocityGate.reset_for_run() emit'ит
+	# Events.run_started, Godot вызывает callback'и в connect-order. Director'ы
+	# подписываются в _ready'е (autoload startup), Intro подписывается в _ready'е
+	# scene'ы (после autoload'ов) → director'ы run_started'ятся раньше.
+	if MarkDirector._active:
+		label.text = "HUNT %d MARKED ENEMIES\nAND SURVIVE 2 MINUTES" % MarkDirector.KILL_TARGET
+	else:
+		label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % SphereDirector.CAPTURE_TARGET
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	backdrop.modulate.a = 0.0

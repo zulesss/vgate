@@ -63,12 +63,27 @@ func _on_player_died() -> void:
 	# ScoreState._on_player_died перед death sequence — current_score после
 	# смерти теоретически мог бы остаться valid (process gated by is_alive)
 	# но final_score deterministic.
-	var captured: int = SphereDirector.captured_count
-	var target: int = SphereDirector.CAPTURE_TARGET
-	# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
-	# (игрок дожил, но <20 captures). Иначе — drain death (cap→0 раньше времени).
+	# Active objective metric — sphere counter vs marked kills, в зависимости
+	# от arena. Сохраняем same shape: progress, optional "objective met" tint,
+	# objective_fail discriminator.
 	var alive_time: float = VelocityGate.get_alive_time()
-	var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and captured < target
+	var progress: int = 0
+	var target: int = 1
+	var total_pool: int = 1  # Default fallback
+	var metric_label: String = "Spheres"
+	if MarkDirector._active:
+		progress = MarkDirector.kills
+		target = MarkDirector.KILL_TARGET
+		total_pool = MarkDirector.KILL_TARGET  # Mark hunt не имеет отдельного "TOTAL" — KILL_TARGET и есть pool
+		metric_label = "Marked Kills"
+	else:
+		progress = SphereDirector.captured_count
+		target = SphereDirector.CAPTURE_TARGET
+		total_pool = SphereDirector.TOTAL_SPHERES
+		metric_label = "Spheres"
+	# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
+	# (игрок дожил, но objective не выполнен). Иначе — drain death.
+	var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and progress < target
 	if objective_fail:
 		header_label.text = "OBJECTIVE FAILED"
 		header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
@@ -76,14 +91,12 @@ func _on_player_died() -> void:
 		header_label.text = "VELOCITY DRAINED"
 		header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 	score_label.text = "Score: %d" % ScoreState.final_score
-	# Sphere line: progress даже на death. Если игрок дошёл до target (>=20)
-	# но всё равно умер до t=120 — almost-win, label tint'ится в зелёный.
-	# Иначе — обычный "X / 20" cyan.
-	if captured >= target:
-		sphere_label.text = "Spheres: %d / %d (objective met)" % [captured, SphereDirector.TOTAL_SPHERES]
+	# Objective progress line: green tint если objective met (almost-win), иначе cyan/magenta.
+	if progress >= target:
+		sphere_label.text = "%s: %d / %d (objective met)" % [metric_label, progress, total_pool]
 		sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)
 	else:
-		sphere_label.text = "Spheres: %d / %d" % [captured, target]
+		sphere_label.text = "%s: %d / %d" % [metric_label, progress, target]
 		sphere_label.modulate = Color(0.478, 0.906, 0.906, 1)
 	best_label.text = "Best: %d" % ScoreState.best_score
 	score_box.visible = true
