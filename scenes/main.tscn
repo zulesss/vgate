@@ -63,7 +63,7 @@ offset_right = 20.0
 offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(0.35, 0.35)
+scale = Vector2(0.175, 0.175)
 pivot_offset = Vector2(64, 64)
 
 [node name="DebugHud" parent="." unique_id=21246251 instance=ExtResource("3_dhud")]
