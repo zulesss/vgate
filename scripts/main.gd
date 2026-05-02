@@ -25,3 +25,15 @@ func _enter_tree() -> void:
 		push_error("Main: arena_scene не задан — арена не будет инстанциирована")
 		return
 	add_child(arena_scene.instantiate())
+
+
+# Initial player positioning по PlayerStart Marker3D из активной арены.
+# Делаем в _ready() (а не в _enter_tree()) чтобы Player.tscn успел отработать
+# свой _ready и rotation_target проинициализировался — иначе наш set перетрётся.
+# Restart-loop reposition'ит игрок RunLoop._on_restart — этот хук только
+# для первого спавна сессии.
+func _ready() -> void:
+	var player: Node = get_node_or_null("Player")
+	if player == null:
+		return
+	PlayerSpawn.teleport_to_start(player, get_tree())

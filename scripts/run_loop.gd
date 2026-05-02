@@ -131,14 +131,13 @@ func _on_restart() -> void:
 	# Reset gate state и emit run_started — все listener'ы (spawn, score) подхватят.
 	VelocityGate.reset_for_run()
 	# Player: respawn() если есть метод (расширяемая convention), иначе fallback —
-	# teleport в (0,1,10) (start-position из main.tscn) + zero velocity.
+	# PlayerSpawn helper читает PlayerStart Marker3D активной арены и телепортирует.
+	# До f0fe... (M10 journey fix) был хардкод (0,1,10) — поломка для arena_c_journey
+	# где z=10 уже мимо start corridor wall и игрок застревал.
 	if player == null:
 		push_warning("RunLoop: player_path не указывает на существующую ноду — restart без player reset")
 		return
 	if player.has_method("respawn"):
 		player.respawn()
 		return
-	if player is Node3D:
-		(player as Node3D).global_position = Vector3(0, 1, 10)
-	if player is CharacterBody3D:
-		(player as CharacterBody3D).velocity = Vector3.ZERO
+	PlayerSpawn.teleport_to_start(player, get_tree())

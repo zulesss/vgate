@@ -517,3 +517,13 @@ region = NodePath("../NavigationRegion3D")
 
 [node name="S1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12.5)
+
+; ─────────────────────────────────────────────────────────────────────────────
+; PLAYER START — глубоко в start corridor (z=5, x=0, y=1) с rotation Y=PI
+; чтобы игрок смотрел +Z по курсу коридора. main.gd / run_loop.gd подхватывают
+; ноду через group "player_start" и позиционируют Player на _enter_tree() +
+; на каждом _on_run_started. До этого fix'а Player жил в main.tscn at (0,1,0)
+; — z=0 ровно у south wall (z=-0.25, толщина 0.5) → застревал в стене.
+
+[node name="PlayerStart" type="Marker3D" parent="." groups=["player_start"]]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1, 5)
