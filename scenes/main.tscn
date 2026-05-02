@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://q18sp2l3a7ej" path="res://scripts/spawn_controller.gd" id="8_spawn"]
 [ext_resource type="PackedScene" uid="uid://bwcrw0upecvnk" path="res://scenes/run_hud.tscn" id="9_runhud"]
 [ext_resource type="PackedScene" uid="uid://b72cao6hud5xc" path="res://scenes/death_screen.tscn" id="10_dscr"]
+[ext_resource type="PackedScene" uid="uid://b0vgtwinscr01" path="res://scenes/win_screen.tscn" id="17_wscr"]
 [ext_resource type="Script" uid="uid://dkgtuoqhnyxxs" path="res://scripts/run_loop.gd" id="11_runloop"]
 [ext_resource type="Texture2D" uid="uid://bf8llq7bk8k25" path="res://assets/skybox/empty_warehouse_01_1k.exr" id="12_skyhdri"]
 [ext_resource type="PackedScene" uid="uid://b72n6a5eoo8xc" path="res://scenes/pause_menu.tscn" id="13_pmenu"]
@@ -103,6 +104,8 @@ point_weights = {
 }
 
 [node name="DeathScreen" parent="." unique_id=1848486399 instance=ExtResource("10_dscr")]
+
+[node name="WinScreen" parent="." unique_id=1848486400 instance=ExtResource("17_wscr")]
 
 [node name="PauseMenu" parent="." unique_id=965963798 instance=ExtResource("13_pmenu")]
 

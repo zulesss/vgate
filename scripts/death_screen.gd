@@ -47,8 +47,11 @@ func _on_player_died() -> void:
 	t1.tween_property(black, "modulate:a", 1.0, FADE_TO_BLACK_SECONDS)
 	await t1.finished
 
-	# Phase 3: показываем score (на чёрном)
-	score_label.text = "Score: %d" % ScoreState.current_score
+	# Phase 3: показываем score (на чёрном). M9: final_score фризится в
+	# ScoreState._on_player_died перед death sequence — current_score после
+	# смерти теоретически мог бы остаться valid (process gated by is_alive)
+	# но final_score deterministic.
+	score_label.text = "Score: %d" % ScoreState.final_score
 	best_label.text = "Best: %d" % ScoreState.best_score
 	score_box.visible = true
 

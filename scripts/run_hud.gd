@@ -14,6 +14,13 @@ class_name RunHud extends CanvasLayer
 # публичный метод get_dash_cooldown_remaining().
 
 const DASH_COOLDOWN_DURATION := 2.5
+# M9 conquest: countdown timer (120 → 0) с visual cue для spike phase (t≥90).
+# Cyan дефолт → красноватый при spike. Простой modulate switch, без tween — это
+# discrete event на t=90, не плавный ramp.
+const RUN_DURATION := 120.0
+const SPIKE_TIME := 90.0
+const TIMER_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
+const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
 
 @onready var timer_label: Label = $TopLeft/TimerLabel
 @onready var score_label: Label = $TopRight/ScoreLabel
@@ -45,11 +52,14 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Timer
-	var t: float = ScoreState.run_time
-	var m: int = int(t / 60.0)
-	var s: int = int(t) % 60
+	# M9 conquest: countdown 120→0. Spike (t≥90) → red tint timer'а как visual cue
+	# что что-то изменилось в момент step-up'а threshold'а / spawn ramp'а.
+	var t_alive: float = ScoreState.run_time
+	var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
+	var m: int = int(remaining / 60.0)
+	var s: int = int(remaining) % 60
 	timer_label.text = "[ %02d:%02d ]" % [m, s]
+	timer_label.modulate = TIMER_COLOR_SPIKE if t_alive >= SPIKE_TIME else TIMER_COLOR_NORMAL
 
 	# Cap meter: VelocityGate.velocity_cap 0..100. Width manual через ColorRect
 	# anchor_right (ProgressBar styling в Godot 4.6 через theme — для prototype

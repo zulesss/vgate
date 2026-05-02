@@ -86,8 +86,9 @@ func _on_player_died() -> void:
 
 func _on_run_won() -> void:
 	# t_norm = 1.0 на победе → score = kills × avg_cap (full multiplier).
-	# Final compute явный (а не последний _process): VelocityGate.is_alive ещё true в
-	# момент эмита, _process успел бы посчитать, но мы хотим деterministic snapshot.
+	# RunLoop set'ит is_alive=false ДО emit'а (freeze spawn/player), поэтому _process
+	# больше не пересчитает. Computed snapshot здесь — deterministic final value.
+	# get_alive_time / get_avg_cap_over_run читают accumulator'ы (не зависят от is_alive).
 	final_score = _compute_live_score()
 	current_score = final_score
 	Events.score_changed.emit(current_score)

@@ -50,6 +50,10 @@ func _process(_delta: float) -> void:
 	# Win condition: дожил до t≥120 → ARENA COMPLETE. Один раз через _won гард.
 	if t >= RUN_DURATION:
 		_won = true
+		# Freeze player input + spawn + score через is_alive=false (single canonical
+		# kill-switch). НЕ зовём force_kill — он бы эмитнул player_died, спутал бы
+		# DeathScreen с WinScreen. Прямое присваивание — explicit "run frozen for win".
+		VelocityGate.is_alive = false
 		Events.run_won.emit()
 
 
