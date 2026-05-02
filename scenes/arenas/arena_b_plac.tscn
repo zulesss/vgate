@@ -156,3 +156,38 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 16)
 
 [node name="S8" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 16)
+
+[node name="SphereSlots" type="Node3D" parent="."]
+
+[node name="SS1" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="SS2" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, 5)
+
+[node name="SS3" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, 5)
+
+[node name="SS4" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, 15)
+
+[node name="SS5" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, -15)
+
+[node name="SS6" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, -5)
+
+[node name="SS7" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, -5)
+
+[node name="SS8" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, 12)
+
+[node name="SS9" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, 12)
+
+[node name="SS10" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, -12)
+
+[node name="SS11" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, -12)

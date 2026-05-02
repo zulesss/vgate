@@ -9,7 +9,11 @@ class_name SphereDirectorNode extends Node
 #     сама когда run закончится через _on_run_started если restart)
 #   - Stop when total_spawned >= TOTAL_SPHERES
 #
-# Slot positions: 11 spots (slot_1 центр + 10 по арене 50×50 Arena B).
+# Slot positions: externalized в arena scene через group "sphere_slot" (Marker3D'ы).
+# Каждая арена задаёт свои slots — топология/размер арен различается, hardcoded
+# 50×50 positions ломались в arena A 26×26. Director собирает slot world-positions
+# в _ready'е через get_nodes_in_group, кеширует в _slot_positions. Если арена не
+# поставила Marker3D'ы — spawn заблокирован (warning + early-return в _try_spawn).
 # Anti-cluster: при выборе нового slot'а исключаем те, что в радиусе ANTI_CLUSTER_DIST
 # от _last_spawn_pos. Не cumulative — только last (per spec).
 #
@@ -29,20 +33,10 @@ const ANTI_CLUSTER_DIST := 8.0
 
 const SPHERE_SCENE := preload("res://objects/sphere.tscn")
 
-# Arena B 50×50 slot positions (per brief). Y=1.0 capture-height.
-const SLOT_POSITIONS: Array[Vector3] = [
-	Vector3(0, 1, 0),         # slot_1 center
-	Vector3(15, 1, 5),        # slot_2 E inner
-	Vector3(-15, 1, 5),       # slot_3 W inner
-	Vector3(5, 1, 15),        # slot_4 S inner
-	Vector3(5, 1, -15),       # slot_5 N inner
-	Vector3(-15, 1, -5),      # slot_6 W inner mirror
-	Vector3(15, 1, -5),       # slot_7 E inner mirror
-	Vector3(12, 1, 12),       # slot_8 SE diagonal
-	Vector3(-12, 1, 12),      # slot_9 SW diagonal
-	Vector3(-12, 1, -12),     # slot_10 NW diagonal
-	Vector3(12, 1, -12),      # slot_11 NE diagonal
-]
+# Slot positions из scene'ы — собираются лениво при первом spawn'е (см.
+# _ensure_slots_loaded). _ready'е делать нельзя — autoload ready'ит ДО
+# main scene'ы, group ещё пуста.
+var _slot_positions: Array[Vector3] = []
 
 var captured_count: int = 0
 var total_spawned: int = 0
@@ -84,6 +78,9 @@ func _on_run_started() -> void:
 	_next_spawn_time = FIRST_SPAWN_TIME
 	_last_spawn_pos = Vector3.INF
 	_objective_complete_emitted = false
+	# Drop slot cache: при reload_current_scene новая arena instance даёт
+	# новые Marker3D'ы. Re-collect через _ensure_slots_loaded на первом spawn'е.
+	_slot_positions.clear()
 	# Free любые живые sphere'ы из предыдущего run'а (если игрок умер/выиграл с активными
 	# sphere'ами на арене). Defensive: queue_free безопасен на already-freed nodes
 	# через is_instance_valid гард.
@@ -98,6 +95,12 @@ func _try_spawn() -> void:
 	if _spawn_parent == null:
 		# Main scene не загружена — spawn skip, total_spawned не инкрементим
 		# (на следующем тике попробуем снова после _schedule_next).
+		return
+	_ensure_slots_loaded()
+	if _slot_positions.is_empty():
+		# Arena не предоставила Marker3D'ы в группе "sphere_slot" — spawn заблокирован.
+		# Warning emit'ится в _ensure_slots_loaded на каждой попытке (раз в spawn-interval
+		# ~4.67с, не на каждый тик). Defensive — каждая arena scene должна иметь slots.
 		return
 	var pos: Vector3 = _pick_slot_position()
 	var sphere: Node3D = SPHERE_SCENE.instantiate()
@@ -123,15 +126,32 @@ func _schedule_next() -> void:
 
 func _pick_slot_position() -> Vector3:
 	# Anti-cluster: исключаем slots в радиусе ANTI_CLUSTER_DIST от _last_spawn_pos.
-	# Если все slots блокированы (теоретически невозможно при 11 slots / dist=8u
-	# на 50×50 арене — diagonals друг от друга >24u) — fallback на чистый random.
+	# Если все slots блокированы (на тесных аренах типа A 26×26 это возможнее) —
+	# fallback на чистый random.
 	var eligible: Array[Vector3] = []
-	for slot in SLOT_POSITIONS:
+	for slot in _slot_positions:
 		if _last_spawn_pos == Vector3.INF or slot.distance_to(_last_spawn_pos) >= ANTI_CLUSTER_DIST:
 			eligible.append(slot)
 	if eligible.is_empty():
-		return SLOT_POSITIONS[randi() % SLOT_POSITIONS.size()]
+		return _slot_positions[randi() % _slot_positions.size()]
 	return eligible[randi() % eligible.size()]
+
+
+func _ensure_slots_loaded() -> void:
+	if not _slot_positions.is_empty():
+		return
+	var markers := get_tree().get_nodes_in_group("sphere_slot")
+	if markers.is_empty():
+		# Arena не настроена — _try_spawn'ы будут no-op до restart'а с правильной ареной.
+		# Без _slot_positions.append не помечаем "loaded", на следующих тиках
+		# повторим попытку (на случай deferred arena instantiation).
+		push_warning("SphereDirector: no nodes in 'sphere_slot' group — sphere spawn заблокирован")
+		return
+	for n in markers:
+		var m := n as Marker3D
+		if m == null:
+			continue
+		_slot_positions.append(m.global_position)
 
 
 func _resolve_spawn_parent() -> void:
