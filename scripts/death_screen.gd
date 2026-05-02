@@ -15,12 +15,14 @@ const ANTI_ACCIDENTAL_DELAY_SECONDS := 0.5
 const PRE_FADE_DEATH_DELAY := 1.8
 
 # M9 Hot Zones playtest tweak (2026-05-02): two distinct failure modes.
-#   - Drain death (cap → 0 при t<RUN_DURATION) → "VELOCITY DRAINED"
-#   - Objective fail (alive at t>=RUN_DURATION но capture'ов <20) → "OBJECTIVE FAILED"
+#   - Drain death (cap → 0 при t<RunLoop.RUN_DURATION) → "VELOCITY DRAINED"
+#   - Objective fail (alive at t>=RunLoop.RUN_DURATION + <20 captures) → "OBJECTIVE FAILED"
 # Discriminator — VelocityGate.get_alive_time() читается на _on_player_died:
 # RunLoop set'ит is_alive=false ПОСЛЕ accumulator update, так что значение
-# фризится точно. >= RUN_DURATION → objective fail.
-const RUN_DURATION := 120.0
+# фризится точно. RUN_DURATION читается из RunLoop через class_name (single
+# source of truth — балансировщик меняет timer в одном месте).
+# Edge: cap=0 ровно на t=RUN_DURATION — drain путь стреляет в _physics_process
+# первым (frame ordering), классифицируется как drain. Корректно semantically.
 
 @onready var black: ColorRect = $Black
 @onready var score_box: VBoxContainer = $ScoreBox
@@ -66,7 +68,7 @@ func _on_player_died() -> void:
 	# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
 	# (игрок дожил, но <20 captures). Иначе — drain death (cap→0 раньше времени).
 	var alive_time: float = VelocityGate.get_alive_time()
-	var objective_fail: bool = alive_time >= RUN_DURATION and captured < target
+	var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and captured < target
 	if objective_fail:
 		header_label.text = "OBJECTIVE FAILED"
 		header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
