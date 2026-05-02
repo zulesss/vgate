@@ -32,7 +32,7 @@ agent_height = 1.8
 agent_max_climb = 0.3
 agent_max_slope = 45.0
 
-[node name="ArenaB" type="Node3D" groups=["navigation_geometry"]]
+[node name="ArenaB" type="Node3D" groups=["navigation_geometry", "objective_spheres"]]
 
 [node name="Floor" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)

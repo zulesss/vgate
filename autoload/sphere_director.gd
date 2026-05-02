@@ -32,12 +32,19 @@ const SPAWN_JITTER := 1.0
 const ANTI_CLUSTER_DIST := 8.0
 
 const SPHERE_SCENE := preload("res://objects/sphere.tscn")
+# Group on root-arena сигнализирует "sphere objective active" — mirrors
+# MarkDirector ARENA_GROUP_HUNT. Set _active в _on_run_started через
+# get_nodes_in_group check. Mutually exclusive с marked-hunt arena'ми.
+const ARENA_GROUP_SPHERES := &"objective_spheres"
 
 # Slot positions из scene'ы — собираются лениво при первом spawn'е (см.
 # _ensure_slots_loaded). _ready'е делать нельзя — autoload ready'ит ДО
 # main scene'ы, group ещё пуста.
 var _slot_positions: Array[Vector3] = []
 
+# Active per-arena (sphere_objective gate). RunLoop._objective_met() читает —
+# определяет какой director'у судить win condition. Set'ится в _on_run_started.
+var _active: bool = false
 var captured_count: int = 0
 var total_spawned: int = 0
 var _run_time: float = 0.0
@@ -60,6 +67,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not _active:
+		return
 	if not VelocityGate.is_alive:
 		return
 	if total_spawned >= TOTAL_SPHERES:
@@ -71,6 +80,10 @@ func _process(delta: float) -> void:
 
 
 func _on_run_started() -> void:
+	# Determine active director per arena group. Если current_scene содержит
+	# arena в group ARENA_GROUP_SPHERES — sphere objective active. Иначе dormant
+	# (Arena A "Камера" → MarkDirector active вместо нас).
+	_active = not get_tree().get_nodes_in_group(ARENA_GROUP_SPHERES).is_empty()
 	# Full reset на каждый new run (включая restart после death/win).
 	captured_count = 0
 	total_spawned = 0
@@ -166,6 +179,8 @@ func _resolve_spawn_parent() -> void:
 
 
 func _on_sphere_captured(_pos: Vector3) -> void:
+	if not _active:
+		return
 	captured_count += 1
 	# Cap reward: каждый capture +SPHERE_REWARD к velocity_cap (clamp к effective ceiling
 	# делается внутри apply_sphere_reward). Через VelocityGate API — не дублируем

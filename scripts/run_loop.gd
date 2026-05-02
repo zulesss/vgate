@@ -55,21 +55,36 @@ func _process(_delta: float) -> void:
 	if not _spike_active and t >= SPIKE_TRIGGER_TIME:
 		_spike_active = true
 		VelocityGate.current_drain_threshold = VelocityGate.SPIKE_THRESHOLD
-	# Win/loss eligibility в t≥120. Hot Zones spec:
-	#   - alive AND captured >= 20 → WIN (run_won)
-	#   - alive AND captured < 20  → LOSS (player_died) — survived timer но objective fail
+	# Win/loss eligibility в t≥120. Two parallel objectives (mutually exclusive
+	# per arena, see directors' _on_run_started routing):
+	#   - SphereDirector active → win = alive AND captured >= CAPTURE_TARGET
+	#   - MarkDirector active   → win = alive AND kills >= KILL_TARGET
+	# Иначе — OBJECTIVE FAILED (alive до 120с но objective не выполнен).
 	# В обоих случаях is_alive=false фризит state. Через _won гард — один раз.
 	if t >= RUN_DURATION:
 		_won = true
 		VelocityGate.is_alive = false
-		if SphereDirector.captured_count >= SphereDirector.CAPTURE_TARGET:
+		if _objective_met():
 			Events.run_won.emit()
 		else:
-			# Objective fail: timer вышел но <CAPTURE_TARGET capture'ов. Эмитим player_died
+			# Objective fail: timer вышел но objective не выполнен. Эмитим player_died
 			# напрямую (VelocityGate.force_kill бы тоже работал но он set'ит
 			# velocity_cap=0 что нечестно для stats — игрок дожил, cap может быть
-			# legit высоким). DeathScreen покажет sphere counter в "almost" виде.
+			# legit высоким). DeathScreen дискриминирует по alive_time + active director.
 			Events.player_died.emit()
+
+
+# Текущий objective — кто active director, тот и судит. Если оба dormant
+# (theoretically — арена не в одной из групп; defensive) — объективом
+# считается "просто доживи". В практике такая арена ошибочна: должна иметь
+# objective_spheres ИЛИ objective_marked_hunt. Логирование через push_warning
+# в run_started level — здесь просто fallback "win если дожил".
+func _objective_met() -> bool:
+	if SphereDirector._active:
+		return SphereDirector.captured_count >= SphereDirector.CAPTURE_TARGET
+	if MarkDirector._active:
+		return MarkDirector.kills >= MarkDirector.KILL_TARGET
+	return true
 
 
 func _on_run_started() -> void:
