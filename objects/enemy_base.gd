@@ -467,6 +467,10 @@ func die() -> void:
 # даёт чистый restore без residue (no_depth_test не остаётся "висеть").
 const _MARK_EMISSION_COLOR := Color(1.6, 0.3, 1.4, 1.0)
 const _MARK_EMISSION_ENERGY := 3.0
+# Overlay albedo: магента с alpha=0.35 чтобы силуэт base mesh'а просвечивал —
+# иначе next_pass полностью перекрывает текстуру и враг становится плоской
+# magenta-кляксой. Tune в плейтесте если читается слабо.
+const _MARK_OVERLAY_COLOR := Color(1.0, 0.4, 1.0, 0.35)
 
 
 func apply_mark() -> void:
@@ -483,10 +487,8 @@ func apply_mark() -> void:
 	mark_mat.emission = _MARK_EMISSION_COLOR
 	mark_mat.emission_energy_multiplier = _MARK_EMISSION_ENERGY
 	mark_mat.no_depth_test = true
-	# Slight transparency на overlay'е чтобы силуэт base mesh'а проскакивал —
-	# иначе magenta-pass полностью перекрывает текстуру.
 	mark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mark_mat.albedo_color = Color(1.0, 0.4, 1.0, 0.35)
+	mark_mat.albedo_color = _MARK_OVERLAY_COLOR
 	_material.next_pass = mark_mat
 
 
