@@ -68,17 +68,8 @@ func _spawn_wave(count: int) -> void:
 		return
 	for i in count:
 		var enemy: Node3D = SWARMLING_SCENE.instantiate() as Node3D
-		# is_spawning bypass'ит первый _physics_process tick'а (см. EnemyBase) —
-		# даём ноде дойти до глобальной позиции до того как AI начнёт двигаться.
-		if "is_spawning" in enemy:
-			enemy.is_spawning = true
 		_spawn_parent.add_child(enemy)
 		enemy.global_position = _pick_spawn_position()
-		# Снимаем guard сразу после позиционирования. Telegraph fade у pursuer'ов
-		# не делаем — visual surprise irrelevant в start corridor где игрок не
-		# смотрит назад в момент спавна.
-		if "is_spawning" in enemy:
-			enemy.is_spawning = false
 		Events.enemy_spawned.emit(enemy)
 
 
@@ -98,10 +89,10 @@ func _resolve_spawn_parent() -> void:
 	if current == null:
 		return
 	# Main scene: Enemies child хранит spawn'ы (см. main.tscn). Если структура
-	# изменится — fallback на current_scene root (SpawnController использует
-	# get_parent() для self-located Enemies — здесь напрямую узлом).
+	# main изменилась и Enemies нет — НЕ spawn'ить orphan'ов под scene root,
+	# warn'аем и оставляем _spawn_parent=null чтобы _spawn_wave skip'нул wave.
 	var enemies := current.get_node_or_null("Enemies")
-	if enemies != null:
-		_spawn_parent = enemies
-	else:
-		_spawn_parent = current
+	if enemies == null:
+		push_warning("JourneyPursuer: Enemies node not found")
+		return
+	_spawn_parent = enemies
