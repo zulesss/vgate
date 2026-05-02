@@ -14,8 +14,17 @@ const FADE_FROM_BLACK_SECONDS := 0.4
 const ANTI_ACCIDENTAL_DELAY_SECONDS := 0.5
 const PRE_FADE_DEATH_DELAY := 1.8
 
+# M9 Hot Zones playtest tweak (2026-05-02): two distinct failure modes.
+#   - Drain death (cap → 0 при t<RUN_DURATION) → "VELOCITY DRAINED"
+#   - Objective fail (alive at t>=RUN_DURATION но capture'ов <20) → "OBJECTIVE FAILED"
+# Discriminator — VelocityGate.get_alive_time() читается на _on_player_died:
+# RunLoop set'ит is_alive=false ПОСЛЕ accumulator update, так что значение
+# фризится точно. >= RUN_DURATION → objective fail.
+const RUN_DURATION := 120.0
+
 @onready var black: ColorRect = $Black
 @onready var score_box: VBoxContainer = $ScoreBox
+@onready var header_label: Label = $ScoreBox/HeaderLabel
 @onready var score_label: Label = $ScoreBox/ScoreLabel
 @onready var sphere_label: Label = $ScoreBox/SphereLabel
 @onready var best_label: Label = $ScoreBox/BestLabel
@@ -52,12 +61,22 @@ func _on_player_died() -> void:
 	# ScoreState._on_player_died перед death sequence — current_score после
 	# смерти теоретически мог бы остаться valid (process gated by is_alive)
 	# но final_score deterministic.
+	var captured: int = SphereDirector.captured_count
+	var target: int = SphereDirector.CAPTURE_TARGET
+	# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
+	# (игрок дожил, но <20 captures). Иначе — drain death (cap→0 раньше времени).
+	var alive_time: float = VelocityGate.get_alive_time()
+	var objective_fail: bool = alive_time >= RUN_DURATION and captured < target
+	if objective_fail:
+		header_label.text = "OBJECTIVE FAILED"
+		header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
+	else:
+		header_label.text = "VELOCITY DRAINED"
+		header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 	score_label.text = "Score: %d" % ScoreState.final_score
 	# Sphere line: progress даже на death. Если игрок дошёл до target (>=20)
 	# но всё равно умер до t=120 — almost-win, label tint'ится в зелёный.
 	# Иначе — обычный "X / 20" cyan.
-	var captured: int = SphereDirector.captured_count
-	var target: int = SphereDirector.CAPTURE_TARGET
 	if captured >= target:
 		sphere_label.text = "Spheres: %d / %d (objective met)" % [captured, SphereDirector.TOTAL_SPHERES]
 		sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)

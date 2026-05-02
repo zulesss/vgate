@@ -21,7 +21,9 @@ class_name RunLoop extends Node
 # SphereDirector.captured_count >= CAPTURE_TARGET (20). Если игрок дожил с <20
 # capture'ов — fail: эмитим Events.player_died напрямую (без force_kill, чтобы
 # не зануливать velocity_cap — игрок survival'нул timer с легитимным cap'ом).
-# DeathScreen показывает stats + sphere counter в "objective fail" виде.
+# DeathScreen показывает stats + sphere counter в "OBJECTIVE FAILED" виде —
+# discriminator от drain death через VelocityGate.get_alive_time() >= 120
+# (drain бы ударил раньше, alive_time < 120).
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0

@@ -25,14 +25,23 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -90.0
-offset_right = 160.0
-offset_bottom = 90.0
+offset_left = -200.0
+offset_top = -120.0
+offset_right = 200.0
+offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = SubResource("Theme_death")
 alignment = 1
+
+[node name="HeaderLabel" type="Label" parent="ScoreBox"]
+layout_mode = 2
+text = "VELOCITY DRAINED"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.95, 0.30, 0.25, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 40
 
 [node name="ScoreLabel" type="Label" parent="ScoreBox"]
 layout_mode = 2
