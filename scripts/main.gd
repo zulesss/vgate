@@ -12,7 +12,14 @@ class_name Main extends Node3D
 @export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_b_plac.tscn")
 
 
-func _ready() -> void:
+# Инстанцируем arena в _enter_tree(), а НЕ в _ready(). Причина — Godot
+# вызывает _ready() bottom-up: child'ы (включая SpawnController внутри Enemies)
+# получают _ready ДО parent'а Main. SpawnController._ready() делает
+# get_tree().get_nodes_in_group("spawn_point") — если arena ещё не в дереве,
+# группа пуста и spawn'ы блокируются навсегда (post-M9 regression).
+# _enter_tree() запускается top-down — Marker3D'ы арены попадают в группу
+# ДО того как Spawner откроет глаза.
+func _enter_tree() -> void:
 	if arena_scene == null:
 		push_error("Main: arena_scene не задан — арена не будет инстанциирована")
 		return
