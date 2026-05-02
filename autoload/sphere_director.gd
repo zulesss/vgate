@@ -147,6 +147,10 @@ func _resolve_spawn_parent() -> void:
 
 func _on_sphere_captured(_pos: Vector3) -> void:
 	captured_count += 1
+	# Cap reward: каждый capture +SPHERE_REWARD к velocity_cap (clamp к effective ceiling
+	# делается внутри apply_sphere_reward). Через VelocityGate API — не дублируем
+	# clamp logic здесь, single source of truth для cap mutations.
+	VelocityGate.apply_sphere_reward()
 	if not _objective_complete_emitted and captured_count >= CAPTURE_TARGET:
 		_objective_complete_emitted = true
 		Events.objective_complete.emit()

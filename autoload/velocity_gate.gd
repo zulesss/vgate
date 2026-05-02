@@ -18,6 +18,11 @@ const SHOOTER_PENALTY := 10
 const MELEE_PENALTY := 20
 const SWARMLING_PENALTY := 5
 const KILL_RESTORE := 25
+# M9 Hot Zones playtest tweak (2026-05-02): capture sphere → +cap reward.
+# Sphere objective был pure (без cap/score gain) — playtest показал, что это делало
+# capture'ы "налогом" вместо положительной транзакции. +10 cap превращает sphere
+# в parallel resource gain, сохраняя при этом отдельную axis от kill economy.
+const SPHERE_REWARD := 10
 const I_FRAMES_AFTER_HIT := 0.3
 # M9 magazine reload: tradeoff "cap для полного magazine". apply_reload_cost path —
 # отдельно от apply_hit, потому что reload сознательный choice (без vignette flash,
@@ -105,6 +110,17 @@ func apply_kill_restore(pos: Vector3, type: String = "melee") -> void:
 			is_draining = false
 			Events.drain_stopped.emit()
 	Events.enemy_killed.emit(KILL_RESTORE, pos, type)
+
+
+# M9 Hot Zones: sphere capture reward. Pure positive cap gain — отдельно от
+# apply_hit (negative, vignette) и apply_kill_restore (kill burst, score). Не эмитит
+# player_hit/enemy_killed, не сжигает i-frames. Использует тот же effective_ceiling
+# что apply_kill_restore — Tier 7+ kill chain boost тоже распространяется на capture.
+func apply_sphere_reward(amount: int = SPHERE_REWARD) -> void:
+	if not is_alive:
+		return
+	var effective_ceiling: float = CAP_CEILING + ceiling_boost
+	velocity_cap = minf(effective_ceiling, velocity_cap + float(amount))
 
 
 func reset_for_run() -> void:
