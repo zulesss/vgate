@@ -30,7 +30,7 @@ emission = Color(0.3, 1.0, 0.6, 1)
 emission_energy_multiplier = 2.5
 
 [sub_resource type="BoxShape3D" id="Goal_collision"]
-size = Vector3(14, 4, 10)
+size = Vector3(4, 4, 3)
 
 ; Pkg C milestone gate — thin Area3D spanning corridor cross-section на входах
 ; в R2/R3/R4. Same shape для всех трёх — geometry identical, position'им через
@@ -695,6 +695,22 @@ use_collision = true
 size = Vector3(18, 4, 0.5)
 material = SubResource("Mat_room")
 
+; Pkg D barrier — два wall segments между R4 entry (z=147) и goal (z=161). Boss
+; spawn at (0, 0.9, 156) ⇒ player must engage boss до того как достигнет barrier
+; на z=158. Gap x=-1.5..+1.5 (3u centerline) forces center path; обойти boss
+; через стены нельзя.
+[node name="R4_Barrier_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, 158)
+use_collision = true
+size = Vector3(11, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="R4_Barrier_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 158)
+use_collision = true
+size = Vector3(11, 4, 0.5)
+material = SubResource("Mat_room")
+
 ; ─────────────────────────────────────────────────────────────────────────────
 ; PRE-PLACED DEFENDERS — instances живут как arena children (НЕ под Enemies
 ; parent в main.tscn где SpawnController оперирует). На run_started SpawnController
@@ -836,9 +852,10 @@ milestone_index = 4
 shape = SubResource("Milestone_gate")
 
 ; ─────────────────────────────────────────────────────────────────────────────
-; GOAL TRIGGER — Area3D 6×4×3 в R4 north end. body_entered проверяет player
-; group → emit Events.journey_complete. Visual beacon (green emissive cylinder)
-; для player visibility что цель достижима.
+; GOAL TRIGGER — Area3D 4×4×3 в R4 north end (Pkg D narrow — was 14×4×10).
+; Игрок должен подойти прямо к beacon, не задевает зону пробежав мимо. body_entered
+; проверяет player group → emit Events.journey_complete. Visual beacon (green
+; emissive cylinder) для player visibility что цель достижима.
 
 [node name="GoalTrigger" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 161)
