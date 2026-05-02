@@ -18,6 +18,10 @@ signal enemy_spawned(enemy: Node)                                             # 
 signal score_changed(new_score: int)                                          # current_score обновился (kill applied)
 signal high_score_loaded(score: int)                                          # ConfigFile прочитан, best_score готов к показу
 
+# M9 conquest: arena complete (дожил до 120с). RunLoop эмитит — WinScreen ловит,
+# ScoreState сохраняет high-score. player_died НЕ эмитится при победе.
+signal run_won()
+
 # M7 Kill Chain (docs/feel/M7_polish_spec.md §Эффект 3). Tier 1=3 kills, 2=5 в окне 3с.
 # Emit'ится KillChain autoload'ом каждый kill в chain — listeners (player camera/FOV, sfx pitch,
 # KillChainFlash overlay) применяют additive feel поверх kill burst'а.

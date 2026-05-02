@@ -7,7 +7,11 @@ class_name VelocityGateState extends Node
 const BASE_WALK_SPEED := 8.0
 const CAP_CEILING := 100.0
 const RESPAWN_CAP := 80.0
+# M9 conquest: threshold dynamic. Base 0.30 для 0-90с, RunLoop step'ает на 0.45
+# в spike phase (90-120с) через current_drain_threshold field. Const оставлен как
+# default value для reset_for_run() и для legacy callers (debug_hud, sfx breath).
 const THRESHOLD := 0.3
+const SPIKE_THRESHOLD := 0.45
 const TOLERANCE_BELOW_THRESHOLD := 2.5
 const DRAIN_RATE := 15.0
 const SHOOTER_PENALTY := 10
@@ -26,6 +30,15 @@ var drain_timer: float = 0.0
 var is_draining: bool = false
 var i_frames_remaining: float = 0.0
 var is_alive: bool = false  # Default false: VelocityGate dormant в меню. reset_for_run() флипает в true при старте run'а, end_run() возвращает false при возврате в меню.
+# M9 conquest: dynamic drain threshold. RunLoop step'ает на SPIKE_THRESHOLD при t>=90,
+# reset_for_run() возвращает к THRESHOLD. _physics_process читает это поле, не const.
+var current_drain_threshold: float = THRESHOLD
+# M9 conquest: cap-time accumulator для score formula. Sum of velocity_cap × dt пока
+# is_alive. avg_cap = _cap_accumulator / time_alive. Reset на reset_for_run().
+# Время accumulator'а тикает в _physics_process (там же где drain logic) — единый
+# pacing с остальной gate-логикой.
+var _cap_accumulator: float = 0.0
+var _alive_time: float = 0.0
 # Kill Chain Tier 7+ sustained: разрешает effective ceiling = CAP_CEILING + ceiling_boost
 # на время активного стрика. Read через apply_kill_restore (clamp вместо CAP_CEILING).
 # Set'ит KillChain через set_ceiling_boost() на streak_entered, clear_ceiling_boost() на
@@ -35,6 +48,19 @@ var ceiling_boost: float = 0.0
 
 func max_speed_at_cap() -> float:
 	return BASE_WALK_SPEED * (velocity_cap / 100.0)
+
+
+# M9 conquest score formula: floor(kills × avg_cap × time_alive_normalized).
+# Возвращает avg_cap (0..100). Если run только начался (alive_time near 0) —
+# fallback на текущий cap, чтобы score formula не делила на ноль.
+func get_avg_cap_over_run() -> float:
+	if _alive_time <= 0.001:
+		return velocity_cap
+	return _cap_accumulator / _alive_time
+
+
+func get_alive_time() -> float:
+	return _alive_time
 
 
 func speed_ratio() -> float:
@@ -89,6 +115,9 @@ func reset_for_run() -> void:
 	i_frames_remaining = 0.0
 	is_alive = true
 	ceiling_boost = 0.0  # Свежий run без residual streak boost'а от прошлой смерти
+	current_drain_threshold = THRESHOLD  # M9: spike step-up сбрасывается на новый run
+	_cap_accumulator = 0.0
+	_alive_time = 0.0
 	# Lifecycle hook (M4): listeners (SpawnController, ScoreState, RunHud) зануляют
 	# своё состояние на этом сигнале. Emit ПОСЛЕ reset state'а — listeners читают
 	# уже свежий VelocityGate (например ScoreState проверяет velocity_cap для in-form bonus).
@@ -123,6 +152,9 @@ func end_run() -> void:
 		Events.drain_stopped.emit()
 	i_frames_remaining = 0.0
 	ceiling_boost = 0.0
+	current_drain_threshold = THRESHOLD
+	_cap_accumulator = 0.0
+	_alive_time = 0.0
 
 
 # M9 magazine reload: списывает RELOAD_COST cap'а как сознательный tradeoff.
@@ -164,10 +196,16 @@ func _physics_process(delta: float) -> void:
 	if not is_alive:
 		return
 
+	# M9 conquest: накапливаем cap × dt и alive_time для avg_cap score formula.
+	# Делаем здесь (а не в _process) чтобы pacing совпадал с drain logic — fixed
+	# delta = устойчивый avg на разных FPS.
+	_cap_accumulator += velocity_cap * delta
+	_alive_time += delta
+
 	# Drain timer: накапливаем время под threshold ТОЛЬКО до старта drain'а — после
 	# того как drain активен, его роль (gate в drain phase) выполнена и расти ему
 	# незачем (иначе float бы рос бесконечно во время затяжного drain).
-	if speed_ratio() < THRESHOLD:
+	if speed_ratio() < current_drain_threshold:
 		if not is_draining:
 			drain_timer += delta
 	else:

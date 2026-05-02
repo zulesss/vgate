@@ -10,9 +10,21 @@ class_name RunLoop extends Node
 # In-place вместо reload_current_scene выгоднее: сохраняет NavMesh, FOV controller,
 # debug-hud connection'ы — экономим ~500мс перезагрузки + сохраняем feel'овую
 # непрерывность (vignette material остаётся живым, GPU pipeline warm).
+#
+# M9 conquest: run теперь time-based (120с). RunLoop отвечает за:
+#   - Spike phase trigger в t=90 (drain threshold step-up до 0.45)
+#   - Win condition в t=120 (Events.run_won → WinScreen)
+# Время читается из VelocityGate.get_alive_time() — single source of truth с
+# accumulator'ом cap_avg в самом gate'е.
+
+const SPIKE_TRIGGER_TIME := 90.0
+const RUN_DURATION := 120.0
 
 @export var player_path: NodePath
 @onready var player: Node = get_node_or_null(player_path)
+
+var _spike_active: bool = false
+var _won: bool = false
 
 
 func _ready() -> void:
@@ -22,6 +34,30 @@ func _ready() -> void:
 	# теперь VelocityGate dormant by default → нужен явный init.
 	VelocityGate.reset_for_run()
 	Events.run_restart_requested.connect(_on_restart)
+	Events.run_started.connect(_on_run_started)
+
+
+func _process(_delta: float) -> void:
+	if not VelocityGate.is_alive or _won:
+		return
+	var t: float = VelocityGate.get_alive_time()
+	# Spike phase step-up: t≥90 → threshold 0.30 → 0.45. Idempotent через
+	# _spike_active гард. Чистый data change, без player_hit emit'а — это
+	# environmental/wave change, не damage event.
+	if not _spike_active and t >= SPIKE_TRIGGER_TIME:
+		_spike_active = true
+		VelocityGate.current_drain_threshold = VelocityGate.SPIKE_THRESHOLD
+	# Win condition: дожил до t≥120 → ARENA COMPLETE. Один раз через _won гард.
+	if t >= RUN_DURATION:
+		_won = true
+		Events.run_won.emit()
+
+
+func _on_run_started() -> void:
+	# Reset state на каждый new run: spike может тригернуться заново, win-flag
+	# сбрасывается чтобы restart после победы стартовал чистый.
+	_spike_active = false
+	_won = false
 
 
 func _on_restart() -> void:
