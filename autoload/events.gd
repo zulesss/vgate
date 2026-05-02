@@ -44,3 +44,21 @@ signal kill_chain_streak_exited()
 signal sphere_captured(world_pos: Vector3)
 signal sphere_expired(world_pos: Vector3)
 signal objective_complete()
+
+# Marked Enemy Hunt objective (Arena A "Камера"). Mutually exclusive со sphere
+# objective — арена через group ("objective_marked_hunt" или "objective_spheres")
+# выбирает active director, второй держит _active=false и no-op'ит. Spec:
+# каждые 12-15с MarkDirector помечает живого врага emissive aura (visible через
+# стены), kill marked → +1 progress, expire через 28с → reroll. Win-eligible
+# при kills >= MarkDirector.KILL_TARGET (6).
+#
+# mark_assigned: Director → enemy.apply_mark() через signal (или direct call —
+# сейчас direct, signal на случай если HUD захочет flash'нуть на assignment'е).
+# mark_killed: emit'ится из enemy_base.die() когда _is_marked=true (а значит kill
+# был player'ом, потому что die() = path через apply_kill_restore). MarkDirector
+# инкрементит counter и сразу reroll'ит через 5с.
+# mark_expired: Director эмитит когда mark жил >MARK_LIFETIME без kill'а ИЛИ
+# когда marked enemy ушёл из tree не убитым (despawn / non-player cause).
+signal mark_assigned(enemy: Node)
+signal mark_killed()
+signal mark_expired()
