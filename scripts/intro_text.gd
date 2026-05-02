@@ -37,7 +37,12 @@ func _on_run_started() -> void:
 	# Events.run_started, Godot вызывает callback'и в connect-order. Director'ы
 	# подписываются в _ready'е (autoload startup), Intro подписывается в _ready'е
 	# scene'ы (после autoload'ов) → director'ы run_started'ятся раньше.
-	if MarkDirector._active:
+	# M10 Journey arena: short directive — нет timer'а, нет counter'а, only
+	# physical objective "дойди до конца не умирая". Detection через group check
+	# на arena root (single source of truth с RunLoop / SpawnController).
+	if not get_tree().get_nodes_in_group(&"objective_journey").is_empty():
+		label.text = "REACH THE DESTINATION\nALIVE"
+	elif MarkDirector._active:
 		label.text = "HUNT %d MARKED ENEMIES\nAND SURVIVE 2 MINUTES" % MarkDirector.KILL_TARGET
 	else:
 		label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % SphereDirector.CAPTURE_TARGET

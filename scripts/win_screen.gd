@@ -41,6 +41,15 @@ func _on_run_won() -> void:
 	# spawn/score/AI пока RESTART не сработает.
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
+	# Journey detection — single source of truth с RunLoop / SpawnController через
+	# group check. На journey арене header переименовываем, sphere row скрываем,
+	# time показываем как "elapsed" (без deadline /120 формата).
+	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
+	if is_journey:
+		header.text = "DESTINATION REACHED"
+	else:
+		header.text = "ARENA COMPLETE"
+
 	# Заполняем breakdown текущими value'ами из ScoreState (final_score фризится
 	# в _on_run_won самого ScoreState'а — порядок connect'а не критичен, оба
 	# подписаны до эмита).
@@ -48,13 +57,19 @@ func _on_run_won() -> void:
 	var avg_cap: float = VelocityGate.get_avg_cap_over_run()
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
-	time_label.text = "Time: %.1f / 120" % t_alive
-	# Active objective metric: sphere counter vs marked-kills counter. Один из
-	# director'ов active (set'ится в run_started через group check'у).
-	if MarkDirector._active:
-		sphere_label.text = "Marked Kills: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
+	if is_journey:
+		time_label.text = "Time: %.1fs" % t_alive
+		# Journey arena не имеет sphere/hunt counter — скрываем row.
+		sphere_label.visible = false
 	else:
-		sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
+		time_label.text = "Time: %.1f / 120" % t_alive
+		sphere_label.visible = true
+		# Active objective metric: sphere counter vs marked-kills counter. Один из
+		# director'ов active (set'ится в run_started через group check'у).
+		if MarkDirector._active:
+			sphere_label.text = "Marked Kills: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
+		else:
+			sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
 	score_label.text = "SCORE: %d" % ScoreState.final_score
 	best_label.text = "BEST: %d" % ScoreState.best_score
 

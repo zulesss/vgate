@@ -66,38 +66,49 @@ func _on_player_died() -> void:
 	# Active objective metric — sphere counter vs marked kills, в зависимости
 	# от arena. Сохраняем same shape: progress, optional "objective met" tint,
 	# objective_fail discriminator.
+	#
+	# M10 Journey arena: нет deadline → нет "objective failed" path'а. Death =
+	# always drain. Sphere/Hunt counter row скрываем (не релевантно journey).
+	# Detection через group check на arena root (mirror RunLoop / WinScreen).
+	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 	var alive_time: float = VelocityGate.get_alive_time()
-	var progress: int = 0
-	var target: int = 1
-	var total_pool: int = 1  # Default fallback
-	var metric_label: String = "Spheres"
-	if MarkDirector._active:
-		progress = MarkDirector.kills
-		target = MarkDirector.KILL_TARGET
-		total_pool = MarkDirector.KILL_TARGET  # Mark hunt не имеет отдельного "TOTAL" — KILL_TARGET и есть pool
-		metric_label = "Marked Kills"
-	else:
-		progress = SphereDirector.captured_count
-		target = SphereDirector.CAPTURE_TARGET
-		total_pool = SphereDirector.TOTAL_SPHERES
-		metric_label = "Spheres"
-	# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
-	# (игрок дожил, но objective не выполнен). Иначе — drain death.
-	var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and progress < target
-	if objective_fail:
-		header_label.text = "OBJECTIVE FAILED"
-		header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
-	else:
-		header_label.text = "VELOCITY DRAINED"
+	if is_journey:
+		header_label.text = "DRAINED OUT"
 		header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
-	score_label.text = "Score: %d" % ScoreState.final_score
-	# Objective progress line: green tint если objective met (almost-win), иначе cyan/magenta.
-	if progress >= target:
-		sphere_label.text = "%s: %d / %d (objective met)" % [metric_label, progress, total_pool]
-		sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)
+		sphere_label.visible = false
 	else:
-		sphere_label.text = "%s: %d / %d" % [metric_label, progress, target]
-		sphere_label.modulate = Color(0.478, 0.906, 0.906, 1)
+		var progress: int = 0
+		var target: int = 1
+		var total_pool: int = 1  # Default fallback
+		var metric_label: String = "Spheres"
+		if MarkDirector._active:
+			progress = MarkDirector.kills
+			target = MarkDirector.KILL_TARGET
+			total_pool = MarkDirector.KILL_TARGET  # Mark hunt не имеет отдельного "TOTAL" — KILL_TARGET и есть pool
+			metric_label = "Marked Kills"
+		else:
+			progress = SphereDirector.captured_count
+			target = SphereDirector.CAPTURE_TARGET
+			total_pool = SphereDirector.TOTAL_SPHERES
+			metric_label = "Spheres"
+		# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
+		# (игрок дожил, но objective не выполнен). Иначе — drain death.
+		var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and progress < target
+		if objective_fail:
+			header_label.text = "OBJECTIVE FAILED"
+			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
+		else:
+			header_label.text = "VELOCITY DRAINED"
+			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
+		# Objective progress line: green tint если objective met (almost-win), иначе cyan/magenta.
+		sphere_label.visible = true
+		if progress >= target:
+			sphere_label.text = "%s: %d / %d (objective met)" % [metric_label, progress, total_pool]
+			sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)
+		else:
+			sphere_label.text = "%s: %d / %d" % [metric_label, progress, target]
+			sphere_label.modulate = Color(0.478, 0.906, 0.906, 1)
+	score_label.text = "Score: %d" % ScoreState.final_score
 	best_label.text = "Best: %d" % ScoreState.best_score
 	score_box.visible = true
 

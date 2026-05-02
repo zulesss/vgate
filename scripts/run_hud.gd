@@ -25,6 +25,10 @@ const SPIKE_TIME := 90.0
 const TIMER_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const TIMER_COLOR_WARN := Color(0.95, 0.80, 0.30, 1)
 const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
+# M10 Journey arena: нет fixed run length, timer countdown теряет смысл. Вместо
+# него считаем elapsed (count-up) — игрок видит "как долго иду" без давления
+# deadline'а. Detection через group check на arena root, mirror RunLoop.
+const ARENA_GROUP_JOURNEY := &"objective_journey"
 
 @onready var timer_label: Label = $TopLeft/VBox/TimerLabel
 @onready var sphere_label: Label = $TopLeft/VBox/SphereLabel
@@ -55,6 +59,9 @@ const HUNT_COLOR_NORMAL := Color(1.0, 0.45, 0.85, 1)
 const HUNT_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
 
 var _player: Node = null
+# Set per-run в _on_run_started через group check. Журней-арена → timer count-up
+# без phase tinting (timer не дедлайн). Иначе — countdown 120→0 с phases.
+var _is_journey: bool = false
 
 
 func _ready() -> void:
@@ -75,17 +82,25 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	# M9 conquest: countdown 120→0. 3-phase timer tint — cyan / amber / red на
 	# t=0/45/90. Каждая граница — instant swap, signal что давление шагнуло вверх.
+	# M10 Journey: count-up (нет deadline'а), modulate всегда normal cyan — drain
+	# единственный pressure source, timer показательный а не угрожающий.
 	var t_alive: float = ScoreState.run_time
-	var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
-	var m: int = int(remaining / 60.0)
-	var s: int = int(remaining) % 60
-	timer_label.text = "[ %02d:%02d ]" % [m, s]
-	if t_alive >= SPIKE_TIME:
-		timer_label.modulate = TIMER_COLOR_SPIKE
-	elif t_alive >= WARN_TIME:
-		timer_label.modulate = TIMER_COLOR_WARN
-	else:
+	if _is_journey:
+		var jm: int = int(t_alive / 60.0)
+		var js: int = int(t_alive) % 60
+		timer_label.text = "[ %02d:%02d ]" % [jm, js]
 		timer_label.modulate = TIMER_COLOR_NORMAL
+	else:
+		var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
+		var m: int = int(remaining / 60.0)
+		var s: int = int(remaining) % 60
+		timer_label.text = "[ %02d:%02d ]" % [m, s]
+		if t_alive >= SPIKE_TIME:
+			timer_label.modulate = TIMER_COLOR_SPIKE
+		elif t_alive >= WARN_TIME:
+			timer_label.modulate = TIMER_COLOR_WARN
+		else:
+			timer_label.modulate = TIMER_COLOR_NORMAL
 
 	# Cap meter: VelocityGate.velocity_cap 0..100. Width manual через ColorRect
 	# anchor_right (ProgressBar styling в Godot 4.6 через theme — для prototype
@@ -144,6 +159,7 @@ func _on_mark_killed() -> void:
 
 
 func _on_run_started() -> void:
+	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 	_refresh_objective_labels()
 
 
