@@ -23,7 +23,8 @@ const TIMER_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
 
 @onready var timer_label: Label = $TopLeft/TimerLabel
-@onready var score_label: Label = $TopRight/ScoreLabel
+@onready var score_label: Label = $TopRight/VBox/ScoreLabel
+@onready var sphere_label: Label = $TopRight/VBox/SphereLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
 @onready var cap_bar: ProgressBar = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar
@@ -37,12 +38,21 @@ const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
 const COLOR_HIGH := Color(0.30, 0.85, 0.40)   # >= 80 cap
 
+# M9 Hot Zones sphere counter colors. До target — cyan. >= 20 (objective met) —
+# green tint + galочка вместо countdown'а (signal "относительно расслабься").
+const SPHERE_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
+const SPHERE_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
+const SPHERE_TARGET := 20
+
 var _player: Node = null
 
 
 func _ready() -> void:
 	Events.score_changed.connect(_on_score_changed)
+	Events.sphere_captured.connect(_on_sphere_captured)
+	Events.run_started.connect(_on_run_started)
 	score_label.text = "[ 0 ]"
+	_refresh_sphere_label()
 	# Player reference: нет explicit signal'а, читаем напрямую из группы "player"
 	# (выставляется в objects/player.gd). На случай если Player ещё не в дереве —
 	# resolve лениво в _process.
@@ -107,3 +117,23 @@ func _process(_delta: float) -> void:
 
 func _on_score_changed(score: int) -> void:
 	score_label.text = "[ %d ]" % score
+
+
+func _on_sphere_captured(_pos: Vector3) -> void:
+	_refresh_sphere_label()
+
+
+func _on_run_started() -> void:
+	_refresh_sphere_label()
+
+
+func _refresh_sphere_label() -> void:
+	# До target: "07/20" cyan. На target и выше: "✓ 20+" green (objective met,
+	# enemy spawn paused — visual signal "ты можешь дышать").
+	var c: int = SphereDirector.captured_count
+	if c >= SPHERE_TARGET:
+		sphere_label.text = "✓ %d" % c
+		sphere_label.modulate = SPHERE_COLOR_DONE
+	else:
+		sphere_label.text = "%02d / %d" % [c, SPHERE_TARGET]
+		sphere_label.modulate = SPHERE_COLOR_NORMAL

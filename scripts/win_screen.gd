@@ -19,6 +19,7 @@ const ANTI_ACCIDENTAL_DELAY := 0.5
 @onready var kills_label: Label = $Box/KillsLabel
 @onready var avg_cap_label: Label = $Box/AvgCapLabel
 @onready var time_label: Label = $Box/TimeLabel
+@onready var sphere_label: Label = $Box/SphereLabel
 @onready var score_label: Label = $Box/ScoreLabel
 @onready var best_label: Label = $Box/BestLabel
 @onready var restart_btn: Button = $Box/RestartButton
@@ -48,6 +49,7 @@ func _on_run_won() -> void:
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	time_label.text = "Time: %.1f / 120" % t_alive
+	sphere_label.text = "Spheres: %d / 25" % SphereDirector.captured_count
 	score_label.text = "SCORE: %d" % ScoreState.final_score
 	best_label.text = "BEST: %d" % ScoreState.best_score
 
