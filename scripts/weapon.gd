@@ -14,6 +14,7 @@ class_name Weapon
 @export_range(0, 5) var spread: float = 0 # Spread of each shot
 @export_range(1, 5) var shot_count: int = 1 # Amount of shots
 @export_range(0, 50) var knockback: int = 20 # Amount of knockback
+@export_range(1, 999) var max_ammo: int = 100 # Magazine size; reload restores to max via VelocityGate cap penalty
 
 @export var min_knockback: Vector2 = Vector2(0.001, 0.001) # x for vertical knockback, y for horizontal knockback
 @export var max_knockback: Vector2 = Vector2(0.0025, 0.002) # x for vertical knockback, y for horizontal knockback

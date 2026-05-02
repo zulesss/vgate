@@ -15,6 +15,10 @@ const MELEE_PENALTY := 20
 const SWARMLING_PENALTY := 5
 const KILL_RESTORE := 25
 const I_FRAMES_AFTER_HIT := 0.3
+# M9 magazine reload: tradeoff "cap для полного magazine". apply_reload_cost path —
+# отдельно от apply_hit, потому что reload сознательный choice (без vignette flash,
+# без player_hit emit'а, без i-frames). Single source of truth для cost number.
+const RELOAD_COST := 10
 
 var velocity_cap: float = RESPAWN_CAP
 var current_speed: float = 0.0
@@ -119,6 +123,23 @@ func end_run() -> void:
 		Events.drain_stopped.emit()
 	i_frames_remaining = 0.0
 	ceiling_boost = 0.0
+
+
+# M9 magazine reload: списывает RELOAD_COST cap'а как сознательный tradeoff.
+# Возвращает true если cost списан (reload разрешён), false если cap < RELOAD_COST
+# (reload запрещён — игрок stuck без kill'а). Не эмитит player_hit (отличается от
+# apply_hit), не сжигает i-frames. Если cap уйдёт в 0 — force_kill (симметрия с
+# apply_hit hit-to-zero). Игрок не должен случайно «выжать» reload до смерти, но
+# guard на cap < RELOAD_COST в player'е делает этот edge-case формально невозможным.
+func apply_reload_cost() -> bool:
+	if not is_alive:
+		return false
+	if velocity_cap < float(RELOAD_COST):
+		return false
+	velocity_cap = maxf(0.0, velocity_cap - float(RELOAD_COST))
+	if velocity_cap <= 0.0:
+		force_kill()
+	return true
 
 
 # Kill Chain Tier 7+ entry: приподнимает effective ceiling. apply_kill_restore сразу

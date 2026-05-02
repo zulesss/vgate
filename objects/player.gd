@@ -64,6 +64,16 @@ var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
 
+# M9 magazine + reload (docs: brief PLAN.md M9). State в player'е (Resource holds spec
+# через weapon.max_ammo). Single source of truth для cost — VelocityGate.RELOAD_COST.
+# Reload запрещён при cap < RELOAD_COST (silent fail). Auto-reload на empty НЕ
+# запускается если cap < RELOAD_COST — иначе игрок stuck (empty → не shoot, no cap →
+# не reload). Под dash — продолжается; на death — отменяется (run_started reset'ит).
+const RELOAD_DURATION := 1.0
+var _current_ammo: int = 0
+var _is_reloading: bool = false
+var _reload_timer: float = 0.0
+
 # Camera bob state.
 var _bob_phase: float = 0.0
 var _bob_amplitude_modifier: float = 1.0  # 0..1, taper'ится по speed_ratio threshold
@@ -211,11 +221,20 @@ func _ready():
 	if not Events.kill_chain_streak_exited.is_connected(_on_kill_chain_streak_exited):
 		Events.kill_chain_streak_exited.connect(_on_kill_chain_streak_exited)
 
+	# M9 reload state reset on new run: предыдущий run мог окончиться mid-reload или
+	# на 0 ammo. run_started флипает is_alive=true ДО эмита, так что reload-guard
+	# в action_shoot увидит свежий state на первом кадре.
+	if not Events.run_started.is_connected(_on_run_started):
+		Events.run_started.connect(_on_run_started)
+	if not Events.player_died.is_connected(_on_player_died):
+		Events.player_died.connect(_on_player_died)
+
 func _process(delta):
 	# Handle functions
 	handle_controls(delta)
 	handle_gravity(delta)
 	_tick_dash(delta)
+	_tick_reload(delta)
 	_tick_feel(delta)
 
 	# Movement
@@ -326,6 +345,11 @@ func handle_controls(delta):
 	if Input.is_action_just_pressed("dash"):
 		_try_start_dash()
 
+	# Reload (manual). Auto-reload trigger живёт в action_shoot() при ammo==0.
+
+	if Input.is_action_just_pressed("reload"):
+		_try_reload(false)
+
 	# Weapon switching
 
 	action_weapon_toggle()
@@ -367,6 +391,14 @@ func action_jump():
 
 func action_shoot():
 	if Input.is_action_pressed("shoot"):
+		# M9: reload locks shoot. Cooldown check после, иначе Cooldown timer мог бы
+		# истечь во время reload и первый shot пройти раньше времени reload-завершения.
+		if _is_reloading: return
+		# Empty magazine → попытка auto-reload (gated cap >= RELOAD_COST). Если cap'а
+		# нет — weapon dry, игрок должен kill'ить чтобы accumулировать cap для reload'а.
+		if _current_ammo <= 0:
+			_try_reload(true)
+			return
 		if !blaster_cooldown.is_stopped(): return # Cooldown for shooting
 
 		Audio.play(weapon.sound_shoot)
@@ -380,7 +412,8 @@ func action_shoot():
 		muzzle.position = container.position - weapon.muzzle_position
 		
 		blaster_cooldown.start(weapon.cooldown)
-		
+		_current_ammo = maxi(0, _current_ammo - 1)
+
 		# Shoot the weapon, amount based on shot count
 		
 		for n in weapon.shot_count:
@@ -442,6 +475,11 @@ func initiate_change_weapon(index):
 
 func change_weapon():
 	weapon = weapons[weapon_index]
+	# M9: новое оружие — magazine full, отменяем активный reload (если был mid-reload
+	# на старом weapon — switch'нул на новый, старый timer не имеет смысла).
+	_current_ammo = weapon.max_ammo
+	_is_reloading = false
+	_reload_timer = 0.0
 
 	# Step 1. Remove previous weapon model(s) from container
 	
@@ -687,6 +725,82 @@ func _on_post_dash_check_timeout() -> void:
 	if VelocityGate.speed_ratio() > DASH_RELIEF_THRESHOLD:
 		if _exhale_player != null:
 			_exhale_player.play()
+
+
+# M9 reload: проверяет cap >= RELOAD_COST, списывает cost через VelocityGate (отдельный
+# path от apply_hit — без vignette flash, без player_hit signal'а). Если cap'а нет —
+# silent fail (manual press) или silent fail (auto на empty). is_auto оставлен в
+# сигнатуре на будущее — сейчас branch'и идентичны, но HUD/SFX могут различать.
+func _try_reload(_is_auto: bool) -> void:
+	if not VelocityGate.is_alive:
+		return
+	if _is_reloading:
+		return
+	if _current_ammo >= weapon.max_ammo:
+		return  # Magazine уже full — no-op (избегаем «бесплатной» trade-of cap'а)
+	if VelocityGate.velocity_cap < float(VelocityGate.RELOAD_COST):
+		return  # Reload запрещён — игрок должен killить чтобы накопить cap
+	_is_reloading = true
+	_reload_timer = RELOAD_DURATION
+
+
+func _tick_reload(delta: float) -> void:
+	if not _is_reloading:
+		return
+	# Death cancels reload — VelocityGate.is_alive флипает в false до того как mы
+	# доберёмся до completion'а. Чистим state и выходим.
+	if not VelocityGate.is_alive:
+		_is_reloading = false
+		_reload_timer = 0.0
+		return
+	_reload_timer = maxf(0.0, _reload_timer - delta)
+	if _reload_timer <= 0.0:
+		# Списать cap в момент завершения (а не старта) — чтобы хит во время reload
+		# не комбинировался с reload-cost'ом и не убил игрока через cap=0. Если за
+		# время reload'а cap упал ниже RELOAD_COST — refund'им magazine не на полный
+		# (apply_reload_cost вернёт false), reload «провалился», ammo остаётся 0.
+		var ok: bool = VelocityGate.apply_reload_cost()
+		_is_reloading = false
+		_reload_timer = 0.0
+		if ok:
+			_current_ammo = weapon.max_ammo
+			Events.weapon_reloaded.emit(VelocityGate.RELOAD_COST)
+
+
+func _on_run_started() -> void:
+	# Свежий run: magazine full, reload state cleared. Auto-reload не нужен (полный mag).
+	if weapon != null:
+		_current_ammo = weapon.max_ammo
+	_is_reloading = false
+	_reload_timer = 0.0
+
+
+func _on_player_died() -> void:
+	# Death во время reload — cancel сразу, не ждём _tick_reload (он guard'ит is_alive
+	# но эмит weapon_reloaded мог бы пройти если death и timer expire совпали по кадрам).
+	_is_reloading = false
+	_reload_timer = 0.0
+
+
+# HUD читает эти геттеры — ammo counter + reload progress. Method-based, чтобы HUD
+# не залезал в private state напрямую (конвенция как get_dash_cooldown_remaining).
+func get_current_ammo() -> int:
+	return _current_ammo
+
+
+func get_max_ammo() -> int:
+	return weapon.max_ammo if weapon != null else 0
+
+
+func is_reloading() -> bool:
+	return _is_reloading
+
+
+func get_reload_progress() -> float:
+	# 0..1: 0 в начале reload'а, 1 в момент завершения.
+	if not _is_reloading or RELOAD_DURATION <= 0.0:
+		return 0.0
+	return clampf(1.0 - _reload_timer / RELOAD_DURATION, 0.0, 1.0)
 
 
 # Spec §1 (revised 2026-04-27): single-axis cap → base FOV.

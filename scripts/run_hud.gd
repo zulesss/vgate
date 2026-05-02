@@ -22,6 +22,9 @@ const DASH_COOLDOWN_DURATION := 2.5
 @onready var cap_bar: ProgressBar = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar
 @onready var cap_fill: ColorRect = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar/Fill
 @onready var cap_value_label: Label = $BottomCenter/VBox/CapRow/CapValue
+@onready var ammo_label: Label = $BottomRight/VBox/AmmoLabel
+@onready var reload_row: Control = $BottomRight/VBox/ReloadRow
+@onready var reload_fill: ColorRect = $BottomRight/VBox/ReloadRow/ReloadFill
 
 const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
@@ -38,6 +41,7 @@ func _ready() -> void:
 	# resolve лениво в _process.
 	_player = get_tree().get_first_node_in_group("player")
 	dash_row.visible = false
+	reload_row.visible = false
 
 
 func _process(_delta: float) -> void:
@@ -76,6 +80,19 @@ func _process(_delta: float) -> void:
 			dash_row.visible = false
 	else:
 		dash_row.visible = false
+
+	# Ammo counter + reload progress. Player-method gated — иначе HUD trash'ит лог
+	# когда RunHud жив без player'а (на arena reload между смертью и spawn'ом).
+	if _player != null and _player.has_method("get_current_ammo"):
+		var cur: int = _player.get_current_ammo()
+		var amax: int = _player.get_max_ammo()
+		ammo_label.text = "%d / %d" % [cur, amax]
+		var reloading: bool = _player.is_reloading()
+		if reloading:
+			reload_row.visible = true
+			reload_fill.anchor_right = clampf(_player.get_reload_progress(), 0.0, 1.0)
+		else:
+			reload_row.visible = false
 
 
 func _on_score_changed(score: int) -> void:
