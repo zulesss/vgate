@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3 uid="uid://b7vg8boss0001"]
+
+[ext_resource type="Script" path="res://objects/boss.gd" id="1_boss"]
+[ext_resource type="PackedScene" uid="uid://baqan4xhqon2n" path="res://assets/models/quaternius/melee_robot.gltf" id="2_visual"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_boss_body"]
+radius = 0.5
+height = 1.7
+
+[node name="Boss" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 7
+script = ExtResource("1_boss")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_boss_body")
+
+[node name="Visual" parent="." instance=ExtResource("2_visual")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 0, -0.85, 0)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 0.5
+avoidance_enabled = true
+radius = 0.5
+height = 1.5
+neighbor_distance = 5.0
+max_neighbors = 8
