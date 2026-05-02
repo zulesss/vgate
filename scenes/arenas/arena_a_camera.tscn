@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-[gd_scene format=3 uid="uid://bexijr2g70ls1"]
-=======
 [gd_scene load_steps=21 format=3 uid="uid://vgateaa1camera"]
->>>>>>> 35d8d1348931314e9c04091de046b7921bd1f122
 
 [ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
 
