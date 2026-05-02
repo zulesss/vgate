@@ -17,7 +17,7 @@ class_name MarkDirectorNode extends Node
 #   - Mark не убит за MARK_LIFETIME (10с) → expires, reroll через REROLL_DELAY.
 #   - Marked enemy ушёл из tree без player kill (despawn / другая причина) →
 #     expires (clean reroll, не chain на нового — "no progress" per spec).
-#   - Win-eligible at kills >= KILL_TARGET (12).
+#   - Win-eligible at kills >= KILL_TARGET (10).
 #
 # Mark detection of player-kill: enemy_base.die() сам эмитит Events.mark_killed
 # если _is_marked=true. Director просто слушает signal и инкрементит. Это
@@ -31,7 +31,7 @@ class_name MarkDirectorNode extends Node
 #     уже emit'ился из enemy_base.die() ДО queue_free → tree_exiting обработается
 #     как "уже учтённый kill" (через _kill_handled guard, set'ится в _on_mark_killed).
 
-const KILL_TARGET := 12
+const KILL_TARGET := 10
 const MARK_INTERVAL_MIN := 12.0
 const MARK_INTERVAL_MAX := 15.0
 const MARK_LIFETIME := 10.0
