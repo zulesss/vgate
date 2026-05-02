@@ -17,7 +17,7 @@ const LIFETIME := 7.0
 const EXPIRE_TELEGRAPH := 2.0  # за столько до expire начинаем cyan→red lerp
 const PULSE_PERIOD := 1.0
 const PULSE_AMPLITUDE := 0.05  # ±5% scale
-const VISUAL_Y_OFFSET := 0.5   # mesh+light выше Area3D на это (capture y=1.0 → mesh y=1.5)
+# Note: visual Y offset (mesh выше Area3D) задан через Visual node transform в sphere.tscn (y=0.5).
 
 const COLOR_NORMAL := Color(0.35, 0.92, 0.95)
 const COLOR_EXPIRE := Color(0.95, 0.30, 0.25)
@@ -37,10 +37,12 @@ var _material: StandardMaterial3D = null
 func _ready() -> void:
 	# Material: каждой инстансе свой clone, чтобы expire telegraph / flash не
 	# мутировал shared resource (scene-level material бы перекрашивал ВСЕ active spheres).
-	var src := mesh.get_active_material(0)
-	if src is StandardMaterial3D:
-		_material = (src as StandardMaterial3D).duplicate() as StandardMaterial3D
-		mesh.set_surface_override_material(0, _material)
+	# .tscn задаёт material_override на shared StandardMaterial3D — clone его в
+	# per-instance копию, чтобы expire telegraph / capture flash не мутировали
+	# shared resource (иначе перекрашивались бы ВСЕ active spheres).
+	if mesh.material_override is StandardMaterial3D:
+		_material = (mesh.material_override as StandardMaterial3D).duplicate() as StandardMaterial3D
+		mesh.material_override = _material
 		_material.albedo_color = COLOR_NORMAL
 		_material.emission = COLOR_NORMAL
 	# body_entered ловит CharacterBody3D игрока (player в group "player", layer 2).

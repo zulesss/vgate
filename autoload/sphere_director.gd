@@ -26,7 +26,6 @@ const FIRST_SPAWN_TIME := 3.0
 const LAST_SPAWN_TIME := 115.0
 const SPAWN_JITTER := 1.0
 const ANTI_CLUSTER_DIST := 8.0
-const SPHERE_Y_CAPTURE := 1.0  # Area3D capture-height (mesh поднят на VISUAL_Y_OFFSET в sphere.gd)
 
 const SPHERE_SCENE := preload("res://objects/sphere.tscn")
 

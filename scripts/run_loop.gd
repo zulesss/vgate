@@ -19,13 +19,12 @@ class_name RunLoop extends Node
 #
 # M9 Hot Zones: win-eligibility теперь требует BOTH alive at 120s AND
 # SphereDirector.captured_count >= CAPTURE_TARGET (20). Если игрок дожил с <20
-# capture'ов — это fail (player_died emit'ится через VelocityGate.force_kill,
-# чтобы DeathScreen показал stats — игрок survival'нул timer но не выполнил
-# objective, treat как loss).
+# capture'ов — fail: эмитим Events.player_died напрямую (без force_kill, чтобы
+# не зануливать velocity_cap — игрок survival'нул timer с легитимным cap'ом).
+# DeathScreen показывает stats + sphere counter в "objective fail" виде.
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0
-const SPHERE_TARGET := 20
 
 @export var player_path: NodePath
 @onready var player: Node = get_node_or_null(player_path)
@@ -61,7 +60,7 @@ func _process(_delta: float) -> void:
 	if t >= RUN_DURATION:
 		_won = true
 		VelocityGate.is_alive = false
-		if SphereDirector.captured_count >= SPHERE_TARGET:
+		if SphereDirector.captured_count >= SphereDirector.CAPTURE_TARGET:
 			Events.run_won.emit()
 		else:
 			# Objective fail: timer вышел но <20 capture'ов. Эмитим player_died

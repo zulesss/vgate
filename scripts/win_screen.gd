@@ -49,7 +49,7 @@ func _on_run_won() -> void:
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	time_label.text = "Time: %.1f / 120" % t_alive
-	sphere_label.text = "Spheres: %d / 25" % SphereDirector.captured_count
+	sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
 	score_label.text = "SCORE: %d" % ScoreState.final_score
 	best_label.text = "BEST: %d" % ScoreState.best_score
 

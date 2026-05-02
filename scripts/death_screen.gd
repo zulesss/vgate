@@ -21,8 +21,6 @@ const PRE_FADE_DEATH_DELAY := 1.8
 @onready var best_label: Label = $ScoreBox/BestLabel
 @onready var restart_btn: Button = $ScoreBox/RestartButton
 
-const SPHERE_TARGET := 20
-
 
 func _ready() -> void:
 	visible = false
@@ -59,11 +57,12 @@ func _on_player_died() -> void:
 	# но всё равно умер до t=120 — almost-win, label tint'ится в зелёный.
 	# Иначе — обычный "X / 20" cyan.
 	var captured: int = SphereDirector.captured_count
-	if captured >= SPHERE_TARGET:
-		sphere_label.text = "Spheres: %d / 25 (objective met)" % captured
+	var target: int = SphereDirector.CAPTURE_TARGET
+	if captured >= target:
+		sphere_label.text = "Spheres: %d / %d (objective met)" % [captured, SphereDirector.TOTAL_SPHERES]
 		sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)
 	else:
-		sphere_label.text = "Spheres: %d / 20" % captured
+		sphere_label.text = "Spheres: %d / %d" % [captured, target]
 		sphere_label.modulate = Color(0.478, 0.906, 0.906, 1)
 	best_label.text = "Best: %d" % ScoreState.best_score
 	score_box.visible = true
