@@ -10,7 +10,7 @@ class_name Main extends Node3D
 #   2. Внутри: CSGBox'ы + NavigationRegion3D + NavBaker + SpawnPoints/S* Marker3D'ы
 #   3. Marker3D'ы в группе "spawn_point" — SpawnController подхватит их сам
 
-@export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_c_shaft.tscn")
+@export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_c_journey.tscn")
 
 
 # Инстанцируем arena в _enter_tree(), а НЕ в _ready(). Причина — Godot
