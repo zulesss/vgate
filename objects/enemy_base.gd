@@ -90,6 +90,12 @@ var _base_emission_color: Color = Color.BLACK
 var _base_emission_energy: float = 0.0
 var _material: StandardMaterial3D = null
 
+# Dedicated hurt-sound player. Bypasses Audio pool (фикс. -10 dB) — нам нужно
+# -13 dB (=-25% от pool baseline) для попадания по врагу (юзер 2026-05-02).
+# 3D positional, чтобы swarm hits на дистанции были тише чем close-range.
+var _hurt_player: AudioStreamPlayer3D = null
+const HURT_VOLUME_DB := -13.0
+
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -139,6 +145,14 @@ func _ready() -> void:
 	# Stagger: первая атака разнесена 0..1.5с от базового cooldown'а.
 	# Применяем как initial cooldown — first attack откладывается.
 	_attack_cooldown_remaining = randf_range(0.0, 1.5)
+
+	# Hurt sound player (-3 dB vs pool baseline). Stream загружается лениво в damage().
+	_hurt_player = AudioStreamPlayer3D.new()
+	_hurt_player.bus = &"SFX"
+	_hurt_player.volume_db = HURT_VOLUME_DB
+	_hurt_player.unit_size = 8.0
+	_hurt_player.stream = load("res://sounds/enemy_hurt.ogg")
+	add_child(_hurt_player)
 
 	# AnimationPlayer внутри GLB-instance (под armature). owned=false — узел
 	# принадлежит imported scene root'у, не self'у. Если placeholder без GLB —
@@ -395,8 +409,11 @@ func damage(amount) -> void:
 		return
 	hp -= int(amount)
 	# Audible feedback per hit (включая killing blow — legacy enemy.gd:31 поведение).
-	# Pool в scripts/audio.gd сидит на SFX bus (commit 9bca5e5) — слайдер SFX покрывает.
-	Audio.play("sounds/enemy_hurt.ogg")
+	# Через dedicated _hurt_player (см. _ready) — -3 dB vs pool baseline (-25% per
+	# юзер 2026-05-02). ±10% pitch jitter копируем из pool для variance.
+	if _hurt_player != null and _hurt_player.stream != null:
+		_hurt_player.pitch_scale = randf_range(0.9, 1.1)
+		_hurt_player.play()
 	if hp <= 0:
 		is_dying = true
 		die()
