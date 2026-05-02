@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bxb0vb5dfk441" path="res://objects/swarmling.tscn" id="4_swarmling"]
 [ext_resource type="PackedScene" uid="uid://b7vg8boss0001" path="res://objects/boss.tscn" id="6_boss"]
 [ext_resource type="Script" path="res://scripts/journey_goal.gd" id="5_goal"]
+[ext_resource type="Script" path="res://scripts/journey_milestone.gd" id="7_milestone"]
 
 ; Materials per spec: corridors industrial dark, rooms slightly warmer/lighter — distinct
 ; visual rhythm corridor→room→corridor. Ceiling/walls same per zone.
@@ -30,6 +31,13 @@ emission_energy_multiplier = 2.5
 
 [sub_resource type="BoxShape3D" id="Goal_collision"]
 size = Vector3(14, 4, 10)
+
+; Pkg C milestone gate — thin Area3D spanning corridor cross-section на входах
+; в R2/R3/R4. Same shape для всех трёх — geometry identical, position'им через
+; node transform. body_entered (player layer 2) → emit milestone_crossed(index)
+; → JourneyPursuer спавнит rear wave свармлингов.
+[sub_resource type="BoxShape3D" id="Milestone_gate"]
+size = Vector3(6, 4, 0.5)
 
 ; Pkg A alcove patch meshes — 3×1×3 nav-mesh source per cavity. Все 6 alcoves
 ; разделяют один resource (geometry identical, instances позиционируются на
@@ -786,6 +794,46 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.9, 152)
 
 [node name="R4_Shooter2" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.9, 152)
+
+; ─────────────────────────────────────────────────────────────────────────────
+; MILESTONE GATES — Pkg C rear-pursuer trigger Area3D'ы. Тонкие гейты на входах
+; в R2/R3/R4 (z=70/111/147 — позиция south-стен этих rooms). Размер 6×4×0.5
+; matches corridor opening (player может пройти только через гейт). milestone_index
+; 2/3/4 → JourneyPursuer вычисляет wave count из WAVE_COUNTS dict (3/4/5 свармлингов).
+; collision_mask=2 = player layer (см. player.tscn).
+
+[node name="MilestoneR2" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 70)
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+script = ExtResource("7_milestone")
+milestone_index = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR2"]
+shape = SubResource("Milestone_gate")
+
+[node name="MilestoneR3" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 111)
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+script = ExtResource("7_milestone")
+milestone_index = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR3"]
+shape = SubResource("Milestone_gate")
+
+[node name="MilestoneR4" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 147)
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+script = ExtResource("7_milestone")
+milestone_index = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MilestoneR4"]
+shape = SubResource("Milestone_gate")
 
 ; ─────────────────────────────────────────────────────────────────────────────
 ; GOAL TRIGGER — Area3D 6×4×3 в R4 north end. body_entered проверяет player
