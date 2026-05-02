@@ -28,7 +28,7 @@ emission = Color(0.3, 1.0, 0.6, 1)
 emission_energy_multiplier = 2.5
 
 [sub_resource type="BoxShape3D" id="Goal_collision"]
-size = Vector3(6, 3, 3)
+size = Vector3(14, 4, 10)
 
 ; Mesh resources for NavigationRegion3D parsing. NavBaker pattern (see arena_b_plac):
 ; CSGBox для visual+collision, parallel MeshInstance3D в группе для nav-mesh source.
@@ -482,9 +482,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 162)
 ; для player visibility что цель достижима.
 
 [node name="GoalTrigger" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 163)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 161)
 collision_layer = 0
 collision_mask = 2
+monitoring = true
 script = ExtResource("5_goal")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GoalTrigger"]
