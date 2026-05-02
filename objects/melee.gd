@@ -15,9 +15,10 @@ var _base_mesh_scale_y: float = 1.0
 
 
 func _ready() -> void:
-	# Числа (M3_enemy_numbers): Melee — HP 20, speed 5.5, range 1.5, windup 450ms,
-	# cooldown 2.5s, penalty 20, detection 35.
-	max_hp = 20
+	# Числа (M3_enemy_numbers): Melee — HP 40 (×2 на 2026-05-02 user balance tweak,
+	# было 20), speed 5.5, range 1.5, windup 450ms, cooldown 2.5s, penalty 20,
+	# detection 35.
+	max_hp = 40
 	move_speed = 5.5
 	attack_range = 1.5
 	attack_windup = 0.45

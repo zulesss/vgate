@@ -18,7 +18,9 @@ class_name EnemySwarmling extends EnemyBase
 
 
 func _ready() -> void:
-	max_hp = 3
+	# HP 6 (×2 на 2026-05-02 user balance tweak, было 3 = 1-shot центральной пулей).
+	# Теперь 2 hit'а минимум — swarmling требует осознанное прицеливание.
+	max_hp = 6
 	move_speed = 8.5
 	attack_range = 1.2
 	attack_windup = 0.0

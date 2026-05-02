@@ -28,9 +28,10 @@ var _has_reposition_target: bool = false
 
 
 func _ready() -> void:
-	# Числа (M3_enemy_numbers): Shooter — HP 30, speed 4.0, range 18, windup 350ms,
-	# cooldown 4.0s, penalty 10 (SHOOTER_PENALTY), detection 35.
-	max_hp = 30
+	# Числа (M3_enemy_numbers): Shooter — HP 60 (×2 на 2026-05-02 user balance tweak,
+	# было 30), speed 4.0, range 18, windup 350ms, cooldown 4.0s,
+	# penalty 10 (SHOOTER_PENALTY), detection 35.
+	max_hp = 60
 	move_speed = 6.0
 	attack_range = 18.0
 	attack_windup = 0.35
