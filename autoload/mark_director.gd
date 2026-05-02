@@ -166,7 +166,6 @@ func _try_assign_mark() -> void:
 	# Apply visual mark. Метод объявлен на EnemyBase (mark_visible через стены).
 	if picked.has_method("apply_mark"):
 		picked.apply_mark()
-	Events.mark_assigned.emit(picked)
 
 
 func _expire_current_mark() -> void:
@@ -181,7 +180,6 @@ func _expire_current_mark() -> void:
 	_next_assign_in = REROLL_DELAY
 	_waiting_for_enemy = false
 	_kill_handled = false
-	Events.mark_expired.emit()
 
 
 func _clear_mark_silent() -> void:
@@ -211,7 +209,6 @@ func _on_active_mark_tree_exiting() -> void:
 	_active_mark = null
 	_mark_lifetime_remaining = 0.0
 	_next_assign_in = REROLL_DELAY
-	Events.mark_expired.emit()
 
 
 # Зовётся самим enemy_base.die() через emit Events.mark_killed (см. enemy_base.gd).
