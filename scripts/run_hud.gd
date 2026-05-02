@@ -179,7 +179,7 @@ func _refresh_sphere_label() -> void:
 
 
 func _refresh_hunt_label() -> void:
-	# Magenta до target ("HUNT 03 / 6"), green на target+ ("✓ HUNT 6+").
+	# Magenta до target ("HUNT 03 / 15"), green на target+ ("✓ HUNT 15+").
 	# Цвет коррелирует с emissive aura mark'а — instant association.
 	var k: int = MarkDirector.kills
 	var target: int = MarkDirector.KILL_TARGET
