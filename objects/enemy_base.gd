@@ -91,11 +91,15 @@ var _base_emission_energy: float = 0.0
 var _material: StandardMaterial3D = null
 
 # Marked Enemy Hunt (Arena A) — визуальный mark поверх базового материала.
-# Активируется MarkDirector.apply_mark() (single instance). При apply бэкапим
-# _base_no_depth_test чтобы restore'нуть на clear. Через стены видно за счёт
-# no_depth_test=true (рендер поверх depth buffer'а — works in all 3D viewports).
+# Активируется MarkDirector.apply_mark() (single instance). Реализован через
+# next_pass material chain: магента + no_depth_test рендерится поверх _material
+# (base) отдельным проходом. Это разделяет mark visual от telegraph emission
+# flash на _material'е (которые юзал предыдущий вариант — apply/end_telegraph
+# подписывали emission поверх mark'а, после _end_telegraph mark исчезал, но
+# no_depth_test оставался → "просто враг через стену", playtest 2026-05-02).
+# clear_mark = next_pass = null → чистый restore без residue, не зависит от
+# того что сейчас пишет telegraph в base material.
 var _is_marked: bool = false
-var _base_no_depth_test: bool = false
 
 
 func _ready() -> void:
@@ -142,7 +146,6 @@ func _ready() -> void:
 				(m as MeshInstance3D).set_surface_override_material(0, _material)
 			_base_emission_color = _material.emission
 			_base_emission_energy = _material.emission_energy_multiplier
-			_base_no_depth_test = _material.no_depth_test
 
 	# Stagger: первая атака разнесена 0..1.5с от базового cooldown'а.
 	# Применяем как initial cooldown — first attack откладывается.
@@ -456,10 +459,12 @@ func die() -> void:
 	_play_death_animation_then_free()
 
 
-# Marked Enemy Hunt — apply visual mark (через стены через no_depth_test). Cap
-# emission на bright magenta + boost energy. Material instance уже clone'нут в
-# _ready'е (не shared между enemies), так что override локальный. Идемпотентно:
-# повторный apply на already-marked enemy — no-op.
+# Marked Enemy Hunt — apply visual mark через next_pass material chain.
+# next_pass = отдельный pass рендерится поверх base _material'а, со своими
+# настройками (emission magenta + no_depth_test=true → видно через стены).
+# Telegraph (melee/shooter) пишет emission в base _material — mark next_pass
+# работает независимо, без конфликта last-write. clear_mark = next_pass=null
+# даёт чистый restore без residue (no_depth_test не остаётся "висеть").
 const _MARK_EMISSION_COLOR := Color(1.6, 0.3, 1.4, 1.0)
 const _MARK_EMISSION_ENERGY := 3.0
 
@@ -473,10 +478,16 @@ func apply_mark() -> void:
 		# clone'ит из active material). Defensive — mark тогда невидим, но flag
 		# _is_marked всё равно set, чтобы mark_killed сработал на kill.
 		return
-	_material.emission_enabled = true
-	_material.emission = _MARK_EMISSION_COLOR
-	_material.emission_energy_multiplier = _MARK_EMISSION_ENERGY
-	_material.no_depth_test = true
+	var mark_mat := StandardMaterial3D.new()
+	mark_mat.emission_enabled = true
+	mark_mat.emission = _MARK_EMISSION_COLOR
+	mark_mat.emission_energy_multiplier = _MARK_EMISSION_ENERGY
+	mark_mat.no_depth_test = true
+	# Slight transparency на overlay'е чтобы силуэт base mesh'а проскакивал —
+	# иначе magenta-pass полностью перекрывает текстуру.
+	mark_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mark_mat.albedo_color = Color(1.0, 0.4, 1.0, 0.35)
+	_material.next_pass = mark_mat
 
 
 func clear_mark() -> void:
@@ -485,9 +496,7 @@ func clear_mark() -> void:
 	_is_marked = false
 	if _material == null:
 		return
-	_material.emission = _base_emission_color
-	_material.emission_energy_multiplier = _base_emission_energy
-	_material.no_depth_test = _base_no_depth_test
+	_material.next_pass = null
 
 
 func _play_death_animation_then_free() -> void:
