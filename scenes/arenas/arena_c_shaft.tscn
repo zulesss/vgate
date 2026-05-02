@@ -66,7 +66,6 @@ geometry_source_group_name = &"navigation_geometry"
 agent_height = 1.8
 agent_radius = 0.3
 agent_max_climb = 0.5
-agent_max_slope = 45.0
 
 [node name="ArenaC" type="Node3D" unique_id=290878755 groups=["navigation_geometry", "objective_marked_hunt"]]
 
@@ -241,7 +240,7 @@ visible = false
 mesh = SubResource("BoxMesh_pitWallNS")
 
 [node name="Ramp_PitNW" type="CSGBox3D" parent="." unique_id=1425430633]
-transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, -13.473, -1.717, -14)
+transform = Transform3D(-0.8660322, -0.4999878, -8.742278e-08, -0.4999878, 0.8660322, 3.5236203e-06, -1.6860562e-06, 3.0952788e-06, -1, -13.472045, -1.7172332, -14.000888)
 use_collision = true
 size = Vector3(6, 0.5, 3)
 material = SubResource("Mat_ramp")
@@ -251,7 +250,7 @@ visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
 [node name="Ramp_PitNE" type="CSGBox3D" parent="." unique_id=964644871]
-transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 13.473, -1.717, -14)
+transform = Transform3D(-0.866018, 0.5000123, -8.742278e-08, 0.5000123, 0.866018, 3.523619e-06, 1.8375625e-06, 3.0078047e-06, -1, 13.473954, -1.7168523, -13.999048)
 use_collision = true
 size = Vector3(6, 0.5, 3)
 material = SubResource("Mat_ramp")
@@ -261,7 +260,7 @@ visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
 [node name="Ramp_PitSW" type="CSGBox3D" parent="." unique_id=1897443762]
-transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, -13.473, -1.717, 14)
+transform = Transform3D(-0.8660322, -0.4999878, -8.742278e-08, -0.4999878, 0.8660322, 3.5236203e-06, -1.6860562e-06, 3.0952788e-06, -1, -13.473956, -1.7171345, 13.999112)
 use_collision = true
 size = Vector3(6, 0.5, 3)
 material = SubResource("Mat_ramp")
@@ -271,7 +270,7 @@ visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
 [node name="Ramp_PitSE" type="CSGBox3D" parent="." unique_id=177809312]
-transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 13.473, -1.717, 14)
+transform = Transform3D(-0.866018, 0.5000123, -8.742278e-08, 0.5000123, 0.866018, 3.523619e-06, 1.8375625e-06, 3.0078047e-06, -1, 13.472043, -1.7167536, 14.000952)
 use_collision = true
 size = Vector3(6, 0.5, 3)
 material = SubResource("Mat_ramp")
@@ -370,43 +369,43 @@ material = SubResource("Mat_mez")
 visible = false
 mesh = SubResource("BoxMesh_mezWE")
 
-[node name="Ramp_MezN" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.829038, 0.559193, 0, -0.559193, 0.829038, -1.5, 1.836, -8.238)
+[node name="Ramp_MezN" type="CSGBox3D" parent="." unique_id=269540836]
+transform = Transform3D(-1, 1.7100669e-05, -7.247664e-08, 1.413653e-05, 0.8290361, 0.55919594, 9.622701e-06, 0.55919594, -0.8290361, -1.4994884, 1.8359565, -8.238083)
 use_collision = true
 size = Vector3(3, 0.5, 7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezN" type="MeshInstance3D" parent="Ramp_MezN"]
+[node name="NavMeshRampMezN" type="MeshInstance3D" parent="Ramp_MezN" unique_id=263391120]
 visible = false
 mesh = SubResource("BoxMesh_mezRampNS")
 
-[node name="Ramp_MezS" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.829038, -0.559193, 0, 0.559193, 0.829038, -1.5, 1.836, 8.238)
+[node name="Ramp_MezS" type="CSGBox3D" parent="." unique_id=1393651372]
+transform = Transform3D(-1, 1.700281e-05, -7.247697e-08, 1.4136526e-05, 0.8290399, -0.5591901, -9.447711e-06, -0.5591901, -0.8290399, -1.5006132, 1.8360145, 8.237917)
 use_collision = true
 size = Vector3(3, 0.5, 7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezS" type="MeshInstance3D" parent="Ramp_MezS"]
+[node name="NavMeshRampMezS" type="MeshInstance3D" parent="Ramp_MezS" unique_id=1122212988]
 visible = false
 mesh = SubResource("BoxMesh_mezRampNS")
 
-[node name="Ramp_MezW" type="CSGBox3D" parent="."]
-transform = Transform3D(0.829038, -0.559193, 0, 0.559193, 0.829038, 0, 0, 0, 1, -8.238, 1.836, -1.5)
+[node name="Ramp_MezW" type="CSGBox3D" parent="." unique_id=1290494943]
+transform = Transform3D(-0.8290379, 0.5591931, -8.742278e-08, 0.5591931, 0.8290379, 0, 7.2476794e-08, -4.8886214e-08, -1, -8.237948, 1.8358849, -1.5005431)
 use_collision = true
 size = Vector3(7, 0.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezW" type="MeshInstance3D" parent="Ramp_MezW"]
+[node name="NavMeshRampMezW" type="MeshInstance3D" parent="Ramp_MezW" unique_id=974824137]
 visible = false
 mesh = SubResource("BoxMesh_mezRampWE")
 
-[node name="Ramp_MezE" type="CSGBox3D" parent="."]
-transform = Transform3D(0.829038, 0.559193, 0, -0.559193, 0.829038, 0, 0, 0, 1, 8.238, 1.836, -1.5)
+[node name="Ramp_MezE" type="CSGBox3D" parent="." unique_id=182276945]
+transform = Transform3D(-0.82904595, -0.55918133, -8.742278e-08, -0.55918133, 0.82904595, 3.5236226e-06, -1.8978667e-06, 2.97013e-06, -1, 8.238052, 1.8361177, -1.4994183)
 use_collision = true
 size = Vector3(7, 0.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezE" type="MeshInstance3D" parent="Ramp_MezE"]
+[node name="NavMeshRampMezE" type="MeshInstance3D" parent="Ramp_MezE" unique_id=831694808]
 visible = false
 mesh = SubResource("BoxMesh_mezRampWE")
 
