@@ -18,7 +18,7 @@ class_name RunLoop extends Node
 # accumulator'ом cap_avg в самом gate'е.
 #
 # M9 Hot Zones: win-eligibility теперь требует BOTH alive at 120s AND
-# SphereDirector.captured_count >= CAPTURE_TARGET (20). Если игрок дожил с <20
+# SphereDirector.captured_count >= CAPTURE_TARGET (15). Если игрок дожил с <15
 # capture'ов — fail: эмитим Events.player_died напрямую (без force_kill, чтобы
 # не зануливать velocity_cap — игрок survival'нул timer с легитимным cap'ом).
 # DeathScreen показывает stats + sphere counter в "OBJECTIVE FAILED" виде —
@@ -65,7 +65,7 @@ func _process(_delta: float) -> void:
 		if SphereDirector.captured_count >= SphereDirector.CAPTURE_TARGET:
 			Events.run_won.emit()
 		else:
-			# Objective fail: timer вышел но <20 capture'ов. Эмитим player_died
+			# Objective fail: timer вышел но <CAPTURE_TARGET capture'ов. Эмитим player_died
 			# напрямую (VelocityGate.force_kill бы тоже работал но он set'ит
 			# velocity_cap=0 что нечестно для stats — игрок дожил, cap может быть
 			# legit высоким). DeathScreen покажет sphere counter в "almost" виде.

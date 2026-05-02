@@ -14,14 +14,14 @@ class_name SphereDirectorNode extends Node
 # от _last_spawn_pos. Не cumulative — только last (per spec).
 #
 # Capture tracking: captured_count++ on Events.sphere_captured. Когда достигает
-# CAPTURE_TARGET (20) — emit Events.objective_complete (один раз).
+# CAPTURE_TARGET (15) — emit Events.objective_complete (один раз).
 #
 # Lifecycle: Events.run_started — full reset (counter, schedule, free все live spheres).
 # VelocityGate.is_alive=false (death/win) — пауза spawn'а (без despawn — death screen
 # сам остановит run, sphere'ы доживают свой lifetime естественно).
 
 const TOTAL_SPHERES := 25
-const CAPTURE_TARGET := 20
+const CAPTURE_TARGET := 15
 const FIRST_SPAWN_TIME := 3.0
 const LAST_SPAWN_TIME := 115.0
 const SPAWN_JITTER := 1.0

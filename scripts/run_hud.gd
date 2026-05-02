@@ -38,8 +38,8 @@ const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
 const COLOR_HIGH := Color(0.30, 0.85, 0.40)   # >= 80 cap
 
-# M9 Hot Zones sphere counter colors. До target — cyan. >= 20 (objective met) —
-# green tint + galочка вместо countdown'а (signal "относительно расслабься").
+# M9 Hot Zones sphere counter colors. До target — cyan. >= CAPTURE_TARGET (objective met) —
+# green tint + галочка вместо countdown'а (signal "относительно расслабься").
 # Target value читается из SphereDirector.CAPTURE_TARGET — single source of truth.
 const SPHERE_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const SPHERE_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
@@ -128,7 +128,7 @@ func _on_run_started() -> void:
 
 
 func _refresh_sphere_label() -> void:
-	# До target: "07/20" cyan. На target и выше: "✓ 20+" green (objective met,
+	# До target: "07/15" cyan. На target и выше: "✓ 15+" green (objective met,
 	# enemy spawn paused — visual signal "ты можешь дышать").
 	var c: int = SphereDirector.captured_count
 	var target: int = SphereDirector.CAPTURE_TARGET
