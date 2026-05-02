@@ -1,0 +1,519 @@
+[gd_scene load_steps=21 format=3 uid="uid://vgateac2journey"]
+
+[ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
+[ext_resource type="PackedScene" uid="uid://bwcrrjslwyvnk" path="res://objects/melee.tscn" id="2_melee"]
+[ext_resource type="PackedScene" uid="uid://b72rd31tgtexc" path="res://objects/shooter.tscn" id="3_shooter"]
+[ext_resource type="PackedScene" uid="uid://bxb0vb5dfk441" path="res://objects/swarmling.tscn" id="4_swarmling"]
+[ext_resource type="Script" path="res://scripts/journey_goal.gd" id="5_goal"]
+
+; Materials per spec: corridors industrial dark, rooms slightly warmer/lighter — distinct
+; visual rhythm corridor→room→corridor. Ceiling/walls same per zone.
+
+[sub_resource type="StandardMaterial3D" id="Mat_corridor"]
+albedo_color = Color(0.3, 0.32, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_room"]
+albedo_color = Color(0.45, 0.42, 0.4, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_ceiling"]
+albedo_color = Color(0.22, 0.23, 0.26, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pillar"]
+albedo_color = Color(0.55, 0.5, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_goal"]
+albedo_color = Color(0.3, 0.95, 0.6, 1)
+emission_enabled = true
+emission = Color(0.3, 1.0, 0.6, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="BoxShape3D" id="Goal_collision"]
+size = Vector3(6, 3, 3)
+
+; Mesh resources for NavigationRegion3D parsing. NavBaker pattern (see arena_b_plac):
+; CSGBox для visual+collision, parallel MeshInstance3D в группе для nav-mesh source.
+
+[sub_resource type="BoxMesh" id="Box_floor_start"]
+size = Vector3(8, 1, 25)
+
+[sub_resource type="BoxMesh" id="Box_floor_r1"]
+size = Vector3(20, 1, 20)
+
+[sub_resource type="BoxMesh" id="Box_floor_c12"]
+size = Vector3(8, 1, 25)
+
+[sub_resource type="BoxMesh" id="Box_floor_r2"]
+size = Vector3(16, 1, 16)
+
+[sub_resource type="BoxMesh" id="Box_floor_c23"]
+size = Vector3(8, 1, 25)
+
+[sub_resource type="BoxMesh" id="Box_floor_r3"]
+size = Vector3(24, 1, 16)
+
+[sub_resource type="BoxMesh" id="Box_floor_c34"]
+size = Vector3(6, 1, 20)
+
+[sub_resource type="BoxMesh" id="Box_floor_r4"]
+size = Vector3(18, 1, 18)
+
+[sub_resource type="NavigationMesh" id="NavMesh_journey"]
+geometry_parsed_geometry_type = 0
+geometry_source_geometry_mode = 1
+geometry_source_group_name = &"navigation_geometry"
+agent_radius = 0.3
+agent_height = 1.8
+agent_max_climb = 0.3
+agent_max_slope = 45.0
+
+[node name="ArenaCJourney" type="Node3D" groups=["navigation_geometry", "objective_journey"]]
+
+; ─────────────────────────────────────────────────────────────────────────────
+; FLOORS — каждая зона отдельным CSGBox + MeshInstance3D для nav parsing.
+; Player spawns at world (0, 1, 0); start corridor centered at z=12.5.
+; Layout chain along +Z: 0→25 start, 25→45 R1, 45→70 C12, 70→86 R2,
+; 86→111 C23, 111→127 R3, 127→147 C34, 147→165 R4, 165 = goal.
+
+[node name="FloorStart" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 12.5)
+use_collision = true
+size = Vector3(8, 1, 25)
+material = SubResource("Mat_corridor")
+
+[node name="NavMeshStart" type="MeshInstance3D" parent="FloorStart"]
+visible = false
+mesh = SubResource("Box_floor_start")
+
+[node name="FloorR1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 35)
+use_collision = true
+size = Vector3(20, 1, 20)
+material = SubResource("Mat_room")
+
+[node name="NavMeshR1" type="MeshInstance3D" parent="FloorR1"]
+visible = false
+mesh = SubResource("Box_floor_r1")
+
+[node name="FloorC12" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 57.5)
+use_collision = true
+size = Vector3(8, 1, 25)
+material = SubResource("Mat_corridor")
+
+[node name="NavMeshC12" type="MeshInstance3D" parent="FloorC12"]
+visible = false
+mesh = SubResource("Box_floor_c12")
+
+[node name="FloorR2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 78)
+use_collision = true
+size = Vector3(16, 1, 16)
+material = SubResource("Mat_room")
+
+[node name="NavMeshR2" type="MeshInstance3D" parent="FloorR2"]
+visible = false
+mesh = SubResource("Box_floor_r2")
+
+[node name="FloorC23" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 98.5)
+use_collision = true
+size = Vector3(8, 1, 25)
+material = SubResource("Mat_corridor")
+
+[node name="NavMeshC23" type="MeshInstance3D" parent="FloorC23"]
+visible = false
+mesh = SubResource("Box_floor_c23")
+
+[node name="FloorR3" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 119)
+use_collision = true
+size = Vector3(24, 1, 16)
+material = SubResource("Mat_room")
+
+[node name="NavMeshR3" type="MeshInstance3D" parent="FloorR3"]
+visible = false
+mesh = SubResource("Box_floor_r3")
+
+[node name="FloorC34" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 137)
+use_collision = true
+size = Vector3(6, 1, 20)
+material = SubResource("Mat_corridor")
+
+[node name="NavMeshC34" type="MeshInstance3D" parent="FloorC34"]
+visible = false
+mesh = SubResource("Box_floor_c34")
+
+[node name="FloorR4" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 156)
+use_collision = true
+size = Vector3(18, 1, 18)
+material = SubResource("Mat_room")
+
+[node name="NavMeshR4" type="MeshInstance3D" parent="FloorR4"]
+visible = false
+mesh = SubResource("Box_floor_r4")
+
+; ─────────────────────────────────────────────────────────────────────────────
+; CEILINGS — closed at y=4.5 (top of 4u-tall walls). Per zone, same colour as
+; wall accent. Closed corridors per spec — visual narrowness.
+
+[node name="CeilStart" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 12.5)
+use_collision = true
+size = Vector3(8, 0.5, 25)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilR1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 35)
+use_collision = true
+size = Vector3(20, 0.5, 20)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilC12" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 57.5)
+use_collision = true
+size = Vector3(8, 0.5, 25)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilR2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 78)
+use_collision = true
+size = Vector3(16, 0.5, 16)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilC23" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 98.5)
+use_collision = true
+size = Vector3(8, 0.5, 25)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilR3" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 119)
+use_collision = true
+size = Vector3(24, 0.5, 16)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilC34" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 137)
+use_collision = true
+size = Vector3(6, 0.5, 20)
+material = SubResource("Mat_ceiling")
+
+[node name="CeilR4" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 156)
+use_collision = true
+size = Vector3(18, 0.5, 18)
+material = SubResource("Mat_ceiling")
+
+; ─────────────────────────────────────────────────────────────────────────────
+; WALLS — outer perimeter + room/corridor transitions (gap walls flanking
+; each passage). Height 4u, top at y=4 below ceiling at y=4.25.
+; Convention: WallNS (along X axis), WallEW (along Z axis). Center y=2.
+
+; ── Start corridor walls (z 0 to 25, x ±4)
+[node name="WallStartW" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, 2, 12.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+[node name="WallStartE" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.25, 2, 12.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+[node name="WallStartS" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -0.25)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("Mat_corridor")
+
+; ── R1 walls (z 25..45, x ±10). South wall has 8u opening (x ±4) for start corridor.
+[node name="WallR1S_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, 25)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR1S_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 25)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR1W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.25, 2, 35)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("Mat_room")
+
+[node name="WallR1E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.25, 2, 35)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("Mat_room")
+
+[node name="WallR1N_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, 45)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR1N_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 45)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+; ── C12 corridor walls (z 45..70, x ±4)
+[node name="WallC12W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, 2, 57.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+[node name="WallC12E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.25, 2, 57.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+; ── R2 walls (z 70..86, x ±8). South opening 8u (x ±4), north opening 8u (x ±4).
+[node name="WallR2S_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 70)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR2S_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, 70)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR2W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 2, 78)
+use_collision = true
+size = Vector3(0.5, 4, 16)
+material = SubResource("Mat_room")
+
+[node name="WallR2E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 2, 78)
+use_collision = true
+size = Vector3(0.5, 4, 16)
+material = SubResource("Mat_room")
+
+[node name="WallR2N_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 86)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR2N_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, 86)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("Mat_room")
+
+; R2 cover pillars 4×4 — двe штуки asymmetric для cover gameplay
+[node name="PillarR2_NW" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 74)
+use_collision = true
+size = Vector3(2, 4, 2)
+material = SubResource("Mat_pillar")
+
+[node name="PillarR2_SE" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 82)
+use_collision = true
+size = Vector3(2, 4, 2)
+material = SubResource("Mat_pillar")
+
+; ── C23 corridor walls (z 86..111, x ±4)
+[node name="WallC23W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, 2, 98.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+[node name="WallC23E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.25, 2, 98.5)
+use_collision = true
+size = Vector3(0.5, 4, 25)
+material = SubResource("Mat_corridor")
+
+; ── R3 walls (z 111..127, x ±12). South opening 8u (corridor C23), north opening 6u (narrow corridor C34).
+[node name="WallR3S_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 111)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR3S_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 111)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR3W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.25, 2, 119)
+use_collision = true
+size = Vector3(0.5, 4, 16)
+material = SubResource("Mat_room")
+
+[node name="WallR3E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.25, 2, 119)
+use_collision = true
+size = Vector3(0.5, 4, 16)
+material = SubResource("Mat_room")
+
+[node name="WallR3N_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 2, 127)
+use_collision = true
+size = Vector3(9, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR3N_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2, 127)
+use_collision = true
+size = Vector3(9, 4, 0.5)
+material = SubResource("Mat_room")
+
+; ── C34 narrow corridor walls (z 127..147, x ±3)
+[node name="WallC34W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.25, 2, 137)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("Mat_corridor")
+
+[node name="WallC34E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.25, 2, 137)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("Mat_corridor")
+
+; ── R4 boss room walls (z 147..165, x ±9). South opening 6u (narrow corridor).
+[node name="WallR4S_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 147)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR4S_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, 147)
+use_collision = true
+size = Vector3(6, 4, 0.5)
+material = SubResource("Mat_room")
+
+[node name="WallR4W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.25, 2, 156)
+use_collision = true
+size = Vector3(0.5, 4, 18)
+material = SubResource("Mat_room")
+
+[node name="WallR4E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.25, 2, 156)
+use_collision = true
+size = Vector3(0.5, 4, 18)
+material = SubResource("Mat_room")
+
+[node name="WallR4N" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 165.25)
+use_collision = true
+size = Vector3(18, 4, 0.5)
+material = SubResource("Mat_room")
+
+; ─────────────────────────────────────────────────────────────────────────────
+; PRE-PLACED DEFENDERS — instances живут как arena children (НЕ под Enemies
+; parent в main.tscn где SpawnController оперирует). На run_started SpawnController
+; видит objective_journey group и noop'ает spawn ramp; defenders из scene live
+; в idle до тех пор пока player не войдёт в detection_radius=35u (enemy_base default).
+;
+; Layout per spec:
+;   R1: 3 swarmlings (welcome chaos)
+;   C1→2: 1 shooter (deep end, blocking corridor)
+;   R2: 2 shooters (defending pillars)
+;   R3: 1 melee + 2 shooters + 1 swarm patrol
+;   R4 boss room: 1 heavy melee + 1 shooter (final defender)
+; Total ~12 enemies.
+
+[node name="Defenders" type="Node3D" parent="."]
+
+[node name="R1_Swarm1" parent="Defenders" instance=ExtResource("4_swarmling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.9, 32)
+
+[node name="R1_Swarm2" parent="Defenders" instance=ExtResource("4_swarmling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.9, 36)
+
+[node name="R1_Swarm3" parent="Defenders" instance=ExtResource("4_swarmling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 42)
+
+[node name="C12_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 65)
+
+[node name="R2_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.9, 76)
+
+[node name="R2_Shooter2" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.9, 84)
+
+[node name="R3_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 115)
+
+[node name="R3_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.9, 121)
+
+[node name="R3_Shooter2" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.9, 121)
+
+[node name="R3_Swarm1" parent="Defenders" instance=ExtResource("4_swarmling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 124)
+
+[node name="R4_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 156)
+
+[node name="R4_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 162)
+
+; ─────────────────────────────────────────────────────────────────────────────
+; GOAL TRIGGER — Area3D 6×4×3 в R4 north end. body_entered проверяет player
+; group → emit Events.journey_complete. Visual beacon (green emissive cylinder)
+; для player visibility что цель достижима.
+
+[node name="GoalTrigger" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 163)
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("5_goal")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalTrigger"]
+shape = SubResource("Goal_collision")
+
+[node name="GoalBeacon" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 163)
+radius = 0.6
+height = 4
+material = SubResource("Mat_goal")
+
+; ─────────────────────────────────────────────────────────────────────────────
+; NAVIGATION — single region across all floors. NavBaker bake на _ready().
+; agent_radius=0.3 / max_climb=0.3 — same как arena_b/a defaults. flat geometry,
+; no multi-tier (Arena C shaft pivot — see brief).
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavMesh_journey")
+
+[node name="NavBaker" type="Node" parent="." node_paths=PackedStringArray("region")]
+script = ExtResource("1_navbaker")
+region = NodePath("../NavigationRegion3D")
+
+; ─────────────────────────────────────────────────────────────────────────────
+; SPAWN POINTS — required by SpawnController._ready() (warning if empty).
+; Journey arena dynamic spawns disabled, но controller всё равно reads group
+; чтобы push_warning не флудил. Один dummy marker (origin) удовлетворяет contract.
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="S1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12.5)
