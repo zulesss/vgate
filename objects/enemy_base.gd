@@ -161,7 +161,18 @@ func _physics_process(delta: float) -> void:
 	# SpawnController на run_started всё равно queue_free'нет всех — здесь только
 	# заморозка, не cleanup. _set_planar_velocity(ZERO) гасит planar inertion и
 	# продолжает работать gravity (труп падает на пол, не висит в воздухе).
+	# Stale windup leak (2026-05-02 playtest): враг с _is_winding_up=true в момент
+	# смерти игрока сохранял флаг и _attack_windup_remaining≈0 пока physics frozen.
+	# На restart VelocityGate.is_alive флипает в true СИНХРОННО (внутри reset_for_run),
+	# SpawnController.queue_free() отложен до конца кадра — на ближайший physics-tick
+	# enemy ещё жив, guard пропускает, _is_winding_up=true → _resolve_attack() →
+	# apply_hit (−10 cap + hit sound) в первый кадр нового run'а. Сбрасываем windup
+	# state здесь — idempotent, чистит флаги до того как restart их реактивирует.
 	if not VelocityGate.is_alive:
+		if _is_winding_up:
+			_is_winding_up = false
+			_attack_windup_remaining = 0.0
+			_end_telegraph()
 		_set_planar_velocity(Vector3.ZERO, delta)
 		move_and_slide()
 		return
