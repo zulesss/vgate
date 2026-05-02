@@ -1,4 +1,4 @@
-class_name R4EntryBarrier extends CSGBox3D
+extends CSGBox3D
 
 # Phased journey progression barrier (Arena C). Стоит на C34→R4 boundary
 # (z=147, narrow 4u corridor exit) и блокирует игрока от skip'а в boss-room
