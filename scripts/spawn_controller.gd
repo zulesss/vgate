@@ -51,11 +51,10 @@ const SPAWN_BLOCKED_RECHECK := 0.5
 # Type curve (phased step-wise) — anchors из docs/systems/M8_swarmling_numbers §2.
 # Веса: [melee, shooter, swarm_group]. Сумма = 1.0 в каждой фазе.
 # Swarmling не нужен в первые 60с — игрок ещё осваивает hook.
-const TYPE_PHASE_BOUNDARIES := [60.0, 120.0, 300.0]  # < 60 / 60-120 / 120-300 / 300+
-const TYPE_WEIGHTS_PHASE_0 := [0.60, 0.40, 0.00]     # 0-60c: tutorial pressure
-const TYPE_WEIGHTS_PHASE_1 := [0.45, 0.35, 0.20]     # 60-120c: первый рой как surprise
-const TYPE_WEIGHTS_PHASE_2 := [0.35, 0.30, 0.35]     # 120-300c: паритет
-const TYPE_WEIGHTS_PHASE_3 := [0.25, 0.25, 0.50]     # 300+c: рои доминируют
+const TYPE_PHASE_BOUNDARIES := [45.0, 90.0]          # < 45 / 45-90 / 90+
+const TYPE_WEIGHTS_PHASE_0 := [0.60, 0.40, 0.00]     # 0-45c: tutorial pressure (no swarm)
+const TYPE_WEIGHTS_PHASE_1 := [0.45, 0.35, 0.20]     # 45-90c: first swarm intro
+const TYPE_WEIGHTS_PHASE_2 := [0.35, 0.30, 0.35]     # 90-120c: paritet (overlaps spike phase — final peak)
 
 # Spawn-point weights — flexible через @export. Любая арена задаёт свой словарь
 # в Inspector'е. Точки без явного веса получают POINT_WEIGHT_DEFAULT (=1).
@@ -273,7 +272,7 @@ func _weighted_pick(candidates: Array[Marker3D], weights: Array[int]) -> Marker3
 # ────── Type curve (phased step-wise — M8 spec §2)
 
 func _current_type_weights() -> Array:
-	# [melee, shooter, swarmling] для текущей фазы run_time.
+	# [melee, shooter, swarmling] для текущей фазы run_time. 120с conquest → 3 фазы.
 	var t := _run_time
 	if DEBUG_SWARM_FROM_START and t < TYPE_PHASE_BOUNDARIES[0]:
 		return TYPE_WEIGHTS_PHASE_1
@@ -281,9 +280,7 @@ func _current_type_weights() -> Array:
 		return TYPE_WEIGHTS_PHASE_0
 	if t < TYPE_PHASE_BOUNDARIES[1]:
 		return TYPE_WEIGHTS_PHASE_1
-	if t < TYPE_PHASE_BOUNDARIES[2]:
-		return TYPE_WEIGHTS_PHASE_2
-	return TYPE_WEIGHTS_PHASE_3
+	return TYPE_WEIGHTS_PHASE_2
 
 
 # Weighted random выбор типа с учётом sub-caps. Если выпавший тип не может
