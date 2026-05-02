@@ -5,7 +5,8 @@ class_name EnemyBoss extends EnemyMelee
 # movement / longer telegraph. Final close-range showdown в narrow boss room.
 #
 # Отличия от Melee (base):
-#   - HP 120 (3× regular melee 40) — ~24 repeater hits @5 dmg → ~4.8s sustained fire
+#   - HP 200 (5× regular melee 40) — ~40 repeater hits @5 dmg → ~8s sustained fire
+#     (раньше 120 = ~4.8s; bumped 2026-05-02 для substantial showdown read)
 #   - move_speed 4.0 (slower 5.5 → heavy / menacing read)
 #   - attack_range 2.5 (longer reach — narrow R4, легче зацепить)
 #   - attack_penalty 25 (выше melee 20 — single hit чувствуется)
@@ -29,7 +30,7 @@ func _ready() -> void:
 	# stagger cooldown). Lunge оставляем включённым из melee parent'а — boss
 	# тоже должен закрывать gap в финальные 300мс windup'а, иначе walk-back
 	# escape'ит даже на slower 4.0 (player walk ~6.4 u/s при cap=80).
-	max_hp = 120
+	max_hp = 200
 	move_speed = 4.0
 	attack_range = 2.5
 	attack_windup = 0.5
