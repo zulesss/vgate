@@ -227,6 +227,11 @@ navigation_mesh = SubResource("NavMesh_arena_a")
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
 
+; Hub-arena spawn — центр арены. Backwards-compat с main.tscn fixed (0,1,0).
+
+[node name="PlayerStart" type="Marker3D" parent="." groups=["player_start"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
 [node name="SpawnPoints" type="Node3D" parent="." unique_id=76992111]
 
 [node name="S1" type="Marker3D" parent="SpawnPoints" unique_id=1909106521 groups=["spawn_point"]]

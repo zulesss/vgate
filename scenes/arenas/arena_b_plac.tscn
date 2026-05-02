@@ -131,6 +131,13 @@ navigation_mesh = SubResource("NavMesh_arena_b")
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
 
+; Hub-arena spawn — игрок появляется в центре арены, как было до a3b9569 (player
+; node в main.tscn fixed at (0,1,0)). Group "player_start" подхватывается
+; main.gd / run_loop.gd для per-arena positioning.
+
+[node name="PlayerStart" type="Marker3D" parent="." groups=["player_start"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
 [node name="SpawnPoints" type="Node3D" parent="."]
 
 [node name="S1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
