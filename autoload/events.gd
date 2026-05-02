@@ -35,3 +35,12 @@ signal kill_chain_triggered(tier: int, hit_pos: Vector3)
 # cap ceiling boost. Exited эмитится при window timeout / death / run_started.
 signal kill_chain_streak_entered(hit_pos: Vector3)
 signal kill_chain_streak_exited()
+
+# M9 Hot Zones / sphere objective (parallel-axis к kill economy):
+# 25 спав-сфер за 120с, каждая 7с lifetime, capture через Area3D walk-through.
+# Capture не восстанавливает cap, не даёт score, не влияет на ammo — pure objective.
+# objective_complete эмитится один раз когда captured_count достигает 20 — слушает
+# SpawnController (пауза врагов до конца run'а).
+signal sphere_captured(world_pos: Vector3)
+signal sphere_expired(world_pos: Vector3)
+signal objective_complete()
