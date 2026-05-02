@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://b7vg8boss0001"]
+[gd_scene format=3 uid="uid://b7vg8boss0001"]
 
 [ext_resource type="Script" path="res://objects/boss.gd" id="1_boss"]
 [ext_resource type="PackedScene" uid="uid://baqan4xhqon2n" path="res://assets/models/quaternius/melee_robot.gltf" id="2_visual"]
