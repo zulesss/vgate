@@ -15,10 +15,10 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Visual differentiation — золотой emissive HDR через override material'а уже
 # после super._ready'я (base clone'ит mesh material и держит его в _material).
-# Mesh scale 1.6 ставится через visual_root в scene'е (transform), но тут
-# подстраховываемся в _ready'е чтобы lunge/walk работали с увеличенным
-# силуэтом (collision shape остаётся melee-default — boss физически такого же
-# радиуса, не толще, иначе застрянет в narrow R4 6u-corridor'е).
+# Mesh scale 1.6 ставится через visual_root в scene'е (transform на Visual node).
+# Collision shape остаётся melee-default (radius 0.5, height 1.7) — boss
+# физически такого же радиуса, не толще, иначе застрянет в narrow R4
+# 6u-corridor'е.
 
 const BOSS_EMISSION_COLOR := Color(2.0, 0.8, 0.3)  # HDR golden — > 1.0 даёт bloom при tonemap'е
 const BOSS_EMISSION_ENERGY := 1.5
