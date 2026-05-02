@@ -232,7 +232,7 @@ func _is_point_eligible(p: Marker3D) -> bool:
 # чтобы не создавать transient Area3D на каждый тик. Sphere shape прощает
 # вертикальный clearance (capsule height не критично — на полу).
 func _is_spawn_area_clear(world_pos: Vector3) -> bool:
-	var space := get_world_3d().direct_space_state
+	var space := get_viewport().get_world_3d().direct_space_state
 	if space == null:
 		return true  # No physics space yet (early frame) — let spawn proceed
 	var shape := SphereShape3D.new()
