@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0vgintrotxt01"]
+
+[ext_resource type="Script" path="res://scripts/intro_text.gd" id="1_introtxt"]
+
+[sub_resource type="SystemFont" id="SystemFont_introtxt"]
+font_names = PackedStringArray("Consolas", "Menlo", "DejaVu Sans Mono", "monospace")
+
+[sub_resource type="Theme" id="Theme_introtxt"]
+default_font = SubResource("SystemFont_introtxt")
+default_font_size = 56
+
+[node name="IntroText" type="CanvasLayer"]
+layer = 25
+script = ExtResource("1_introtxt")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -480.0
+offset_top = -120.0
+offset_right = 480.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_introtxt")
+text = "CAPTURE 15 SPHERES
+AND SURVIVE 2 MINUTES"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+mouse_filter = 2
