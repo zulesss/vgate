@@ -35,11 +35,11 @@ func _on_run_started() -> void:
 		_tween.kill()
 	backdrop.modulate.a = 0.0
 	label.modulate.a = 0.0
+	# Все 4 tween'а параллельны во времени, sequencing через set_delay —
+	# bulletproof против quirk'ов chain() + set_parallel в Godot 4.x.
 	_tween = create_tween()
 	_tween.set_parallel(true)
 	_tween.tween_property(backdrop, "modulate:a", 1.0, FADE_IN)
 	_tween.tween_property(label, "modulate:a", 1.0, FADE_IN)
-	_tween.chain().tween_interval(HOLD)
-	_tween.chain().set_parallel(true)
-	_tween.tween_property(backdrop, "modulate:a", 0.0, FADE_OUT)
-	_tween.tween_property(label, "modulate:a", 0.0, FADE_OUT)
+	_tween.tween_property(backdrop, "modulate:a", 0.0, FADE_OUT).set_delay(FADE_IN + HOLD)
+	_tween.tween_property(label, "modulate:a", 0.0, FADE_OUT).set_delay(FADE_IN + HOLD)
