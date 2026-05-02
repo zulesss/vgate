@@ -8,9 +8,14 @@ class_name SpawnController extends Node
 # get_parent().add_child) — у Enemies нет логики, чисто контейнер. Старые
 # hard-coded EnemyMelee/EnemyShooter из main.tscn удалены вместе с этим pkg'ем.
 
-const RAMP_K := 0.005                 # interval = max(FLOOR, BASE / (1 + t * K))
-const RAMP_BASE := 4.0
-const INTERVAL_FLOOR := 0.8           # абсолютный минимум между двумя spawn'ами
+# M9 conquest: 120s run с phased ramp. Замена endless формулы (RAMP_K=0.005, RAMP_BASE=4.0,
+# FLOOR=0.8). К t=60: ~1.5с. К t=90: ~1.1с. К t=90+ (spike): ~0.5с (×2.2 врагов на пиковое
+# давление 90-120). Числа из milestone-spec'а.
+const RAMP_K := 0.018                 # interval = max(FLOOR, BASE / (1 + t * K))
+const RAMP_BASE := 3.5
+const INTERVAL_FLOOR := 0.4           # абсолютный минимум между двумя spawn'ами (spike phase)
+const SPIKE_START := 90.0             # сек, instant step-up на peak давление до t=120
+const SPIKE_INTERVAL_MULT := 0.45     # base_interval * 0.45 → ~×2.2 врагов в spike phase
 # DEBUG: fast spawn для тестирования feel-эффектов (Kill Chain etc.).
 # True = override interval на ~0.4с независимо от run_time. ВЕРНУТЬ false перед merge'ем
 # в main для production playtest'а. M4 numbers в docs/systems/M4_spawn_numbers.md остаются LOCKED.
@@ -121,7 +126,10 @@ func _process(delta: float) -> void:
 	if DEBUG_FAST_SPAWN:
 		interval = DEBUG_SPAWN_INTERVAL
 	else:
-		interval = max(INTERVAL_FLOOR, RAMP_BASE / (1.0 + _run_time * RAMP_K))
+		var base_interval: float = max(INTERVAL_FLOOR, RAMP_BASE / (1.0 + _run_time * RAMP_K))
+		# Spike phase: t >= 90 sec → step-up до ~×2.2 врагов. Step (не linear ramp) —
+		# игрок должен почувствовать «что-то изменилось» в этот момент.
+		interval = base_interval * SPIKE_INTERVAL_MULT if _run_time >= SPIKE_START else base_interval
 	if _spawn_timer < interval:
 		return
 	if _live_enemies >= ENEMY_CAP:
