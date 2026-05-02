@@ -124,6 +124,10 @@ func _ready() -> void:
 	if _heartbeat_player.stream != null:
 		_loop_stream(_heartbeat_player.stream)
 	_drain_player = _make_2d("drain_warning.ogg", -14.0)
+	# pause замораживает drain_warning loop (юзер 2026-05-02: "нажал паузу — drain
+	# не перестал играть"). Парент Sfx — PROCESS_MODE_ALWAYS чтобы tween'ы duck/death
+	# работали на паузе; per-player override как у heartbeat.
+	_drain_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if _drain_player.stream != null:
 		_loop_stream(_drain_player.stream)
 	_ambient_player = _make_ambient("scifi_drone.ogg", AMBIENT_DEFAULT_DB)
