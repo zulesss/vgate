@@ -89,9 +89,16 @@ func _update_state() -> void:
 	if state == State.REPOSITION:
 		if _has_reposition_target:
 			var to_target: float = global_position.distance_to(_reposition_target)
-			if to_target > REPOSITION_REACH:
+			# Stuck-detection: если NavAgent рапортует path finished но мы ещё далеко
+			# от target'а — значит NavMesh path найти не смог (target недостижим, типа
+			# на другом nav-tier'е до которого ramp-эрозия не дотягивает, или цель
+			# попала в eroded зону). Без этого guard'а shooter застревает в REPOSITION
+			# навечно: `return` ниже не пускает в attack-логику, и при потере player'ом
+			# tier'а "снайперы перестают по нему стрелять" (playtest 2026-05-02).
+			# Bail-through: drop target, fall в normal dist/LOS логику ниже.
+			if to_target > REPOSITION_REACH and not nav_agent.is_navigation_finished():
 				return  # ещё едем
-		# Доехали → reset, выбираем нормальное поведение по дистанции.
+		# Доехали ИЛИ застряли (path dead) → reset, выбираем нормальное поведение.
 		_has_reposition_target = false
 		_schedule_next_reposition()
 
