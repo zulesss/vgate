@@ -66,7 +66,6 @@ func _ready() -> void:
 	Events.run_restart_requested.connect(_on_restart)
 	Events.run_started.connect(_on_run_started)
 	Events.journey_complete.connect(_on_journey_complete)
-	Events.enemy_killed.connect(_on_enemy_killed)
 
 
 func _process(_delta: float) -> void:
@@ -78,6 +77,16 @@ func _process(_delta: float) -> void:
 	# t≥120 без win → OBJECTIVE FAILED (player_died emit). Win триггерится из
 	# _on_journey_complete по факту goal entry, не здесь.
 	if _is_journey:
+		# Win check polled per-frame (вместо broken signal-based path): goal entry
+		# set'ит _journey_goal_reached, а последний enemy queue_free's только после
+		# 0.6с death animation — signal на enemy_killed эмитится ДО free и видит
+		# умирающего как "ещё в группе". Polling в _process ловит exact frame
+		# когда последний queue_free отработал и группа реально пуста.
+		if _journey_goal_reached and _all_enemies_dead():
+			_won = true
+			VelocityGate.is_alive = false
+			Events.run_won.emit()
+			return
 		if t >= RUN_DURATION:
 			_won = true
 			VelocityGate.is_alive = false
@@ -143,8 +152,8 @@ func _on_journey_complete() -> void:
 		# trigger у себя guard'ит против double-fire (_triggered=true), что значит
 		# повторный pass-through уже не выстрелит. Если игрок выйдет/войдёт после
 		# зачистки — _on_journey_complete не повторится. Поэтому запоминаем что
-		# goal уже посещён, и check'аем all_enemies_dead в Events.enemy_killed
-		# listener'е — последний killed enemy после goal entry должен finalize win.
+		# goal уже посещён, и polling в _process ловит момент когда последний
+		# enemy queue_free's (после 0.6с death anim) и группа реально пуста.
 		_journey_goal_reached = true
 		return
 	_won = true
@@ -159,32 +168,6 @@ func _all_enemies_dead() -> bool:
 	return get_tree().get_nodes_in_group(ENEMY_GROUP).is_empty()
 
 
-# Goal-after-clear path: игрок может зачистить territory ПОСЛЕ goal entry —
-# например если зашёл в goal слишком рано и вернулся killing remaining
-# defenders. На каждом enemy_killed (journey arena, goal уже visited) проверяем
-# и finalize'им win.
-func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
-	if not _is_journey or _won or not VelocityGate.is_alive:
-		return
-	if not _journey_goal_reached:
-		return
-	# enemy_killed эмитится ДО queue_free врага (см. EnemyBase). На момент check'а
-	# убитый ещё в группе — нужно exclude. Считаем "alive" как любой живой EnemyBase
-	# (queue_freed via die() выходит из группы немедленно? нет — queue_free defer'ит
-	# выход до next idle frame). Поэтому используем deferred check на следующем frame.
-	call_deferred("_check_journey_win_after_kill")
-
-
-func _check_journey_win_after_kill() -> void:
-	if _won or not VelocityGate.is_alive:
-		return
-	if not _all_enemies_dead():
-		return
-	_won = true
-	VelocityGate.is_alive = false
-	Events.run_won.emit()
-
-
 func _on_run_started() -> void:
 	# Reset state на каждый new run: spike может тригернуться заново, win-flag
 	# сбрасывается чтобы restart после победы стартовал чистый.
@@ -192,9 +175,9 @@ func _on_run_started() -> void:
 	_won = false
 	_journey_goal_reached = false
 	# Journey arena detection (cached): _process читает _is_journey для timer-fail
-	# и enemy_killed handler гэйтится по нему. _on_journey_complete делает свой own
-	# just-in-time group lookup для robustness — кэш может быть stale если signal
-	# не пришёл (initial load до первого run_started).
+	# и polling win check (goal_reached + all_enemies_dead). _on_journey_complete
+	# делает свой own just-in-time group lookup для robustness — кэш может быть
+	# stale если signal не пришёл (initial load до первого run_started).
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 
 
