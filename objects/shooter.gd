@@ -25,6 +25,12 @@ var _telegraph_audio: AudioStreamPlayer3D
 var _reposition_timer: float = 0.0
 var _reposition_target: Vector3 = Vector3.ZERO
 var _has_reposition_target: bool = false
+# Journey-arena turret-mode: shooter не репозится и не chase'ит (стоит на месте,
+# крутится к player'у, стреляет по LOS). Detect через group `objective_journey`
+# на arena root в _ready (consistent с run_loop / spawn_controller pattern).
+# Playtest 2026-05-02: "снайперы отходят в сторону откуда я ухожу" в journey —
+# мешает kill-to-proceed-через-cover темпу. Arena_b/arena_a сохраняют reposition.
+var _stationary: bool = false
 
 
 func _ready() -> void:
@@ -46,6 +52,8 @@ func _ready() -> void:
 	_telegraph_audio.stream = load("res://sounds/blaster.ogg")
 	_telegraph_audio.unit_size = 8.0
 	add_child(_telegraph_audio)
+
+	_stationary = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 
 	_schedule_next_reposition()
 
@@ -73,12 +81,15 @@ func _update_state() -> void:
 
 	# Reposition trigger: периодический таймер (тикает в _physics_process выше)
 	# ИЛИ потеря line-of-sight в Attack/Chase.
+	# Journey-arena: _stationary=true → reposition полностью отключён (turret-mode).
+	# Defender'ы держат свою позицию из tscn placement, player должен dig их out.
 	var need_reposition := false
-	if _reposition_timer <= 0.0:
-		need_reposition = true
-	elif dist <= attack_range and not _has_line_of_sight():
-		# В range но не вижу — обходим cover.
-		need_reposition = true
+	if not _stationary:
+		if _reposition_timer <= 0.0:
+			need_reposition = true
+		elif dist <= attack_range and not _has_line_of_sight():
+			# В range но не вижу — обходим cover.
+			need_reposition = true
 
 	if need_reposition and state != State.REPOSITION:
 		_pick_reposition_target()
@@ -116,6 +127,14 @@ func _update_state() -> void:
 # Override: Reposition использует _reposition_target. Остальные состояния
 # (Idle/Chase/Attack-windup) дефер'им в base (та же логика что у Melee).
 func _apply_movement(delta: float) -> void:
+	# Journey turret-mode: shooter стоит на месте всегда. Base CHASE начинает
+	# pursuit когда player вылетает за attack_range (18m, < detection 35m) —
+	# не хотим этого в journey (defender должен держать пост в R1/R2/R3/R4).
+	# Rotation работает (face_player в base _physics_process до _apply_movement).
+	if _stationary:
+		_set_planar_velocity(Vector3.ZERO, delta)
+		move_and_slide()
+		return
 	if state == State.REPOSITION and _has_reposition_target and nav_agent != null:
 		nav_agent.target_position = _reposition_target
 		if nav_agent.is_navigation_finished():
