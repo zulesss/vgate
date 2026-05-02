@@ -9,13 +9,14 @@ class_name IntroText extends CanvasLayer
 #   - Если новый run_started прилетит во время предыдущего fade'а (быстрый death-restart) —
 #     прерываем активный tween и стартуем заново. Иначе бы tween'ы накладывались.
 #
-# Mouse passthrough: layer высокий чтобы поверх HUD / crosshair'а, но mouse_filter=ignore
-# на root + child label чтобы клики/aim проходили насквозь (игрок может играть пока visible).
+# Tween таргетит дочерние CanvasItem'ы (Backdrop, Label) — у CanvasLayer нет modulate.
+# Pattern same как kill_chain_flash.gd: rect.modulate.a tween, не self.modulate.
 
 const FADE_IN := 0.5
 const HOLD := 4.0
 const FADE_OUT := 0.5
 
+@onready var backdrop: ColorRect = $Backdrop
 @onready var label: Label = $Label
 
 var _tween: Tween = null
@@ -23,21 +24,22 @@ var _tween: Tween = null
 
 func _ready() -> void:
 	# Стартует невидимым — emit run_started в RunLoop._ready пинает первый show.
-	modulate.a = 0.0
+	backdrop.modulate.a = 0.0
+	label.modulate.a = 0.0
 	Events.run_started.connect(_on_run_started)
 
 
 func _on_run_started() -> void:
-	_refresh_text()
+	label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % SphereDirector.CAPTURE_TARGET
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
-	modulate.a = 0.0
+	backdrop.modulate.a = 0.0
+	label.modulate.a = 0.0
 	_tween = create_tween()
-	_tween.tween_property(self, "modulate:a", 1.0, FADE_IN)
-	_tween.tween_interval(HOLD)
-	_tween.tween_property(self, "modulate:a", 0.0, FADE_OUT)
-
-
-func _refresh_text() -> void:
-	var target: int = SphereDirector.CAPTURE_TARGET
-	label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % target
+	_tween.set_parallel(true)
+	_tween.tween_property(backdrop, "modulate:a", 1.0, FADE_IN)
+	_tween.tween_property(label, "modulate:a", 1.0, FADE_IN)
+	_tween.chain().tween_interval(HOLD)
+	_tween.chain().set_parallel(true)
+	_tween.tween_property(backdrop, "modulate:a", 0.0, FADE_OUT)
+	_tween.tween_property(label, "modulate:a", 0.0, FADE_OUT)
