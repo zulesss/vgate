@@ -28,6 +28,7 @@ AudioSettings="*res://autoload/audio_settings.gd"
 Sfx="*res://autoload/sfx.gd"
 MusicDirector="*res://autoload/music_director.gd"
 KillChain="*res://autoload/kill_chain.gd"
+SphereDirector="*res://autoload/sphere_director.gd"
 
 [display]
 
