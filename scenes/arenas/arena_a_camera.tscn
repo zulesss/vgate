@@ -1,0 +1,369 @@
+[gd_scene load_steps=22 format=3 uid="uid://vgateaa1camera"]
+
+[ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(26, 1, 26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
+size = Vector3(26, 0.5, 26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_outerNS"]
+size = Vector3(26, 3.5, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_outerEW"]
+size = Vector3(0.5, 3.5, 26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_innerH6"]
+size = Vector3(6, 3.5, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_innerV6"]
+size = Vector3(0.5, 3.5, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cornerH5"]
+size = Vector3(5, 3.5, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cornerH1"]
+size = Vector3(1, 3.5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.5, 0.5, 0.52, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_ceiling"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.4, 0.42, 0.45, 1)
+
+[sub_resource type="NavigationMesh" id="NavMesh_arena_a"]
+geometry_parsed_geometry_type = 0
+geometry_source_geometry_mode = 1
+geometry_source_group_name = &"navigation_geometry"
+agent_radius = 0.3
+agent_height = 1.8
+agent_max_climb = 0.3
+agent_max_slope = 5.0
+
+[node name="ArenaA" type="Node3D" groups=["navigation_geometry"]]
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(26, 1, 26)
+material = SubResource("Mat_floor")
+
+[node name="NavMeshFloor" type="MeshInstance3D" parent="Floor"]
+visible = false
+mesh = SubResource("BoxMesh_floor")
+
+[node name="Ceiling" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.75, 0)
+use_collision = true
+size = Vector3(26, 0.5, 26)
+material = SubResource("Mat_ceiling")
+
+[node name="NavMeshCeiling" type="MeshInstance3D" parent="Ceiling"]
+visible = false
+mesh = SubResource("BoxMesh_ceiling")
+
+[node name="WallNorth" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, -13)
+use_collision = true
+size = Vector3(26, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMeshWallNorth" type="MeshInstance3D" parent="WallNorth"]
+visible = false
+mesh = SubResource("BoxMesh_outerNS")
+
+[node name="WallSouth" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 13)
+use_collision = true
+size = Vector3(26, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMeshWallSouth" type="MeshInstance3D" parent="WallSouth"]
+visible = false
+mesh = SubResource("BoxMesh_outerNS")
+
+[node name="WallEast" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 1.75, 0)
+use_collision = true
+size = Vector3(0.5, 3.5, 26)
+material = SubResource("Mat_wall")
+
+[node name="NavMeshWallEast" type="MeshInstance3D" parent="WallEast"]
+visible = false
+mesh = SubResource("BoxMesh_outerEW")
+
+[node name="WallWest" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 1.75, 0)
+use_collision = true
+size = Vector3(0.5, 3.5, 26)
+material = SubResource("Mat_wall")
+
+[node name="NavMeshWallWest" type="MeshInstance3D" parent="WallWest"]
+visible = false
+mesh = SubResource("BoxMesh_outerEW")
+
+[node name="InnerWall_N_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.75, -4)
+use_collision = true
+size = Vector3(6, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iN_W" type="MeshInstance3D" parent="InnerWall_N_W"]
+visible = false
+mesh = SubResource("BoxMesh_innerH6")
+
+[node name="InnerWall_N_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.75, -4)
+use_collision = true
+size = Vector3(6, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iN_E" type="MeshInstance3D" parent="InnerWall_N_E"]
+visible = false
+mesh = SubResource("BoxMesh_innerH6")
+
+[node name="InnerWall_S_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 1.75, 4)
+use_collision = true
+size = Vector3(6, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iS_W" type="MeshInstance3D" parent="InnerWall_S_W"]
+visible = false
+mesh = SubResource("BoxMesh_innerH6")
+
+[node name="InnerWall_S_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1.75, 4)
+use_collision = true
+size = Vector3(6, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iS_E" type="MeshInstance3D" parent="InnerWall_S_E"]
+visible = false
+mesh = SubResource("BoxMesh_innerH6")
+
+[node name="InnerWall_W_N" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.75, -7)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iW_N" type="MeshInstance3D" parent="InnerWall_W_N"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="InnerWall_W_S" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.75, 7)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iW_S" type="MeshInstance3D" parent="InnerWall_W_S"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="InnerWall_E_N" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.75, -7)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iE_N" type="MeshInstance3D" parent="InnerWall_E_N"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="InnerWall_E_S" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.75, 7)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_iE_S" type="MeshInstance3D" parent="InnerWall_E_S"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="CornerWall_NW_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.75, -10)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNW_E" type="MeshInstance3D" parent="CornerWall_NW_E"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="CornerWall_NW_S_outer" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1.75, -5)
+use_collision = true
+size = Vector3(5, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNW_S_o" type="MeshInstance3D" parent="CornerWall_NW_S_outer"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH5")
+
+[node name="CornerWall_NW_S_inner" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.75, -5)
+use_collision = true
+size = Vector3(1, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNW_S_i" type="MeshInstance3D" parent="CornerWall_NW_S_inner"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH1")
+
+[node name="CornerWall_NE_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.75, -10)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNE_W" type="MeshInstance3D" parent="CornerWall_NE_W"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="CornerWall_NE_S_outer" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1.75, -5)
+use_collision = true
+size = Vector3(5, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNE_S_o" type="MeshInstance3D" parent="CornerWall_NE_S_outer"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH5")
+
+[node name="CornerWall_NE_S_inner" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.75, -5)
+use_collision = true
+size = Vector3(1, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cNE_S_i" type="MeshInstance3D" parent="CornerWall_NE_S_inner"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH1")
+
+[node name="CornerWall_SW_E" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.75, 10)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSW_E" type="MeshInstance3D" parent="CornerWall_SW_E"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="CornerWall_SW_N_outer" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1.75, 5)
+use_collision = true
+size = Vector3(5, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSW_N_o" type="MeshInstance3D" parent="CornerWall_SW_N_outer"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH5")
+
+[node name="CornerWall_SW_N_inner" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.75, 5)
+use_collision = true
+size = Vector3(1, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSW_N_i" type="MeshInstance3D" parent="CornerWall_SW_N_inner"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH1")
+
+[node name="CornerWall_SE_W" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.75, 10)
+use_collision = true
+size = Vector3(0.5, 3.5, 6)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSE_W" type="MeshInstance3D" parent="CornerWall_SE_W"]
+visible = false
+mesh = SubResource("BoxMesh_innerV6")
+
+[node name="CornerWall_SE_N_outer" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1.75, 5)
+use_collision = true
+size = Vector3(5, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSE_N_o" type="MeshInstance3D" parent="CornerWall_SE_N_outer"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH5")
+
+[node name="CornerWall_SE_N_inner" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.75, 5)
+use_collision = true
+size = Vector3(1, 3.5, 0.5)
+material = SubResource("Mat_wall")
+
+[node name="NavMesh_cSE_N_i" type="MeshInstance3D" parent="CornerWall_SE_N_inner"]
+visible = false
+mesh = SubResource("BoxMesh_cornerH1")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavMesh_arena_a")
+
+[node name="NavBaker" type="Node" parent="." node_paths=PackedStringArray("region")]
+script = ExtResource("1_navbaker")
+region = NodePath("../NavigationRegion3D")
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="S1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11)
+
+[node name="S2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11)
+
+[node name="S3" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, 0)
+
+[node name="S4" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 0)
+
+[node name="S5" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -10)
+
+[node name="S6" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -10)
+
+[node name="S7" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 10)
+
+[node name="S8" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 10)
+
+[node name="SphereSlots" type="Node3D" parent="."]
+
+[node name="SS1" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="SS2" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 3)
+
+[node name="SS3" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, 3)
+
+[node name="SS4" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, -3)
+
+[node name="SS5" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, -3)
+
+[node name="SS6" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -10)
+
+[node name="SS7" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 10)
+
+[node name="SS8" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 0)
+
+[node name="SS9" type="Marker3D" parent="SphereSlots" groups=["sphere_slot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, 0)

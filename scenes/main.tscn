@@ -13,7 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://b72n6a5eoo8xc" path="res://scenes/pause_menu.tscn" id="13_pmenu"]
 [ext_resource type="PackedScene" uid="uid://bdllyyo8pgpf1" path="res://scenes/kill_chain_flash.tscn" id="14_kcflash"]
 [ext_resource type="PackedScene" uid="uid://b0vgintrotxt01" path="res://scenes/intro_text.tscn" id="18_introtxt"]
-[ext_resource type="PackedScene" uid="uid://vgateab1plac" path="res://scenes/arenas/arena_b_plac.tscn" id="15_arena_b"]
+[ext_resource type="PackedScene" uid="uid://vgateaa1camera" path="res://scenes/arenas/arena_a_camera.tscn" id="15_arena_a"]
 [ext_resource type="Script" uid="uid://dyll6yqtwkcpr" path="res://scripts/main.gd" id="16_mainscript"]
 
 [sub_resource type="PanoramaSkyMaterial" id="SkyMat_main"]
@@ -39,7 +39,7 @@ shader_parameter/vignette_outer = 0.75
 
 [node name="Main" type="Node3D" unique_id=2122460138]
 script = ExtResource("16_mainscript")
-arena_scene = ExtResource("15_arena_b")
+arena_scene = ExtResource("15_arena_a")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=786217075]
 environment = SubResource("Env_main")
