@@ -30,7 +30,7 @@ func _enter_tree() -> void:
 # Initial player positioning по PlayerStart Marker3D из активной арены.
 # Делаем в _ready() (а не в _enter_tree()) чтобы Player.tscn успел отработать
 # свой _ready и rotation_target проинициализировался — иначе наш set перетрётся.
-# Restart-loop reposition'ит игрок RunLoop._on_run_started — этот хук только
+# Restart-loop reposition'ит игрок RunLoop._on_restart — этот хук только
 # для первого спавна сессии.
 func _ready() -> void:
 	var player: Node = get_node_or_null("Player")
