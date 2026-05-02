@@ -29,6 +29,16 @@ const MIN_SPAWN_DISTANCE := 12.0      # < 12u от player'а — skip
 const SHOOTER_ANTI_CLUSTER_RADIUS := 8.0
 const SPAWN_POINT_COOLDOWN := 3.0
 const TELEGRAPH_FADE_SECONDS := 0.25
+# M9 spawn-stuck fix (playtest 7min Phase 3 high swarm density). Перед spawn'ом
+# проверяем что в радиусе SPAWN_CLEARANCE_RADIUS вокруг spawn-position'а нет
+# других врагов. Радиус покрывает swarm ring offset 0.6u + capsule radius 0.5u
+# + margin. Если не clear — этот spawn-tick отменяется (точка получает короткий
+# soft-cooldown SPAWN_BLOCKED_RECHECK), interval timer не сбрасывается — спавн
+# попытается на следующем тике (быстрый retry). См. карпу-чек: альтернатива —
+# wire RVO velocity_computed на enemy_base, но это design-decision (M8 revert
+# на hard collision был осознанный — flag parent'у в финальном отчёте).
+const SPAWN_CLEARANCE_RADIUS := 1.2
+const SPAWN_BLOCKED_RECHECK := 0.5
 # M5 audio cleanup: spawn-telegraph audio теперь exclusive у Sfx autoload через
 # Events.enemy_spawned (melee_spawn.ogg / shooter_spawn.ogg). Раньше здесь
 # create'ился AudioStreamPlayer3D с blaster.ogg — был аудио double-trigger.
@@ -129,6 +139,16 @@ func _process(delta: float) -> void:
 		_spawn_timer = interval
 		return
 
+	# M9 anti-overlap: точка может быть free по cooldown'у, но physically заблокирована
+	# другим врагом (swarmling not yet cleared spawn area из-за player camping nearby /
+	# stuck pursuit). Skip этот tick, soft-cooldown точку на 0.5с — даём свармлингу
+	# уйти. Не сбрасываем _spawn_timer (спавн ramp не теряется), на следующем тике
+	# _pick_point предложит другую точку (ту, у которой нет soft-cooldown'а).
+	if not _is_spawn_area_clear(point.global_position):
+		_point_cooldowns[str(point.name)] = SPAWN_BLOCKED_RECHECK
+		_spawn_timer = interval
+		return
+
 	var type_choice := _pick_type(point)
 	if type_choice == "swarmling":
 		# Group spawn: 3-4 одновременно, sub-cap MAX_LIVE_SWARMLINGS (M8 spec §2).
@@ -204,6 +224,27 @@ func _is_point_eligible(p: Marker3D) -> bool:
 		if p.global_position.distance_to(_player.global_position) < MIN_SPAWN_DISTANCE:
 			return false
 	return true
+
+
+# Physics overlap check: есть ли уже враг в радиусе SPAWN_CLEARANCE_RADIUS
+# вокруг spawn position'а. Layer 4 = enemies (см. objects/*.tscn collision_layer).
+# Возвращает true когда area clear (можно спавнить). PhysicsServer3D direct API
+# чтобы не создавать transient Area3D на каждый тик. Sphere shape прощает
+# вертикальный clearance (capsule height не критично — на полу).
+func _is_spawn_area_clear(world_pos: Vector3) -> bool:
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return true  # No physics space yet (early frame) — let spawn proceed
+	var shape := SphereShape3D.new()
+	shape.radius = SPAWN_CLEARANCE_RADIUS
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, Vector3(world_pos.x, SPAWN_Y, world_pos.z))
+	query.collision_mask = 4  # enemies only — игнорируем env (layer 1) и player (layer 2)
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	var results := space.intersect_shape(query, 1)
+	return results.is_empty()
 
 
 func _weighted_pick(candidates: Array[Marker3D], weights: Array[int]) -> Marker3D:
