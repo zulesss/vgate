@@ -76,6 +76,10 @@ var _live_shooters: int = 0
 var _live_swarmlings: int = 0
 var _spawn_points: Array[Marker3D] = []
 var _player: Node3D = null
+# M9 Hot Zones: pause new spawns когда игрок выполнил objective (≥20 capture).
+# Existing enemies продолжают жить до natural death (kill / despawn по timer'у).
+# Reset на run_started через _on_run_started.
+var _enemies_paused: bool = false
 
 var _melee_scene: PackedScene = preload("res://objects/melee.tscn")
 var _shooter_scene: PackedScene = preload("res://objects/shooter.tscn")
@@ -107,10 +111,16 @@ func _ready() -> void:
 
 	Events.run_started.connect(_on_run_started)
 	Events.enemy_killed.connect(_on_enemy_killed)
+	Events.objective_complete.connect(_on_objective_complete)
 
 
 func _process(delta: float) -> void:
 	if not VelocityGate.is_alive:
+		return
+	# M9 Hot Zones: после objective_complete (20 sphere'ов capture) — pause всех
+	# новых spawn'ов до конца run'а (relief phase). Existing enemies остаются живыми
+	# естественно (despawn только через kill).
+	if _enemies_paused:
 		return
 
 	_run_time += delta
@@ -458,6 +468,7 @@ func _on_run_started() -> void:
 	_live_enemies = 0
 	_live_shooters = 0
 	_live_swarmlings = 0
+	_enemies_paused = false
 	# Очистить любых живых врагов (M4 in-place restart). Parent = Enemies-нода;
 	# скрипт сам себя не free'ит (он же child Enemies, не EnemyBase).
 	if get_parent() != null:
@@ -472,3 +483,7 @@ func _on_enemy_killed(_restore: int, _pos: Vector3, type: String) -> void:
 		_live_shooters = max(0, _live_shooters - 1)
 	elif type == "swarmling":
 		_live_swarmlings = max(0, _live_swarmlings - 1)
+
+
+func _on_objective_complete() -> void:
+	_enemies_paused = true

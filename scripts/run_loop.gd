@@ -16,9 +16,16 @@ class_name RunLoop extends Node
 #   - Win condition в t=120 (Events.run_won → WinScreen)
 # Время читается из VelocityGate.get_alive_time() — single source of truth с
 # accumulator'ом cap_avg в самом gate'е.
+#
+# M9 Hot Zones: win-eligibility теперь требует BOTH alive at 120s AND
+# SphereDirector.captured_count >= CAPTURE_TARGET (20). Если игрок дожил с <20
+# capture'ов — это fail (player_died emit'ится через VelocityGate.force_kill,
+# чтобы DeathScreen показал stats — игрок survival'нул timer но не выполнил
+# objective, treat как loss).
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0
+const SPHERE_TARGET := 20
 
 @export var player_path: NodePath
 @onready var player: Node = get_node_or_null(player_path)
@@ -47,14 +54,21 @@ func _process(_delta: float) -> void:
 	if not _spike_active and t >= SPIKE_TRIGGER_TIME:
 		_spike_active = true
 		VelocityGate.current_drain_threshold = VelocityGate.SPIKE_THRESHOLD
-	# Win condition: дожил до t≥120 → ARENA COMPLETE. Один раз через _won гард.
+	# Win/loss eligibility в t≥120. Hot Zones spec:
+	#   - alive AND captured >= 20 → WIN (run_won)
+	#   - alive AND captured < 20  → LOSS (player_died) — survived timer но objective fail
+	# В обоих случаях is_alive=false фризит state. Через _won гард — один раз.
 	if t >= RUN_DURATION:
 		_won = true
-		# Freeze player input + spawn + score через is_alive=false (single canonical
-		# kill-switch). НЕ зовём force_kill — он бы эмитнул player_died, спутал бы
-		# DeathScreen с WinScreen. Прямое присваивание — explicit "run frozen for win".
 		VelocityGate.is_alive = false
-		Events.run_won.emit()
+		if SphereDirector.captured_count >= SPHERE_TARGET:
+			Events.run_won.emit()
+		else:
+			# Objective fail: timer вышел но <20 capture'ов. Эмитим player_died
+			# напрямую (VelocityGate.force_kill бы тоже работал но он set'ит
+			# velocity_cap=0 что нечестно для stats — игрок дожил, cap может быть
+			# legit высоким). DeathScreen покажет sphere counter в "almost" виде.
+			Events.player_died.emit()
 
 
 func _on_run_started() -> void:
