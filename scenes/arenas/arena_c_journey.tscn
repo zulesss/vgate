@@ -40,13 +40,13 @@ size = Vector3(8, 1, 25)
 size = Vector3(20, 1, 20)
 
 [sub_resource type="BoxMesh" id="Box_floor_c12"]
-size = Vector3(8, 1, 25)
+size = Vector3(6, 1, 25)
 
 [sub_resource type="BoxMesh" id="Box_floor_r2"]
 size = Vector3(16, 1, 16)
 
 [sub_resource type="BoxMesh" id="Box_floor_c23"]
-size = Vector3(8, 1, 25)
+size = Vector3(6, 1, 25)
 
 [sub_resource type="BoxMesh" id="Box_floor_r3"]
 size = Vector3(24, 1, 16)
@@ -97,7 +97,7 @@ mesh = SubResource("Box_floor_r1")
 [node name="FloorC12" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 57.5)
 use_collision = true
-size = Vector3(8, 1, 25)
+size = Vector3(6, 1, 25)
 material = SubResource("Mat_corridor")
 
 [node name="NavMeshC12" type="MeshInstance3D" parent="FloorC12"]
@@ -117,7 +117,7 @@ mesh = SubResource("Box_floor_r2")
 [node name="FloorC23" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 98.5)
 use_collision = true
-size = Vector3(8, 1, 25)
+size = Vector3(6, 1, 25)
 material = SubResource("Mat_corridor")
 
 [node name="NavMeshC23" type="MeshInstance3D" parent="FloorC23"]
@@ -173,7 +173,7 @@ material = SubResource("Mat_ceiling")
 [node name="CeilC12" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 57.5)
 use_collision = true
-size = Vector3(8, 0.5, 25)
+size = Vector3(6, 0.5, 25)
 material = SubResource("Mat_ceiling")
 
 [node name="CeilR2" type="CSGBox3D" parent="."]
@@ -185,7 +185,7 @@ material = SubResource("Mat_ceiling")
 [node name="CeilC23" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 98.5)
 use_collision = true
-size = Vector3(8, 0.5, 25)
+size = Vector3(6, 0.5, 25)
 material = SubResource("Mat_ceiling")
 
 [node name="CeilR3" type="CSGBox3D" parent="."]
@@ -255,42 +255,43 @@ use_collision = true
 size = Vector3(0.5, 4, 20)
 material = SubResource("Mat_room")
 
+; R1 north opening narrowed to 6u (was 8u) to match C12 corridor — chokepoint
 [node name="WallR1N_W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, 45)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 2, 45)
 use_collision = true
-size = Vector3(6, 4, 0.5)
+size = Vector3(7, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR1N_E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 45)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 2, 45)
 use_collision = true
-size = Vector3(6, 4, 0.5)
+size = Vector3(7, 4, 0.5)
 material = SubResource("Mat_room")
 
-; ── C12 corridor walls (z 45..70, x ±4)
+; ── C12 corridor walls (z 45..70, x ±3 — narrowed from 8u to 6u for chokepoint feel)
 [node name="WallC12W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, 2, 57.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.25, 2, 57.5)
 use_collision = true
 size = Vector3(0.5, 4, 25)
 material = SubResource("Mat_corridor")
 
 [node name="WallC12E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.25, 2, 57.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.25, 2, 57.5)
 use_collision = true
 size = Vector3(0.5, 4, 25)
 material = SubResource("Mat_corridor")
 
-; ── R2 walls (z 70..86, x ±8). South opening 8u (x ±4), north opening 8u (x ±4).
+; ── R2 walls (z 70..86, x ±8). South opening 6u (matches C12), north opening 6u (matches C23).
 [node name="WallR2S_W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 70)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 2, 70)
 use_collision = true
-size = Vector3(4, 4, 0.5)
+size = Vector3(5, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR2S_E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, 70)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 2, 70)
 use_collision = true
-size = Vector3(4, 4, 0.5)
+size = Vector3(5, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR2W" type="CSGBox3D" parent="."]
@@ -306,15 +307,15 @@ size = Vector3(0.5, 4, 16)
 material = SubResource("Mat_room")
 
 [node name="WallR2N_W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 86)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 2, 86)
 use_collision = true
-size = Vector3(4, 4, 0.5)
+size = Vector3(5, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR2N_E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2, 86)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 2, 86)
 use_collision = true
-size = Vector3(4, 4, 0.5)
+size = Vector3(5, 4, 0.5)
 material = SubResource("Mat_room")
 
 ; R2 cover pillars 4×4 — двe штуки asymmetric для cover gameplay
@@ -330,30 +331,30 @@ use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_pillar")
 
-; ── C23 corridor walls (z 86..111, x ±4)
+; ── C23 corridor walls (z 86..111, x ±3 — narrowed from 8u to 6u for chokepoint feel)
 [node name="WallC23W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.25, 2, 98.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.25, 2, 98.5)
 use_collision = true
 size = Vector3(0.5, 4, 25)
 material = SubResource("Mat_corridor")
 
 [node name="WallC23E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.25, 2, 98.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.25, 2, 98.5)
 use_collision = true
 size = Vector3(0.5, 4, 25)
 material = SubResource("Mat_corridor")
 
-; ── R3 walls (z 111..127, x ±12). South opening 8u (corridor C23), north opening 6u (narrow corridor C34).
+; ── R3 walls (z 111..127, x ±12). South opening 6u (matches C23), north opening 6u (matches C34).
 [node name="WallR3S_W" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 111)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 2, 111)
 use_collision = true
-size = Vector3(8, 4, 0.5)
+size = Vector3(9, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR3S_E" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 111)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 2, 111)
 use_collision = true
-size = Vector3(8, 4, 0.5)
+size = Vector3(9, 4, 0.5)
 material = SubResource("Mat_room")
 
 [node name="WallR3W" type="CSGBox3D" parent="."]
@@ -430,16 +431,18 @@ material = SubResource("Mat_room")
 ; видит objective_journey group и noop'ает spawn ramp; defenders из scene live
 ; в idle до тех пор пока player не войдёт в detection_radius=35u (enemy_base default).
 ;
-; Layout per spec (post-2026-05-02 балансировка: было слишком просто пробежать,
-; corridors стояли пустыми, R4 boss room чувствовался как обычная комната):
+; Layout per spec (post-2026-05-02 повторная балансировка: 19 defenders без corridor
+; melee всё ещё bypass'или — игрок пробегал shooter'ов в широких 8u коридорах.
+; Fix: коридоры C12/C23 narrow до 6u (физический chokepoint) + по 1 мили в каждый
+; коридор как блокер на пути. C34 уже был 6u, добавлен мили):
 ;   R1: 3 swarmlings (welcome chaos)
-;   C1→2: 1 shooter (deep end) + 1 swarmling (mid) — corridor blocker
+;   C1→2 (6u narrow): 1 melee blocker (mid) + 1 shooter (deep) + 1 swarmling
 ;   R2: 2 shooters (defending pillars)
-;   C2→3: 1 shooter (mid-corridor blocker, был пуст)
-;   R3: 2 melee + 2 shooters + 2 swarm patrol (было 1m+2sh+1sw — middle room)
-;   C3→4 narrow: 1 shooter (узкий коридор blocker, был пуст — главный chokepoint)
-;   R4 boss room: 2 heavy melee + 2 shooters (было 1m+1sh — финал должен жать)
-; Total ~19 enemies (было 12).
+;   C2→3 (6u narrow): 1 melee blocker (mid) + 1 shooter
+;   R3: 2 melee + 2 shooters + 2 swarm patrol
+;   C3→4 (6u narrow): 1 melee blocker (mid) + 1 shooter (deep)
+;   R4 boss room: 2 heavy melee + 2 shooters
+; Total ~22 enemies (было 19) — coridors теперь требуют kill-to-proceed.
 
 [node name="Defenders" type="Node3D" parent="."]
 
@@ -455,6 +458,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 42)
 [node name="C12_Swarm1" parent="Defenders" instance=ExtResource("4_swarmling")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 53)
 
+[node name="C12_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 58)
+
 [node name="C12_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 65)
 
@@ -464,8 +470,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.9, 76)
 [node name="R2_Shooter2" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.9, 84)
 
-[node name="C23_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+[node name="C23_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 98)
+
+[node name="C23_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 102)
 
 [node name="R3_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.9, 115)
@@ -484,6 +493,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 124)
 
 [node name="R3_Swarm2" parent="Defenders" instance=ExtResource("4_swarmling")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.9, 117)
+
+[node name="C34_Melee1" parent="Defenders" instance=ExtResource("2_melee")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 134)
 
 [node name="C34_Shooter1" parent="Defenders" instance=ExtResource("3_shooter")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 140)
