@@ -182,6 +182,18 @@ func _on_run_started() -> void:
 
 
 func _on_restart() -> void:
+	# Re-instantiate arena ДО reset_for_run(): pre-placed defenders в arena scene
+	# (Defenders/ под journey arena) на первом run'е queue_free'ятся при kill'ах.
+	# Без re-instantiate ringpa restart даёт пустую арену. Synchronous remove_child
+	# в Main.reinstantiate_arena() выкидывает старый arena root из дерева до того,
+	# как run_started listener'ы (SpawnController, директора) запросят группы —
+	# они увидят свежие Marker3D'ы / Defenders, не старые.
+	# Sphere/Mark арены не имеют pre-placed enemies, но re-instantiate всё равно
+	# безопасен: NavBaker внутри арены делает sync rebake в _ready (см. nav_baker.gd),
+	# spawn-points refresh'аются в SpawnController на run_started (см. _on_run_started).
+	var main: Node = get_parent()
+	if main != null and main.has_method("reinstantiate_arena"):
+		main.reinstantiate_arena()
 	# Reset gate state и emit run_started — все listener'ы (spawn, score) подхватят.
 	VelocityGate.reset_for_run()
 	# Player: respawn() если есть метод (расширяемая convention), иначе fallback —

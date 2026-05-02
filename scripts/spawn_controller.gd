@@ -476,6 +476,19 @@ func _on_run_started() -> void:
 	_live_shooters = 0
 	_live_swarmlings = 0
 	_enemies_paused = false
+	# Refresh spawn-points + player из дерева: на restart Main.reinstantiate_arena()
+	# free'ит старый arena root — кэшированные с _ready() Marker3D references
+	# становятся stale. Перечитываем группы каждый run, чтобы новые Marker'ы
+	# ловились корректно. Player — единственный, его не пересоздаём, но defensive
+	# refresh на случай будущих player respawn-as-fresh-instance путей.
+	_spawn_points.clear()
+	var raw := get_tree().get_nodes_in_group("spawn_point")
+	for n in raw:
+		var m := n as Marker3D
+		if m == null:
+			continue
+		_spawn_points.append(m)
+	_player = get_tree().get_first_node_in_group("player") as Node3D
 	# Journey arena: pre-placed defenders only, dynamic spawning отключаем
 	# через _enemies_paused=true с самого старта. Mirror existing pause path
 	# (objective_complete) — _process'ится early-return пока флаг true.

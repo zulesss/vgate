@@ -12,6 +12,15 @@ class_name Main extends Node3D
 
 @export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_c_journey.tscn")
 
+# Кэш текущего arena instance для re-instantiation на restart. Pre-placed
+# defenders в arena scene (под Defenders/) на первом run'е queue_free'ятся
+# при kill'ах — на restart их нужно вернуть как фрешо инстансы. Делаем
+# через free()+add_child() нового инстанса; вызывается из RunLoop._on_restart
+# СИНХРОННО до VelocityGate.reset_for_run() чтобы listener'ы run_started
+# (SpawnController, Sphere/Mark директора, RunLoop._on_run_started) уже
+# видели новые группы (player_start / spawn_point / objective_journey).
+var _arena_node: Node = null
+
 
 # Инстанцируем arena в _enter_tree(), а НЕ в _ready(). Причина — Godot
 # вызывает _ready() bottom-up: child'ы (включая SpawnController внутри Enemies)
@@ -24,7 +33,28 @@ func _enter_tree() -> void:
 	if arena_scene == null:
 		push_error("Main: arena_scene не задан — арена не будет инстанциирована")
 		return
-	add_child(arena_scene.instantiate())
+	_arena_node = arena_scene.instantiate()
+	add_child(_arena_node)
+
+
+# Restart-time arena reset. Вызывается из RunLoop._on_restart СИНХРОННО до
+# VelocityGate.reset_for_run() — порядок критичен: listener'ы run_started
+# (SpawnController, директора) должны видеть свежие Marker3D'ы / pre-placed
+# defenders, а не старые (уже удалённые / частично queue_free'нутые).
+#
+# Pattern: remove_child + queue_free старого + add_child нового. remove_child
+# выкидывает старый из дерева СИНХРОННО (значит группы player_start/
+# spawn_point/objective_journey/enemy из него уйдут до того, как мы запросим
+# их у tree). queue_free() добивает память на следующем idle frame'е.
+func reinstantiate_arena() -> void:
+	if arena_scene == null:
+		push_error("Main: arena_scene не задан — re-instantiate skipped")
+		return
+	if _arena_node != null and is_instance_valid(_arena_node):
+		remove_child(_arena_node)
+		_arena_node.queue_free()
+	_arena_node = arena_scene.instantiate()
+	add_child(_arena_node)
 
 
 # Initial player positioning по PlayerStart Marker3D из активной арены.
