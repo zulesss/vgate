@@ -18,19 +18,9 @@ func _ready() -> void:
 	# silent fail однозначно исключил эту гипотезу).
 	monitoring = true
 	body_entered.connect(_on_body_entered)
-	# DEBUG-GOAL-TRIGGER (2026-05-02): юзер playtest — body_entered не фаерится.
-	# Ловим body_shape_entered тоже — диагностика. Удалить после следующего
-	# плейтеста с подтверждённым win-trigger'ом.
-	print("[GoalTrigger] _ready: monitoring=", monitoring,
-		" collision_mask=", collision_mask,
-		" global_pos=", global_position)
 
 
 func _on_body_entered(body: Node) -> void:
-	# DEBUG-GOAL-TRIGGER: лог любого тела на входе. Убрать вместе с _ready print'ом.
-	print("[GoalTrigger] body_entered: body=", body,
-		" name=", body.name,
-		" in_player_group=", body.is_in_group("player"))
 	if _triggered:
 		return
 	if not body.is_in_group("player"):

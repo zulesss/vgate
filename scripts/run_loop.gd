@@ -108,9 +108,15 @@ func _objective_met() -> bool:
 
 # Journey win path: GoalTrigger Area3D в arena scene'е эмитит journey_complete
 # когда player_body вошёл в trigger volume. Mirror'ит timer-based win path: гард
-# _won + _is_journey, freeze is_alive, emit run_won.
+# _won + just-in-time journey-detection, freeze is_alive, emit run_won.
+#
+# Just-in-time check (вместо чтения cached _is_journey из _on_run_started): если
+# Events.run_started ещё не fire'нул на initial load (только на restart) — кэш
+# stays false и win silently no-op'ит. Group-lookup на момент signal'а robust
+# к timing — если уж journey_complete пришёл, journey arena живёт в дереве.
 func _on_journey_complete() -> void:
-	if not _is_journey or _won or not VelocityGate.is_alive:
+	var is_journey: bool = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
+	if not is_journey or _won or not VelocityGate.is_alive:
 		return
 	_won = true
 	VelocityGate.is_alive = false
@@ -122,8 +128,9 @@ func _on_run_started() -> void:
 	# сбрасывается чтобы restart после победы стартовал чистый.
 	_spike_active = false
 	_won = false
-	# Journey arena detection: arena root в группе ARENA_GROUP_JOURNEY → timer
-	# logic отключается. Same pattern как SphereDirector / MarkDirector active gate.
+	# Journey arena detection (cached): _process читает _is_journey чтобы
+	# skip'нуть timer-logic. _on_journey_complete делает свой own just-in-time
+	# group lookup для robustness — кэш может быть stale если signal не пришёл.
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 
 
