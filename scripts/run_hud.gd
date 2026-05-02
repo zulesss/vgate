@@ -26,9 +26,9 @@ const TIMER_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const TIMER_COLOR_WARN := Color(0.95, 0.80, 0.30, 1)
 const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
 
-@onready var timer_label: Label = $TopLeft/TimerLabel
-@onready var score_label: Label = $TopRight/VBox/ScoreLabel
-@onready var sphere_label: Label = $TopRight/VBox/SphereLabel
+@onready var timer_label: Label = $TopLeft/VBox/TimerLabel
+@onready var sphere_label: Label = $TopLeft/VBox/SphereLabel
+@onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
 @onready var cap_bar: ProgressBar = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar

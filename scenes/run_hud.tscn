@@ -20,18 +20,34 @@ anchor_bottom = 0.0
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 280.0
-offset_bottom = 60.0
+offset_bottom = 110.0
 theme = SubResource("Theme_hud")
 theme_override_constants/margin_left = 0
 theme_override_constants/margin_top = 0
 mouse_filter = 2
 
-[node name="TimerLabel" type="Label" parent="TopLeft"]
+[node name="VBox" type="VBoxContainer" parent="TopLeft"]
+layout_mode = 2
+alignment = 0
+theme_override_constants/separation = 4
+mouse_filter = 2
+
+[node name="TimerLabel" type="Label" parent="TopLeft/VBox"]
 layout_mode = 2
 text = "[ 00:00 ]"
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+mouse_filter = 2
+
+[node name="SphereLabel" type="Label" parent="TopLeft/VBox"]
+layout_mode = 2
+text = "00 / 15"
+horizontal_alignment = 0
+theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
 [node name="TopRight" type="MarginContainer" parent="."]
@@ -43,34 +59,18 @@ anchor_bottom = 0.0
 offset_left = -280.0
 offset_top = 16.0
 offset_right = -16.0
-offset_bottom = 110.0
+offset_bottom = 60.0
 grow_horizontal = 0
 theme = SubResource("Theme_hud")
 mouse_filter = 2
 
-[node name="VBox" type="VBoxContainer" parent="TopRight"]
-layout_mode = 2
-alignment = 0
-theme_override_constants/separation = 4
-mouse_filter = 2
-
-[node name="ScoreLabel" type="Label" parent="TopRight/VBox"]
+[node name="ScoreLabel" type="Label" parent="TopRight"]
 layout_mode = 2
 text = "[ 0 ]"
 horizontal_alignment = 2
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
-mouse_filter = 2
-
-[node name="SphereLabel" type="Label" parent="TopRight/VBox"]
-layout_mode = 2
-text = "00 / 15"
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
 [node name="BottomRight" type="MarginContainer" parent="."]
