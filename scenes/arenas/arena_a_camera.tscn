@@ -20,9 +20,6 @@ size = Vector3(6, 3.5, 0.5)
 [sub_resource type="BoxMesh" id="BoxMesh_innerV6"]
 size = Vector3(0.5, 3.5, 6)
 
-[sub_resource type="BoxMesh" id="BoxMesh_cornerH4"]
-size = Vector3(4, 3.5, 0.5)
-
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.5, 0.5, 0.52, 1)
 
@@ -193,16 +190,6 @@ material = SubResource("Mat_wall")
 visible = false
 mesh = SubResource("BoxMesh_innerV6")
 
-[node name="CornerWall_NW_S_outer" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.75, -5)
-use_collision = true
-size = Vector3(4, 3.5, 0.5)
-material = SubResource("Mat_wall")
-
-[node name="NavMesh_cNW_S_o" type="MeshInstance3D" parent="CornerWall_NW_S_outer"]
-visible = false
-mesh = SubResource("BoxMesh_cornerH4")
-
 [node name="CornerWall_NE_W" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.75, -10)
 use_collision = true
@@ -212,16 +199,6 @@ material = SubResource("Mat_wall")
 [node name="NavMesh_cNE_W" type="MeshInstance3D" parent="CornerWall_NE_W"]
 visible = false
 mesh = SubResource("BoxMesh_innerV6")
-
-[node name="CornerWall_NE_S_outer" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.75, -5)
-use_collision = true
-size = Vector3(4, 3.5, 0.5)
-material = SubResource("Mat_wall")
-
-[node name="NavMesh_cNE_S_o" type="MeshInstance3D" parent="CornerWall_NE_S_outer"]
-visible = false
-mesh = SubResource("BoxMesh_cornerH4")
 
 [node name="CornerWall_SW_E" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.75, 10)
@@ -233,16 +210,6 @@ material = SubResource("Mat_wall")
 visible = false
 mesh = SubResource("BoxMesh_innerV6")
 
-[node name="CornerWall_SW_N_outer" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.75, 5)
-use_collision = true
-size = Vector3(4, 3.5, 0.5)
-material = SubResource("Mat_wall")
-
-[node name="NavMesh_cSW_N_o" type="MeshInstance3D" parent="CornerWall_SW_N_outer"]
-visible = false
-mesh = SubResource("BoxMesh_cornerH4")
-
 [node name="CornerWall_SE_W" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.75, 10)
 use_collision = true
@@ -252,16 +219,6 @@ material = SubResource("Mat_wall")
 [node name="NavMesh_cSE_W" type="MeshInstance3D" parent="CornerWall_SE_W"]
 visible = false
 mesh = SubResource("BoxMesh_innerV6")
-
-[node name="CornerWall_SE_N_outer" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.75, 5)
-use_collision = true
-size = Vector3(4, 3.5, 0.5)
-material = SubResource("Mat_wall")
-
-[node name="NavMesh_cSE_N_o" type="MeshInstance3D" parent="CornerWall_SE_N_outer"]
-visible = false
-mesh = SubResource("BoxMesh_cornerH4")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavMesh_arena_a")
