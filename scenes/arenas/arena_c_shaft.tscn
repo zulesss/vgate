@@ -1,21 +1,9 @@
-[gd_scene load_steps=22 format=3 uid="uid://vgateac1shaft"]
+[gd_scene format=3 uid="uid://b38hfyqrygvm0"]
 
 [ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_main"]
 albedo_color = Color(0.35, 0.32, 0.28, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_pit"]
-albedo_color = Color(0.2, 0.2, 0.22, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_mez"]
-albedo_color = Color(0.5, 0.48, 0.44, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_ramp"]
-albedo_color = Color(0.4, 0.38, 0.35, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_centerpad"]
-albedo_color = Color(0.6, 0.55, 0.45, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_floorCenter"]
 size = Vector3(22, 1, 22)
@@ -26,14 +14,20 @@ size = Vector3(22, 1, 8)
 [sub_resource type="BoxMesh" id="BoxMesh_floorWE"]
 size = Vector3(8, 1, 22)
 
+[sub_resource type="StandardMaterial3D" id="Mat_pit"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_pitFloor"]
 size = Vector3(8, 1, 8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pitWallEW"]
+size = Vector3(0.5, 3, 8)
 
 [sub_resource type="BoxMesh" id="BoxMesh_pitWallNS"]
 size = Vector3(8, 3, 0.5)
 
-[sub_resource type="BoxMesh" id="BoxMesh_pitWallEW"]
-size = Vector3(0.5, 3, 8)
+[sub_resource type="StandardMaterial3D" id="Mat_ramp"]
+albedo_color = Color(0.4, 0.38, 0.35, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_pitRamp"]
 size = Vector3(3, 0.5, 6)
@@ -44,8 +38,14 @@ size = Vector3(38, 8, 0.5)
 [sub_resource type="BoxMesh" id="BoxMesh_outerEW"]
 size = Vector3(0.5, 8, 38)
 
+[sub_resource type="StandardMaterial3D" id="Mat_centerpad"]
+albedo_color = Color(0.6, 0.55, 0.45, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_centerPad"]
 size = Vector3(4, 1, 4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_mez"]
+albedo_color = Color(0.5, 0.48, 0.44, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_mezNS"]
 size = Vector3(22, 0.5, 8)
@@ -63,470 +63,461 @@ size = Vector3(1.7, 1.5, 3)
 geometry_parsed_geometry_type = 0
 geometry_source_geometry_mode = 1
 geometry_source_group_name = &"navigation_geometry"
-agent_radius = 0.3
 agent_height = 1.8
+agent_radius = 0.3
 agent_max_climb = 1.6
-agent_max_slope = 45.0
 
-[node name="ArenaC" type="Node3D" groups=["navigation_geometry", "objective_marked_hunt"]]
+[node name="ArenaC" type="Node3D" unique_id=290878755 groups=["navigation_geometry", "objective_marked_hunt"]]
 
-
-[node name="Floor_Center" type="CSGBox3D" parent="."]
+[node name="Floor_Center" type="CSGBox3D" parent="." unique_id=916688525]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 size = Vector3(22, 1, 22)
 material = SubResource("Mat_main")
 
-[node name="NavMeshFloorCenter" type="MeshInstance3D" parent="Floor_Center"]
+[node name="NavMeshFloorCenter" type="MeshInstance3D" parent="Floor_Center" unique_id=1571109373]
 visible = false
 mesh = SubResource("BoxMesh_floorCenter")
 
-[node name="Floor_N" type="CSGBox3D" parent="."]
+[node name="Floor_N" type="CSGBox3D" parent="." unique_id=1782614417]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -14)
 use_collision = true
 size = Vector3(22, 1, 8)
 material = SubResource("Mat_main")
 
-[node name="NavMeshFloorN" type="MeshInstance3D" parent="Floor_N"]
+[node name="NavMeshFloorN" type="MeshInstance3D" parent="Floor_N" unique_id=959082746]
 visible = false
 mesh = SubResource("BoxMesh_floorNS")
 
-[node name="Floor_S" type="CSGBox3D" parent="."]
+[node name="Floor_S" type="CSGBox3D" parent="." unique_id=321221490]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 14)
 use_collision = true
 size = Vector3(22, 1, 8)
 material = SubResource("Mat_main")
 
-[node name="NavMeshFloorS" type="MeshInstance3D" parent="Floor_S"]
+[node name="NavMeshFloorS" type="MeshInstance3D" parent="Floor_S" unique_id=1465666426]
 visible = false
 mesh = SubResource("BoxMesh_floorNS")
 
-[node name="Floor_W" type="CSGBox3D" parent="."]
+[node name="Floor_W" type="CSGBox3D" parent="." unique_id=409219300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -0.5, 0)
 use_collision = true
 size = Vector3(8, 1, 22)
 material = SubResource("Mat_main")
 
-[node name="NavMeshFloorW" type="MeshInstance3D" parent="Floor_W"]
+[node name="NavMeshFloorW" type="MeshInstance3D" parent="Floor_W" unique_id=942479567]
 visible = false
 mesh = SubResource("BoxMesh_floorWE")
 
-[node name="Floor_E" type="CSGBox3D" parent="."]
+[node name="Floor_E" type="CSGBox3D" parent="." unique_id=522881738]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -0.5, 0)
 use_collision = true
 size = Vector3(8, 1, 22)
 material = SubResource("Mat_main")
 
-[node name="NavMeshFloorE" type="MeshInstance3D" parent="Floor_E"]
+[node name="NavMeshFloorE" type="MeshInstance3D" parent="Floor_E" unique_id=454337927]
 visible = false
 mesh = SubResource("BoxMesh_floorWE")
 
-
-[node name="PitFloor_NW" type="CSGBox3D" parent="."]
+[node name="PitFloor_NW" type="CSGBox3D" parent="." unique_id=89725061]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -3.5, -14)
 use_collision = true
 size = Vector3(8, 1, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitNW" type="MeshInstance3D" parent="PitFloor_NW"]
+[node name="NavMeshPitNW" type="MeshInstance3D" parent="PitFloor_NW" unique_id=2070371788]
 visible = false
 mesh = SubResource("BoxMesh_pitFloor")
 
-[node name="PitFloor_NE" type="CSGBox3D" parent="."]
+[node name="PitFloor_NE" type="CSGBox3D" parent="." unique_id=1067483531]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -3.5, -14)
 use_collision = true
 size = Vector3(8, 1, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitNE" type="MeshInstance3D" parent="PitFloor_NE"]
+[node name="NavMeshPitNE" type="MeshInstance3D" parent="PitFloor_NE" unique_id=1180222018]
 visible = false
 mesh = SubResource("BoxMesh_pitFloor")
 
-[node name="PitFloor_SW" type="CSGBox3D" parent="."]
+[node name="PitFloor_SW" type="CSGBox3D" parent="." unique_id=1251328038]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -3.5, 14)
 use_collision = true
 size = Vector3(8, 1, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitSW" type="MeshInstance3D" parent="PitFloor_SW"]
+[node name="NavMeshPitSW" type="MeshInstance3D" parent="PitFloor_SW" unique_id=902547472]
 visible = false
 mesh = SubResource("BoxMesh_pitFloor")
 
-[node name="PitFloor_SE" type="CSGBox3D" parent="."]
+[node name="PitFloor_SE" type="CSGBox3D" parent="." unique_id=230929596]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -3.5, 14)
 use_collision = true
 size = Vector3(8, 1, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitSE" type="MeshInstance3D" parent="PitFloor_SE"]
+[node name="NavMeshPitSE" type="MeshInstance3D" parent="PitFloor_SE" unique_id=829956471]
 visible = false
 mesh = SubResource("BoxMesh_pitFloor")
 
-
-[node name="PitWall_NW_E" type="CSGBox3D" parent="."]
+[node name="PitWall_NW_E" type="CSGBox3D" parent="." unique_id=924353595]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -1.5, -14)
 use_collision = true
 size = Vector3(0.5, 3, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallNW_E" type="MeshInstance3D" parent="PitWall_NW_E"]
+[node name="NavMeshPitWallNW_E" type="MeshInstance3D" parent="PitWall_NW_E" unique_id=1778345589]
 visible = false
 mesh = SubResource("BoxMesh_pitWallEW")
 
-[node name="PitWall_NW_S" type="CSGBox3D" parent="."]
+[node name="PitWall_NW_S" type="CSGBox3D" parent="." unique_id=113265651]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -1.5, -10)
 use_collision = true
 size = Vector3(8, 3, 0.5)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallNW_S" type="MeshInstance3D" parent="PitWall_NW_S"]
+[node name="NavMeshPitWallNW_S" type="MeshInstance3D" parent="PitWall_NW_S" unique_id=1307257793]
 visible = false
 mesh = SubResource("BoxMesh_pitWallNS")
 
-[node name="PitWall_NE_W" type="CSGBox3D" parent="."]
+[node name="PitWall_NE_W" type="CSGBox3D" parent="." unique_id=489241033]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -1.5, -14)
 use_collision = true
 size = Vector3(0.5, 3, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallNE_W" type="MeshInstance3D" parent="PitWall_NE_W"]
+[node name="NavMeshPitWallNE_W" type="MeshInstance3D" parent="PitWall_NE_W" unique_id=711623624]
 visible = false
 mesh = SubResource("BoxMesh_pitWallEW")
 
-[node name="PitWall_NE_S" type="CSGBox3D" parent="."]
+[node name="PitWall_NE_S" type="CSGBox3D" parent="." unique_id=919855535]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -1.5, -10)
 use_collision = true
 size = Vector3(8, 3, 0.5)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallNE_S" type="MeshInstance3D" parent="PitWall_NE_S"]
+[node name="NavMeshPitWallNE_S" type="MeshInstance3D" parent="PitWall_NE_S" unique_id=1725449962]
 visible = false
 mesh = SubResource("BoxMesh_pitWallNS")
 
-[node name="PitWall_SW_E" type="CSGBox3D" parent="."]
+[node name="PitWall_SW_E" type="CSGBox3D" parent="." unique_id=900030325]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -1.5, 14)
 use_collision = true
 size = Vector3(0.5, 3, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallSW_E" type="MeshInstance3D" parent="PitWall_SW_E"]
+[node name="NavMeshPitWallSW_E" type="MeshInstance3D" parent="PitWall_SW_E" unique_id=847282045]
 visible = false
 mesh = SubResource("BoxMesh_pitWallEW")
 
-[node name="PitWall_SW_N" type="CSGBox3D" parent="."]
+[node name="PitWall_SW_N" type="CSGBox3D" parent="." unique_id=490049753]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -1.5, 10)
 use_collision = true
 size = Vector3(8, 3, 0.5)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallSW_N" type="MeshInstance3D" parent="PitWall_SW_N"]
+[node name="NavMeshPitWallSW_N" type="MeshInstance3D" parent="PitWall_SW_N" unique_id=684339258]
 visible = false
 mesh = SubResource("BoxMesh_pitWallNS")
 
-[node name="PitWall_SE_W" type="CSGBox3D" parent="."]
+[node name="PitWall_SE_W" type="CSGBox3D" parent="." unique_id=83170728]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -1.5, 14)
 use_collision = true
 size = Vector3(0.5, 3, 8)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallSE_W" type="MeshInstance3D" parent="PitWall_SE_W"]
+[node name="NavMeshPitWallSE_W" type="MeshInstance3D" parent="PitWall_SE_W" unique_id=573357386]
 visible = false
 mesh = SubResource("BoxMesh_pitWallEW")
 
-[node name="PitWall_SE_N" type="CSGBox3D" parent="."]
+[node name="PitWall_SE_N" type="CSGBox3D" parent="." unique_id=13013657]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -1.5, 10)
 use_collision = true
 size = Vector3(8, 3, 0.5)
 material = SubResource("Mat_pit")
 
-[node name="NavMeshPitWallSE_N" type="MeshInstance3D" parent="PitWall_SE_N"]
+[node name="NavMeshPitWallSE_N" type="MeshInstance3D" parent="PitWall_SE_N" unique_id=126765554]
 visible = false
 mesh = SubResource("BoxMesh_pitWallNS")
 
-
-[node name="Ramp_PitNW" type="CSGBox3D" parent="."]
-transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, -11.5, -1.5, -14)
+[node name="Ramp_PitNW" type="CSGBox3D" parent="." unique_id=1425430633]
+transform = Transform3D(-0.86602503, -0.4999998, -8.742278e-08, -0.4999998, 0.86602503, 0, 7.571032e-08, 4.371137e-08, -1, -11.5, -1.5, -14)
 use_collision = true
 size = Vector3(3, 0.5, 6)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampPitNW" type="MeshInstance3D" parent="Ramp_PitNW"]
+[node name="NavMeshRampPitNW" type="MeshInstance3D" parent="Ramp_PitNW" unique_id=1869610867]
 visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
-[node name="Ramp_PitNE" type="CSGBox3D" parent="."]
-transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 11.5, -1.5, -14)
+[node name="Ramp_PitNE" type="CSGBox3D" parent="." unique_id=964644871]
+transform = Transform3D(-1.8092016, 0.23560905, -8.7422784e-08, 1.044543, 0.40808687, 0, 1.5816543e-07, -2.05976e-08, -1.0000001, 13.662394, -1.6750987, -14)
 use_collision = true
 size = Vector3(3, 0.5, 6)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampPitNE" type="MeshInstance3D" parent="Ramp_PitNE"]
+[node name="NavMeshRampPitNE" type="MeshInstance3D" parent="Ramp_PitNE" unique_id=813686166]
 visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
-[node name="Ramp_PitSW" type="CSGBox3D" parent="."]
-transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, -11.5, -1.5, 14)
+[node name="Ramp_PitSW" type="CSGBox3D" parent="." unique_id=1897443762]
+transform = Transform3D(-0.86602503, -0.4999998, -8.742278e-08, -0.4999998, 0.86602503, 0, 7.571032e-08, 4.371137e-08, -1, -11.5, -1.5, 14)
 use_collision = true
 size = Vector3(3, 0.5, 6)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampPitSW" type="MeshInstance3D" parent="Ramp_PitSW"]
+[node name="NavMeshRampPitSW" type="MeshInstance3D" parent="Ramp_PitSW" unique_id=1067766215]
 visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
-[node name="Ramp_PitSE" type="CSGBox3D" parent="."]
-transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 11.5, -1.5, 14)
+[node name="Ramp_PitSE" type="CSGBox3D" parent="." unique_id=177809312]
+transform = Transform3D(-1.8092016, 0.23560905, -8.7422784e-08, 1.044543, 0.40808687, 0, 1.5816543e-07, -2.05976e-08, -1.0000001, 13.662394, -1.6750987, 14)
 use_collision = true
 size = Vector3(3, 0.5, 6)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampPitSE" type="MeshInstance3D" parent="Ramp_PitSE"]
+[node name="NavMeshRampPitSE" type="MeshInstance3D" parent="Ramp_PitSE" unique_id=784464974]
 visible = false
 mesh = SubResource("BoxMesh_pitRamp")
 
-
-[node name="WallNorth" type="CSGBox3D" parent="."]
+[node name="WallNorth" type="CSGBox3D" parent="." unique_id=2006936716]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -19)
 use_collision = true
 size = Vector3(38, 8, 0.5)
 material = SubResource("Mat_main")
 
-[node name="NavMeshWallN" type="MeshInstance3D" parent="WallNorth"]
+[node name="NavMeshWallN" type="MeshInstance3D" parent="WallNorth" unique_id=1090654079]
 visible = false
 mesh = SubResource("BoxMesh_outerNS")
 
-[node name="WallSouth" type="CSGBox3D" parent="."]
+[node name="WallSouth" type="CSGBox3D" parent="." unique_id=606710241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 19)
 use_collision = true
 size = Vector3(38, 8, 0.5)
 material = SubResource("Mat_main")
 
-[node name="NavMeshWallS" type="MeshInstance3D" parent="WallSouth"]
+[node name="NavMeshWallS" type="MeshInstance3D" parent="WallSouth" unique_id=2138974098]
 visible = false
 mesh = SubResource("BoxMesh_outerNS")
 
-[node name="WallEast" type="CSGBox3D" parent="."]
+[node name="WallEast" type="CSGBox3D" parent="." unique_id=1280654694]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 4, 0)
 use_collision = true
 size = Vector3(0.5, 8, 38)
 material = SubResource("Mat_main")
 
-[node name="NavMeshWallE" type="MeshInstance3D" parent="WallEast"]
+[node name="NavMeshWallE" type="MeshInstance3D" parent="WallEast" unique_id=509320973]
 visible = false
 mesh = SubResource("BoxMesh_outerEW")
 
-[node name="WallWest" type="CSGBox3D" parent="."]
+[node name="WallWest" type="CSGBox3D" parent="." unique_id=1912249477]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 4, 0)
 use_collision = true
 size = Vector3(0.5, 8, 38)
 material = SubResource("Mat_main")
 
-[node name="NavMeshWallW" type="MeshInstance3D" parent="WallWest"]
+[node name="NavMeshWallW" type="MeshInstance3D" parent="WallWest" unique_id=2116131969]
 visible = false
 mesh = SubResource("BoxMesh_outerEW")
 
-
-[node name="CenterPad" type="CSGBox3D" parent="."]
+[node name="CenterPad" type="CSGBox3D" parent="." unique_id=668307286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 use_collision = true
 size = Vector3(4, 1, 4)
 material = SubResource("Mat_centerpad")
 
-[node name="NavMeshCenterPad" type="MeshInstance3D" parent="CenterPad"]
+[node name="NavMeshCenterPad" type="MeshInstance3D" parent="CenterPad" unique_id=738406151]
 visible = false
 mesh = SubResource("BoxMesh_centerPad")
 
-[node name="Mez_N" type="CSGBox3D" parent="."]
+[node name="Mez_N" type="CSGBox3D" parent="." unique_id=467155167]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -15)
 use_collision = true
 size = Vector3(22, 0.5, 8)
 material = SubResource("Mat_mez")
 
-[node name="NavMeshMezN" type="MeshInstance3D" parent="Mez_N"]
+[node name="NavMeshMezN" type="MeshInstance3D" parent="Mez_N" unique_id=698788679]
 visible = false
 mesh = SubResource("BoxMesh_mezNS")
 
-[node name="Mez_S" type="CSGBox3D" parent="."]
+[node name="Mez_S" type="CSGBox3D" parent="." unique_id=155175649]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 15)
 use_collision = true
 size = Vector3(22, 0.5, 8)
 material = SubResource("Mat_mez")
 
-[node name="NavMeshMezS" type="MeshInstance3D" parent="Mez_S"]
+[node name="NavMeshMezS" type="MeshInstance3D" parent="Mez_S" unique_id=1828237541]
 visible = false
 mesh = SubResource("BoxMesh_mezNS")
 
-[node name="Mez_W" type="CSGBox3D" parent="."]
+[node name="Mez_W" type="CSGBox3D" parent="." unique_id=2007587431]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 4, 0)
 use_collision = true
 size = Vector3(8, 0.5, 22)
 material = SubResource("Mat_mez")
 
-[node name="NavMeshMezW" type="MeshInstance3D" parent="Mez_W"]
+[node name="NavMeshMezW" type="MeshInstance3D" parent="Mez_W" unique_id=2090807482]
 visible = false
 mesh = SubResource("BoxMesh_mezWE")
 
-[node name="Mez_E" type="CSGBox3D" parent="."]
+[node name="Mez_E" type="CSGBox3D" parent="." unique_id=1362748142]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 4, 0)
 use_collision = true
 size = Vector3(8, 0.5, 22)
 material = SubResource("Mat_mez")
 
-[node name="NavMeshMezE" type="MeshInstance3D" parent="Mez_E"]
+[node name="NavMeshMezE" type="MeshInstance3D" parent="Mez_E" unique_id=1144756108]
 visible = false
 mesh = SubResource("BoxMesh_mezWE")
 
-[node name="Ramp_MezN_Step1" type="CSGBox3D" parent="."]
+[node name="Ramp_MezN_Step1" type="CSGBox3D" parent="." unique_id=1647471921]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.75, -8)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezNStep1" type="MeshInstance3D" parent="Ramp_MezN_Step1"]
+[node name="NavMeshRampMezNStep1" type="MeshInstance3D" parent="Ramp_MezN_Step1" unique_id=2114020043]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezN_Step2" type="CSGBox3D" parent="."]
+[node name="Ramp_MezN_Step2" type="CSGBox3D" parent="." unique_id=1105050336]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2.25, -10)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezNStep2" type="MeshInstance3D" parent="Ramp_MezN_Step2"]
+[node name="NavMeshRampMezNStep2" type="MeshInstance3D" parent="Ramp_MezN_Step2" unique_id=1023886931]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezN_Step3" type="CSGBox3D" parent="."]
+[node name="Ramp_MezN_Step3" type="CSGBox3D" parent="." unique_id=600203022]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 3.75, -12)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezNStep3" type="MeshInstance3D" parent="Ramp_MezN_Step3"]
+[node name="NavMeshRampMezNStep3" type="MeshInstance3D" parent="Ramp_MezN_Step3" unique_id=837647337]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezS_Step1" type="CSGBox3D" parent="."]
+[node name="Ramp_MezS_Step1" type="CSGBox3D" parent="." unique_id=1255141297]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.75, 8)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezSStep1" type="MeshInstance3D" parent="Ramp_MezS_Step1"]
+[node name="NavMeshRampMezSStep1" type="MeshInstance3D" parent="Ramp_MezS_Step1" unique_id=367434106]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezS_Step2" type="CSGBox3D" parent="."]
+[node name="Ramp_MezS_Step2" type="CSGBox3D" parent="." unique_id=1849655222]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2.25, 10)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezSStep2" type="MeshInstance3D" parent="Ramp_MezS_Step2"]
+[node name="NavMeshRampMezSStep2" type="MeshInstance3D" parent="Ramp_MezS_Step2" unique_id=533074089]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezS_Step3" type="CSGBox3D" parent="."]
+[node name="Ramp_MezS_Step3" type="CSGBox3D" parent="." unique_id=946614312]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 3.75, 12)
 use_collision = true
 size = Vector3(3, 1.5, 1.7)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezSStep3" type="MeshInstance3D" parent="Ramp_MezS_Step3"]
+[node name="NavMeshRampMezSStep3" type="MeshInstance3D" parent="Ramp_MezS_Step3" unique_id=1792284793]
 visible = false
 mesh = SubResource("BoxMesh_mezStepNS")
 
-[node name="Ramp_MezW_Step1" type="CSGBox3D" parent="."]
+[node name="Ramp_MezW_Step1" type="CSGBox3D" parent="." unique_id=1272357328]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.75, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezWStep1" type="MeshInstance3D" parent="Ramp_MezW_Step1"]
+[node name="NavMeshRampMezWStep1" type="MeshInstance3D" parent="Ramp_MezW_Step1" unique_id=965287992]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-[node name="Ramp_MezW_Step2" type="CSGBox3D" parent="."]
+[node name="Ramp_MezW_Step2" type="CSGBox3D" parent="." unique_id=1048121263]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2.25, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezWStep2" type="MeshInstance3D" parent="Ramp_MezW_Step2"]
+[node name="NavMeshRampMezWStep2" type="MeshInstance3D" parent="Ramp_MezW_Step2" unique_id=780106974]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-[node name="Ramp_MezW_Step3" type="CSGBox3D" parent="."]
+[node name="Ramp_MezW_Step3" type="CSGBox3D" parent="." unique_id=995850716]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 3.75, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezWStep3" type="MeshInstance3D" parent="Ramp_MezW_Step3"]
+[node name="NavMeshRampMezWStep3" type="MeshInstance3D" parent="Ramp_MezW_Step3" unique_id=1081862657]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-[node name="Ramp_MezE_Step1" type="CSGBox3D" parent="."]
+[node name="Ramp_MezE_Step1" type="CSGBox3D" parent="." unique_id=1760336040]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.75, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezEStep1" type="MeshInstance3D" parent="Ramp_MezE_Step1"]
+[node name="NavMeshRampMezEStep1" type="MeshInstance3D" parent="Ramp_MezE_Step1" unique_id=1262040677]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-[node name="Ramp_MezE_Step2" type="CSGBox3D" parent="."]
+[node name="Ramp_MezE_Step2" type="CSGBox3D" parent="." unique_id=174704023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2.25, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezEStep2" type="MeshInstance3D" parent="Ramp_MezE_Step2"]
+[node name="NavMeshRampMezEStep2" type="MeshInstance3D" parent="Ramp_MezE_Step2" unique_id=1123123012]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-[node name="Ramp_MezE_Step3" type="CSGBox3D" parent="."]
+[node name="Ramp_MezE_Step3" type="CSGBox3D" parent="." unique_id=823321629]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 3.75, -1.5)
 use_collision = true
 size = Vector3(1.7, 1.5, 3)
 material = SubResource("Mat_ramp")
 
-[node name="NavMeshRampMezEStep3" type="MeshInstance3D" parent="Ramp_MezE_Step3"]
+[node name="NavMeshRampMezEStep3" type="MeshInstance3D" parent="Ramp_MezE_Step3" unique_id=1565593833]
 visible = false
 mesh = SubResource("BoxMesh_mezStepWE")
 
-
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1993720167]
 navigation_mesh = SubResource("NavMesh_arena_c")
 
-[node name="NavBaker" type="Node" parent="." node_paths=PackedStringArray("region")]
+[node name="NavBaker" type="Node" parent="." unique_id=544505158 node_paths=PackedStringArray("region")]
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
 
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=2037465869]
 
-[node name="SpawnPoints" type="Node3D" parent="."]
-
-[node name="S1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S1" type="Marker3D" parent="SpawnPoints" unique_id=1960595737 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -15)
 
-[node name="S2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S2" type="Marker3D" parent="SpawnPoints" unique_id=500397117 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 15)
 
-[node name="S3" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S3" type="Marker3D" parent="SpawnPoints" unique_id=603969835 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 0, 0)
 
-[node name="S4" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S4" type="Marker3D" parent="SpawnPoints" unique_id=244700086 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, 0)
 
-[node name="S5" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S5" type="Marker3D" parent="SpawnPoints" unique_id=432320978 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -3, -14)
 
-[node name="S6" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S6" type="Marker3D" parent="SpawnPoints" unique_id=1053284261 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -3, -14)
 
-[node name="S7" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S7" type="Marker3D" parent="SpawnPoints" unique_id=942507376 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, -3, 14)
 
-[node name="S8" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="S8" type="Marker3D" parent="SpawnPoints" unique_id=1456363117 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -3, 14)
