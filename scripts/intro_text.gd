@@ -41,7 +41,7 @@ func _on_run_started() -> void:
 	# physical objective "дойди до конца не умирая". Detection через group check
 	# на arena root (single source of truth с RunLoop / SpawnController).
 	if not get_tree().get_nodes_in_group(&"objective_journey").is_empty():
-		label.text = "REACH THE DESTINATION\nALIVE"
+		label.text = "CLEAR ENEMIES AND ESCAPE\nIN 2 MINUTES"
 	elif MarkDirector._active:
 		label.text = "HUNT %d MARKED ENEMIES\nAND SURVIVE 2 MINUTES" % MarkDirector.KILL_TARGET
 	else:

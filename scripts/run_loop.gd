@@ -25,16 +25,23 @@ class_name RunLoop extends Node
 # discriminator от drain death через VelocityGate.get_alive_time() >= 120
 # (drain бы ударил раньше, alive_time < 120).
 #
-# M10 Journey (Arena C "Дорога"): третий objective type. Arena root в группе
-# "objective_journey" → отключаем timer logic (нет 120с лимита, нет spike phase).
-# Win-trigger — Area3D на финише уровня эмитит Events.journey_complete →
-# RunLoop ставит is_alive=false + emit run_won. Failure mode только drain
-# (cap → 0); никакого "objective failed" path'а — нет deadline'а. Score
-# formula для journey тоже отличается (см. ScoreState).
+# M10 Journey (Arena C "Дорога"): clear-and-escape objective.
+#   Win   = alive AND all enemies dead AND reached goal AND alive_time < 120
+#   Fail  = drain (cap → 0) OR timer expires before win condition met
+# Group "objective_journey" gates the journey-specific path: 120с deadline
+# применяется но без spike phase (давление от pre-placed defenders + pursuers,
+# не env threshold step-up). Goal Area3D эмитит journey_complete; RunLoop
+# вэлидирует "all enemies dead" group check + alive_time. Если игрок дошёл
+# до goal но defenders ещё живы — НЕ win, продолжает играть до timer (может
+# вернуться зачистить или сбежал слишком рано).
+# Enemy count: get_tree().get_nodes_in_group("enemy") — EnemyBase.add_to_group("enemy")
+# в _ready'е, decrement через queue_free. Pre-placed + dynamic pursuers
+# одинаково counted.
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0
 const ARENA_GROUP_JOURNEY := &"objective_journey"
+const ENEMY_GROUP := &"enemy"
 
 @export var player_path: NodePath
 @onready var player: Node = get_node_or_null(player_path)
@@ -42,9 +49,12 @@ const ARENA_GROUP_JOURNEY := &"objective_journey"
 var _spike_active: bool = false
 var _won: bool = false
 # Set per-run в _on_run_started через group check на current arena. Если активна
-# journey arena — _process пропускает timer-based win/fail, и win triggers через
-# Events.journey_complete signal вместо t>=RUN_DURATION.
+# journey arena — timer-fail активен но win triggers через Events.journey_complete +
+# all_enemies_dead вместо t>=RUN_DURATION objective check.
 var _is_journey: bool = false
+# Player вошёл в journey goal Area3D но territory ещё не cleared — ждём
+# последнего kill'а который finalize'ит win. Reset на run_started.
+var _journey_goal_reached: bool = false
 
 
 func _ready() -> void:
@@ -56,18 +66,23 @@ func _ready() -> void:
 	Events.run_restart_requested.connect(_on_restart)
 	Events.run_started.connect(_on_run_started)
 	Events.journey_complete.connect(_on_journey_complete)
+	Events.enemy_killed.connect(_on_enemy_killed)
 
 
 func _process(_delta: float) -> void:
 	if not VelocityGate.is_alive or _won:
 		return
-	# Journey arena: нет timer'а вообще. Win triggered via journey_complete
-	# (player walked into goal Area3D), failure — только drain death (cap=0)
-	# который рутится через VelocityGate.player_died. Spike phase тоже отсутствует —
-	# давление только от pre-placed defenders + drain если игрок встанет.
-	if _is_journey:
-		return
 	var t: float = VelocityGate.get_alive_time()
+	# Journey arena: spike phase OFF (давление от pre-placed enemies + pursuers
+	# которое уже шкалируется milestone'ами). Только timer-fail path активен:
+	# t≥120 без win → OBJECTIVE FAILED (player_died emit). Win триггерится из
+	# _on_journey_complete по факту goal entry, не здесь.
+	if _is_journey:
+		if t >= RUN_DURATION:
+			_won = true
+			VelocityGate.is_alive = false
+			Events.player_died.emit()
+		return
 	# Spike phase step-up: t≥90 → threshold 0.30 → 0.45. Idempotent через
 	# _spike_active гард. Чистый data change, без player_hit emit'а — это
 	# environmental/wave change, не damage event.
@@ -110,6 +125,11 @@ func _objective_met() -> bool:
 # когда player_body вошёл в trigger volume. Mirror'ит timer-based win path: гард
 # _won + just-in-time journey-detection, freeze is_alive, emit run_won.
 #
+# Clear-and-escape: goal entry alone недостаточно — требуем all_enemies_dead().
+# Если игрок дошёл до goal но defenders ещё живы → silently no-op (играет
+# дальше, может вернуться зачистить или ждать timer'а). Идея: goal — финиш,
+# но финиш засчитывается только если территория зачищена.
+#
 # Just-in-time check (вместо чтения cached _is_journey из _on_run_started): если
 # Events.run_started ещё не fire'нул на initial load (только на restart) — кэш
 # stays false и win silently no-op'ит. Group-lookup на момент signal'а robust
@@ -117,6 +137,48 @@ func _objective_met() -> bool:
 func _on_journey_complete() -> void:
 	var is_journey: bool = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 	if not is_journey or _won or not VelocityGate.is_alive:
+		return
+	if not _all_enemies_dead():
+		# Player reached goal но territory не cleared — продолжает играть. Goal
+		# trigger у себя guard'ит против double-fire (_triggered=true), что значит
+		# повторный pass-through уже не выстрелит. Если игрок выйдет/войдёт после
+		# зачистки — _on_journey_complete не повторится. Поэтому запоминаем что
+		# goal уже посещён, и check'аем all_enemies_dead в Events.enemy_killed
+		# listener'е — последний killed enemy после goal entry должен finalize win.
+		_journey_goal_reached = true
+		return
+	_won = true
+	VelocityGate.is_alive = false
+	Events.run_won.emit()
+
+
+# Helper: все враги в группе "enemy" мертвы. EnemyBase.add_to_group("enemy") в
+# _ready'е, queue_free на death decrement'ит группу автоматически. Pre-placed
+# defenders + dynamic pursuers все одинаково counted.
+func _all_enemies_dead() -> bool:
+	return get_tree().get_nodes_in_group(ENEMY_GROUP).is_empty()
+
+
+# Goal-after-clear path: игрок может зачистить territory ПОСЛЕ goal entry —
+# например если зашёл в goal слишком рано и вернулся killing remaining
+# defenders. На каждом enemy_killed (journey arena, goal уже visited) проверяем
+# и finalize'им win.
+func _on_enemy_killed(_restore: int, _pos: Vector3, _type: String) -> void:
+	if not _is_journey or _won or not VelocityGate.is_alive:
+		return
+	if not _journey_goal_reached:
+		return
+	# enemy_killed эмитится ДО queue_free врага (см. EnemyBase). На момент check'а
+	# убитый ещё в группе — нужно exclude. Считаем "alive" как любой живой EnemyBase
+	# (queue_freed via die() выходит из группы немедленно? нет — queue_free defer'ит
+	# выход до next idle frame). Поэтому используем deferred check на следующем frame.
+	call_deferred("_check_journey_win_after_kill")
+
+
+func _check_journey_win_after_kill() -> void:
+	if _won or not VelocityGate.is_alive:
+		return
+	if not _all_enemies_dead():
 		return
 	_won = true
 	VelocityGate.is_alive = false
@@ -128,9 +190,11 @@ func _on_run_started() -> void:
 	# сбрасывается чтобы restart после победы стартовал чистый.
 	_spike_active = false
 	_won = false
-	# Journey arena detection (cached): _process читает _is_journey чтобы
-	# skip'нуть timer-logic. _on_journey_complete делает свой own just-in-time
-	# group lookup для robustness — кэш может быть stale если signal не пришёл.
+	_journey_goal_reached = false
+	# Journey arena detection (cached): _process читает _is_journey для timer-fail
+	# и enemy_killed handler гэйтится по нему. _on_journey_complete делает свой own
+	# just-in-time group lookup для robustness — кэш может быть stale если signal
+	# не пришёл (initial load до первого run_started).
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 
 

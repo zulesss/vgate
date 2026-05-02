@@ -67,14 +67,21 @@ func _on_player_died() -> void:
 	# от arena. Сохраняем same shape: progress, optional "objective met" tint,
 	# objective_fail discriminator.
 	#
-	# M10 Journey arena: нет deadline → нет "objective failed" path'а. Death =
-	# always drain. Sphere/Hunt counter row скрываем (не релевантно journey).
-	# Detection через group check на arena root (mirror RunLoop / WinScreen).
+	# M10 Journey clear-and-escape: 2 failure modes по alive_time discriminator'у:
+	#   - drain (cap → 0 при alive_time < RUN_DURATION) → "VELOCITY DRAINED"
+	#   - timer expired без win (alive_time >= RUN_DURATION, RunLoop эмитнул
+	#     player_died через timer-fail path) → "OBJECTIVE FAILED" — territory
+	#     не зачищена ИЛИ goal не достигнут вовремя.
+	# Sphere/Hunt counter row скрываем (не релевантно journey).
 	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 	var alive_time: float = VelocityGate.get_alive_time()
 	if is_journey:
-		header_label.text = "DRAINED OUT"
-		header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
+		if alive_time >= RunLoop.RUN_DURATION:
+			header_label.text = "OBJECTIVE FAILED"
+			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
+		else:
+			header_label.text = "VELOCITY DRAINED"
+			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 		sphere_label.visible = false
 	else:
 		var progress: int = 0

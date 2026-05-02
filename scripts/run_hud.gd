@@ -25,14 +25,19 @@ const SPIKE_TIME := 90.0
 const TIMER_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const TIMER_COLOR_WARN := Color(0.95, 0.80, 0.30, 1)
 const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
-# M10 Journey arena: нет fixed run length, timer countdown теряет смысл. Вместо
-# него считаем elapsed (count-up) — игрок видит "как долго иду" без давления
-# deadline'а. Detection через group check на arena root, mirror RunLoop.
+# M10 Journey arena (clear-and-escape): теперь 120с deadline активен, timer
+# countdown как в обычной арене (cyan/amber/red phase tinting). Вместо
+# sphere/hunt counter показываем "ENEMIES: N" — оставшиеся живые враги в
+# группе "enemy". Decrements автоматически на queue_free.
 const ARENA_GROUP_JOURNEY := &"objective_journey"
+const ENEMY_GROUP := &"enemy"
+const ENEMY_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
+const ENEMY_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
 
 @onready var timer_label: Label = $TopLeft/VBox/TimerLabel
 @onready var sphere_label: Label = $TopLeft/VBox/SphereLabel
 @onready var hunt_label: Label = $TopLeft/VBox/HuntLabel
+@onready var enemy_label: Label = $TopLeft/VBox/EnemyLabel
 @onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
@@ -80,27 +85,33 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# M9 conquest: countdown 120→0. 3-phase timer tint — cyan / amber / red на
-	# t=0/45/90. Каждая граница — instant swap, signal что давление шагнуло вверх.
-	# M10 Journey: count-up (нет deadline'а), modulate всегда normal cyan — drain
-	# единственный pressure source, timer показательный а не угрожающий.
+	# M9 conquest / M10 Journey: countdown 120→0. 3-phase timer tint — cyan /
+	# amber / red на t=0/45/90. Каждая граница — instant swap, signal что давление
+	# шагнуло вверх. Journey arena использует те же phases — clear-and-escape
+	# теперь deadline-driven (см. RunLoop).
 	var t_alive: float = ScoreState.run_time
-	if _is_journey:
-		var jm: int = int(t_alive / 60.0)
-		var js: int = int(t_alive) % 60
-		timer_label.text = "[ %02d:%02d ]" % [jm, js]
-		timer_label.modulate = TIMER_COLOR_NORMAL
+	var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
+	var m: int = int(remaining / 60.0)
+	var s: int = int(remaining) % 60
+	timer_label.text = "[ %02d:%02d ]" % [m, s]
+	if t_alive >= SPIKE_TIME:
+		timer_label.modulate = TIMER_COLOR_SPIKE
+	elif t_alive >= WARN_TIME:
+		timer_label.modulate = TIMER_COLOR_WARN
 	else:
-		var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
-		var m: int = int(remaining / 60.0)
-		var s: int = int(remaining) % 60
-		timer_label.text = "[ %02d:%02d ]" % [m, s]
-		if t_alive >= SPIKE_TIME:
-			timer_label.modulate = TIMER_COLOR_SPIKE
-		elif t_alive >= WARN_TIME:
-			timer_label.modulate = TIMER_COLOR_WARN
+		timer_label.modulate = TIMER_COLOR_NORMAL
+
+	# Journey enemy counter: live update каждый кадр (нет дешёвого signal'а на
+	# enemy spawn — pursuers spawn'ятся async из spawn_controller). Group size
+	# через get_nodes_in_group — O(N) но N ≤ 30, copy-cost negligible.
+	if _is_journey:
+		var alive_enemies: int = get_tree().get_nodes_in_group(ENEMY_GROUP).size()
+		if alive_enemies <= 0:
+			enemy_label.text = "✓ CLEAR"
+			enemy_label.modulate = ENEMY_COLOR_DONE
 		else:
-			timer_label.modulate = TIMER_COLOR_NORMAL
+			enemy_label.text = "ENEMIES: %d" % alive_enemies
+			enemy_label.modulate = ENEMY_COLOR_NORMAL
 
 	# Cap meter: VelocityGate.velocity_cap 0..100. Width manual через ColorRect
 	# anchor_right (ProgressBar styling в Godot 4.6 через theme — для prototype
@@ -166,19 +177,27 @@ func _on_run_started() -> void:
 func _refresh_objective_labels() -> void:
 	# Per-arena objective: один из director'ов active (run_started ставит _active
 	# по group check'у). Активный label видим, неактивный hidden — без dimmed
-	# варианта чтобы HUD не cluttered'ил.
-	if SphereDirector._active:
+	# варианта чтобы HUD не cluttered'ил. Journey arena: enemy counter, остальные
+	# скрыты — counter обновляется per-frame в _process.
+	if _is_journey:
+		sphere_label.visible = false
+		hunt_label.visible = false
+		enemy_label.visible = true
+	elif SphereDirector._active:
 		sphere_label.visible = true
 		hunt_label.visible = false
+		enemy_label.visible = false
 		_refresh_sphere_label()
 	elif MarkDirector._active:
 		sphere_label.visible = false
 		hunt_label.visible = true
+		enemy_label.visible = false
 		_refresh_hunt_label()
 	else:
-		# До run_started оба директора dormant. Hide — main_menu / pre-run state.
+		# До run_started все директора dormant. Hide — main_menu / pre-run state.
 		sphere_label.visible = false
 		hunt_label.visible = false
+		enemy_label.visible = false
 
 
 func _refresh_sphere_label() -> void:

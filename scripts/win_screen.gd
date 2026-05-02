@@ -42,11 +42,11 @@ func _on_run_won() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	# Journey detection — single source of truth с RunLoop / SpawnController через
-	# group check. На journey арене header переименовываем, sphere row скрываем,
-	# time показываем как "elapsed" (без deadline /120 формата).
+	# group check. На journey арене header — clear-and-escape победа, time показываем
+	# с deadline (now /120 актуально — есть timer-fail), sphere row скрываем.
 	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 	if is_journey:
-		header.text = "DESTINATION REACHED"
+		header.text = "AREA CLEARED"
 	else:
 		header.text = "ARENA COMPLETE"
 
@@ -58,8 +58,9 @@ func _on_run_won() -> void:
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	if is_journey:
-		time_label.text = "Time: %.1fs" % t_alive
-		# Journey arena не имеет sphere/hunt counter — скрываем row.
+		# Journey clear-and-escape: deadline активен (120s), показываем как
+		# обычная арена — Time: t / 120. Sphere row скрыт, kills уже в KillsLabel'е.
+		time_label.text = "Time: %.1f / 120" % t_alive
 		sphere_label.visible = false
 	else:
 		time_label.text = "Time: %.1f / 120" % t_alive
