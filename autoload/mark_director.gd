@@ -58,6 +58,10 @@ var _mark_lifetime_remaining: float = 0.0
 # unload). Если kill уже обработан через mark_killed flow, tree_exiting не должен
 # trigger'нуть expire — иначе double-emit. Set'ится в _on_active_mark_killed.
 var _kill_handled: bool = false
+# Objective done — kills достиг KILL_TARGET. Stop assigning new marks (sphere arena
+# делает то же через SphereDirector._objective_complete_emitted; mirror pattern).
+# Reset на _on_run_started. Гейтит _process scheduling и _try_assign_mark.
+var _objective_done: bool = false
 
 
 func _ready() -> void:
@@ -81,6 +85,11 @@ func _process(delta: float) -> void:
 		_mark_lifetime_remaining -= delta
 		if _mark_lifetime_remaining <= 0.0:
 			_expire_current_mark()
+		return
+
+	# Objective done — kills hit KILL_TARGET. Не scheduling новых mark'ов; expire/kill
+	# уже отработали через cleanup'ы выше. Mirror SphereDirector behaviour.
+	if _objective_done:
 		return
 
 	# Mark не assigned (или _active_mark освобождён). Тикаем countdown to next
@@ -108,6 +117,7 @@ func _on_run_started() -> void:
 	_clear_mark_silent()
 	_waiting_for_enemy = false
 	_kill_handled = false
+	_objective_done = false
 	# Initial delay перед первым mark'ом — randomized в окне MIN..MAX. Игрок успевает
 	# оглядеться, не получает mark instantly при респавне.
 	_next_assign_in = randf_range(MARK_INTERVAL_MIN, MARK_INTERVAL_MAX)
@@ -230,3 +240,8 @@ func _on_active_mark_killed_signal() -> void:
 	# Disconnect tree_exiting — не нужен для kill flow (mark_killed уже зарегил факт),
 	# но _on_active_mark_tree_exiting прилетит при queue_free и проверит _kill_handled.
 	# НЕ disconnect'аем здесь — нужен для cleanup _active_mark = null в tree_exiting handler'е.
+	# Objective complete — mirror SphereDirector. Set flag (gates _process scheduling),
+	# emit Events.objective_complete (один раз; SpawnController пауsит спавн врагов).
+	if not _objective_done and kills >= KILL_TARGET:
+		_objective_done = true
+		Events.objective_complete.emit()
