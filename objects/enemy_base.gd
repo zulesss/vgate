@@ -90,6 +90,13 @@ var _base_emission_color: Color = Color.BLACK
 var _base_emission_energy: float = 0.0
 var _material: StandardMaterial3D = null
 
+# Marked Enemy Hunt (Arena A) — визуальный mark поверх базового материала.
+# Активируется MarkDirector.apply_mark() (single instance). При apply бэкапим
+# _base_no_depth_test чтобы restore'нуть на clear. Через стены видно за счёт
+# no_depth_test=true (рендер поверх depth buffer'а — works in all 3D viewports).
+var _is_marked: bool = false
+var _base_no_depth_test: bool = false
+
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -135,6 +142,7 @@ func _ready() -> void:
 				(m as MeshInstance3D).set_surface_override_material(0, _material)
 			_base_emission_color = _material.emission
 			_base_emission_energy = _material.emission_energy_multiplier
+			_base_no_depth_test = _material.no_depth_test
 
 	# Stagger: первая атака разнесена 0..1.5с от базового cooldown'а.
 	# Применяем как initial cooldown — first attack откладывается.
@@ -434,9 +442,52 @@ func die() -> void:
 	# geometry дольше). collision_layer=0: отключаем дальнейшие raycast'ы / contact'ы
 	# (player может стрелять в умирающего, ловить на body collision'е — нечестно).
 	VelocityGate.apply_kill_restore(global_position, _kill_type())
+	# Marked Enemy Hunt — если этот враг был mark'нут, эмитим mark_killed ПОСЛЕ
+	# apply_kill_restore (чтобы порядок side-effect'ов: kill counters / score → потом
+	# mark progress). MarkDirector ловит signal, инкрементит counter, set'ит
+	# _kill_handled=true → последующий tree_exiting на queue_free не сработает как expire.
+	# Visual mark не clear'аем здесь — die() запускает death animation, на которой
+	# emissive aura ещё видна 0.6s, что читается как «убил marked'а» feedback.
+	# queue_free всё равно зачистит node, MarkDirector обнулит ref в tree_exiting.
+	if _is_marked:
+		Events.mark_killed.emit()
 	collision_layer = 0
 	collision_mask = 0
 	_play_death_animation_then_free()
+
+
+# Marked Enemy Hunt — apply visual mark (через стены через no_depth_test). Cap
+# emission на bright magenta + boost energy. Material instance уже clone'нут в
+# _ready'е (не shared между enemies), так что override локальный. Идемпотентно:
+# повторный apply на already-marked enemy — no-op.
+const _MARK_EMISSION_COLOR := Color(1.6, 0.3, 1.4, 1.0)
+const _MARK_EMISSION_ENERGY := 3.0
+
+
+func apply_mark() -> void:
+	if _is_marked:
+		return
+	_is_marked = true
+	if _material == null:
+		# Placeholder без material clone (theoretically не должно случаться — _ready
+		# clone'ит из active material). Defensive — mark тогда невидим, но flag
+		# _is_marked всё равно set, чтобы mark_killed сработал на kill.
+		return
+	_material.emission_enabled = true
+	_material.emission = _MARK_EMISSION_COLOR
+	_material.emission_energy_multiplier = _MARK_EMISSION_ENERGY
+	_material.no_depth_test = true
+
+
+func clear_mark() -> void:
+	if not _is_marked:
+		return
+	_is_marked = false
+	if _material == null:
+		return
+	_material.emission = _base_emission_color
+	_material.emission_energy_multiplier = _base_emission_energy
+	_material.no_depth_test = _base_no_depth_test
 
 
 func _play_death_animation_then_free() -> void:
