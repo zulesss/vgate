@@ -221,9 +221,8 @@ func _ready():
 	if not Events.kill_chain_streak_exited.is_connected(_on_kill_chain_streak_exited):
 		Events.kill_chain_streak_exited.connect(_on_kill_chain_streak_exited)
 
-	# M9 reload state reset on new run: предыдущий run мог окончиться mid-reload или
-	# на 0 ammo. run_started флипает is_alive=true ДО эмита, так что reload-guard
-	# в action_shoot увидит свежий state на первом кадре.
+	# M9 reload state reset on new run / cancel on death (предыдущий run мог
+	# окончиться mid-reload или с пустым magazine).
 	if not Events.run_started.is_connected(_on_run_started):
 		Events.run_started.connect(_on_run_started)
 	if not Events.player_died.is_connected(_on_player_died):
@@ -348,7 +347,7 @@ func handle_controls(delta):
 	# Reload (manual). Auto-reload trigger живёт в action_shoot() при ammo==0.
 
 	if Input.is_action_just_pressed("reload"):
-		_try_reload(false)
+		_try_reload()
 
 	# Weapon switching
 
@@ -397,7 +396,7 @@ func action_shoot():
 		# Empty magazine → попытка auto-reload (gated cap >= RELOAD_COST). Если cap'а
 		# нет — weapon dry, игрок должен kill'ить чтобы accumулировать cap для reload'а.
 		if _current_ammo <= 0:
-			_try_reload(true)
+			_try_reload()
 			return
 		if !blaster_cooldown.is_stopped(): return # Cooldown for shooting
 
@@ -729,9 +728,8 @@ func _on_post_dash_check_timeout() -> void:
 
 # M9 reload: проверяет cap >= RELOAD_COST, списывает cost через VelocityGate (отдельный
 # path от apply_hit — без vignette flash, без player_hit signal'а). Если cap'а нет —
-# silent fail (manual press) или silent fail (auto на empty). is_auto оставлен в
-# сигнатуре на будущее — сейчас branch'и идентичны, но HUD/SFX могут различать.
-func _try_reload(_is_auto: bool) -> void:
+# silent fail (одинаково для manual и auto pressed на empty).
+func _try_reload() -> void:
 	if not VelocityGate.is_alive:
 		return
 	if _is_reloading:
@@ -764,7 +762,6 @@ func _tick_reload(delta: float) -> void:
 		_reload_timer = 0.0
 		if ok:
 			_current_ammo = weapon.max_ammo
-			Events.weapon_reloaded.emit(VelocityGate.RELOAD_COST)
 
 
 func _on_run_started() -> void:

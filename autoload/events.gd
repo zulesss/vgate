@@ -31,8 +31,3 @@ signal kill_chain_triggered(tier: int, hit_pos: Vector3)
 # cap ceiling boost. Exited эмитится при window timeout / death / run_started.
 signal kill_chain_streak_entered(hit_pos: Vector3)
 signal kill_chain_streak_exited()
-
-# M9 magazine reload (manual via "reload" action или auto на empty). Emit после того
-# как cap уже списан и magazine восстановлен — listeners (HUD, audio) реагируют на
-# completion, не на start. cost=10 пробрасываем для возможной HUD-аннотации.
-signal weapon_reloaded(cost: int)
