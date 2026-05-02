@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://5jbg1akgrlfj" path="res://scripts/journey_goal.gd" id="5_goal"]
 [ext_resource type="PackedScene" path="res://objects/boss.tscn" id="6_boss"]
 [ext_resource type="Script" path="res://objects/r4_entry_barrier.gd" id="8_r4barrier"]
+[ext_resource type="PackedScene" uid="uid://bjmvf0rcef4mf" path="res://objects/moving_force.tscn" id="9_movforce"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_corridor"]
 albedo_color = Color(0.3, 0.32, 0.35, 1)
@@ -762,6 +763,9 @@ navigation_mesh = SubResource("NavMesh_journey")
 [node name="NavBaker" type="Node" parent="." unique_id=1787723211 node_paths=PackedStringArray("region")]
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
+
+[node name="MovingForce" parent="." instance=ExtResource("9_movforce")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -10)
 
 [node name="SpawnPoints" type="Node3D" parent="." unique_id=578591003]
 
