@@ -1,7 +1,7 @@
 class_name ObjectiveSphere extends Node3D
 
 # M9 Hot Zones — sphere objective (parallel-axis к kill economy).
-# Lifetime 7с (LIFETIME), capture через Area3D body_entered (player walks through).
+# Lifetime 8с (LIFETIME), capture через Area3D body_entered (player walks through).
 # На capture: эмитит Events.sphere_captured + visual flash + queue_free.
 # На expire: эмитит Events.sphere_expired + queue_free (без flash).
 #
@@ -13,7 +13,7 @@ class_name ObjectiveSphere extends Node3D
 # (main scene либо Spheres-контейнер). Y из spec'а — capture-height 1.0 для Area3D,
 # visual mesh центрируется на 1.5 (поднят чуть выше для glow читаемости).
 
-const LIFETIME := 7.0
+const LIFETIME := 8.0
 const EXPIRE_TELEGRAPH := 2.0  # за столько до expire начинаем cyan→red lerp
 const PULSE_PERIOD := 1.0
 const PULSE_AMPLITUDE := 0.05  # ±5% scale
