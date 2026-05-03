@@ -190,18 +190,6 @@ func apply_reload_cost() -> bool:
 	return true
 
 
-# Journey moving force: silent cap drain без player_hit emit (никакой vignette
-# flash, никаких i-frames — фоговая угроза работает sustained, не per-jolt).
-# Mirror apply_reload_cost pattern: direct decrement, force_kill при cap=0 для
-# симметрии с apply_hit hit-to-zero. Идемпотентен по is_alive guard.
-func apply_force_drain(amount: int) -> void:
-	if not is_alive:
-		return
-	velocity_cap = maxf(0.0, velocity_cap - float(amount))
-	if velocity_cap <= 0.0:
-		force_kill()
-
-
 # Kill Chain Tier 7+ entry: приподнимает effective ceiling. apply_kill_restore сразу
 # подхватит на следующем kill'е через минимум(CAP_CEILING + boost, ...).
 func set_ceiling_boost(boost: float) -> void:
