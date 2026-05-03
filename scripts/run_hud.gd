@@ -8,9 +8,9 @@ class_name RunHud extends CanvasLayer
 # Velocity Gate hook'а. Цвет lerp'ится по value: red < 0.5 < yellow < 0.8 < green.
 #
 # M5 polish: sci-fi minimal стиль — mono SystemFont, cyan #7AE7E7, bracket-обёртка
-# для timer/score. Cap bar получил CAP-title + numeric readout справа +
-# threshold tick (30%, статичный). Сверху над cap bar — DashRow: тонкий cooldown
-# индикатор (пустой → полный за 2.5 сек). Игрок берётся через group "player" +
+# для timer/score. Cap bar получил CAP-title + numeric readout справа.
+# Сверху над cap bar — DashRow: тонкий cooldown индикатор (пустой → полный
+# за 2.5 сек). Игрок берётся через group "player" +
 # публичный метод get_dash_cooldown_remaining().
 # Cathedral boss arena: поверх HUD — top-center BossBar (Pkg B): VISIBLE
 # только пока boss alive. Phase-color section'ы + 2 vertical tick'а на 67% / 34%.
