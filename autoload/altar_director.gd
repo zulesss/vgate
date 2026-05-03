@@ -98,6 +98,13 @@ const BOSS_SCENE := preload("res://objects/boss.tscn")
 # mirror SpawnController.SPAWN_Y.
 const SPAWN_Y := 0.9
 
+# Anti-overlap clearance: радиус sphere-query вокруг spawn position'а — если в
+# нём уже есть другой враг (collision_mask=4), spawn skip'ается. Mirror
+# SpawnController.SPAWN_CLEARANCE_RADIUS (1.2u — capsule radius 0.5 + swarm
+# ring offset 0.6 + margin). Playtest 2026-05-03: enemies spawn'ились друг на
+# друге когда altar director выбирал ту же spawn-point подряд.
+const SPAWN_CLEARANCE_RADIUS := 1.2
+
 
 # Per-altar state. Index 0..3 соответствует order'у group("altar_zone") на момент
 # _on_run_started — стабилен в пределах run'а (arena instance не меняется до
@@ -429,24 +436,56 @@ func _tick_spawning(delta: float) -> void:
 		altar.spawn_timer -= delta
 		if altar.spawn_timer > 0.0:
 			continue
-		# Pick spawn point + type, instantiate.
-		_spawn_for_altar(altar)
-		altar.spawn_timer = SPAWN_INTERVAL_BASE + randf_range(-SPAWN_INTERVAL_JITTER, SPAWN_INTERVAL_JITTER)
+		# Pick spawn point + type, instantiate. Если все spawn-points заблокированы
+		# overlap'ом — defer на следующий tick (НЕ ресетим interval, оставляем timer
+		# на 0 → попытаемся снова со следующим _process'ом). Это soft-fail: spawn
+		# flow восстановится как только swarmling'и/melee отойдут от точки.
+		if _spawn_for_altar(altar):
+			altar.spawn_timer = SPAWN_INTERVAL_BASE + randf_range(-SPAWN_INTERVAL_JITTER, SPAWN_INTERVAL_JITTER)
 
 
-func _spawn_for_altar(altar: AltarState) -> void:
-	var marker := altar.spawn_points[randi() % altar.spawn_points.size()]
-	var pos := marker.global_position
-	pos.y = SPAWN_Y
+# Returns true если spawn состоялся, false если все spawn-points заблокированы.
+# Каждый altar zone имеет 2 marker'а — пробуем оба в random order'е перед defer.
+func _spawn_for_altar(altar: AltarState) -> bool:
 	var t: String = _pick_type_for_phase()
-	if t == "swarmling":
-		# Group of SWARM_GROUP_SIZE с tiny ring offset (mirror spawn_controller).
-		for i in SWARM_GROUP_SIZE:
-			var angle: float = TAU * float(i) / float(SWARM_GROUP_SIZE) + randf() * 0.2
-			var offset := Vector3(cos(angle), 0.0, sin(angle)) * 0.6
-			_instantiate_enemy_at(pos + offset, "swarmling")
-	else:
-		_instantiate_enemy_at(pos, t)
+	# Shuffle spawn-points (small array, 2 элемента) — random order попыток.
+	var candidates: Array[Marker3D] = altar.spawn_points.duplicate()
+	candidates.shuffle()
+	for marker in candidates:
+		var pos := marker.global_position
+		pos.y = SPAWN_Y
+		if not _is_spawn_area_clear(pos):
+			continue  # try next spawn-point
+		if t == "swarmling":
+			# Group of SWARM_GROUP_SIZE с tiny ring offset (mirror spawn_controller).
+			for i in SWARM_GROUP_SIZE:
+				var angle: float = TAU * float(i) / float(SWARM_GROUP_SIZE) + randf() * 0.2
+				var offset := Vector3(cos(angle), 0.0, sin(angle)) * 0.6
+				_instantiate_enemy_at(pos + offset, "swarmling")
+		else:
+			_instantiate_enemy_at(pos, t)
+		return true
+	# Все spawn-points этой zone заблокированы overlap'ом — defer.
+	return false
+
+
+# Physics overlap check вокруг spawn position'а (mirror SpawnController._is_spawn_area_clear).
+# Layer 4 = enemies. Возвращает true когда area clear (можно спавнить). Sphere
+# shape прощает вертикальный clearance.
+func _is_spawn_area_clear(world_pos: Vector3) -> bool:
+	var space := get_viewport().get_world_3d().direct_space_state
+	if space == null:
+		return true  # No physics space yet (early frame) — let spawn proceed
+	var shape := SphereShape3D.new()
+	shape.radius = SPAWN_CLEARANCE_RADIUS
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, Vector3(world_pos.x, SPAWN_Y, world_pos.z))
+	query.collision_mask = 4  # enemies only — игнорируем env (layer 1) и player (layer 2)
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	var results := space.intersect_shape(query, 1)
+	return results.is_empty()
 
 
 func _pick_type_for_phase() -> String:
