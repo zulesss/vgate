@@ -214,8 +214,9 @@ func _process(_delta: float) -> void:
 		dash_row.visible = false
 
 	# Jump cooldown bar — двойной jump CD визуализация. Сразу после second jump
-	# (consume) bar пуст, плавно заполняется до 1.25с. Cyan vs dash amber —
-	# distinguishable. visible=false когда CD=0 (на земле либо single jump unused).
+	# (consume) bar пуст, плавно заполняется до 1.25с. Light blue (0.4,0.7,1.0)
+	# vs dash light-cyan (0.478,0.906,0.906) — different hue, distinguishable.
+	# visible=false когда CD=0 (на земле либо single jump unused).
 	if _player != null and _player.has_method("get_jump_cooldown_remaining"):
 		var jcd: float = _player.get_jump_cooldown_remaining()
 		if jcd > 0.0:
