@@ -387,7 +387,7 @@ func _refresh_altar_label() -> void:
 	var c: int = AltarDirector.captured_count
 	var target: int = AltarDirector.ALTAR_COUNT
 	if c >= target:
-		altar_label.text = "✓ KILL THE BOSS"
+		altar_label.text = "KILL THE BOSS"
 		altar_label.modulate = ALTAR_COLOR_DONE
 	else:
 		altar_label.text = "ALTARS %d / %d" % [c, target]
