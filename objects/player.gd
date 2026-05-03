@@ -14,12 +14,13 @@ const DASH_VELOCITY_BURST := 20.0
 const DASH_DURATION := 0.2
 const DASH_COOLDOWN := 2.5
 
-# Jump CD (rate-limit ТОЛЬКО на double-jump). 1.25с = DASH_COOLDOWN / 2 — гарантирует
-# что double-jump доступен между двумя dash'ами, а не как ledge-spam mobility.
-# First jump с земли всегда instant и CD не ставит. CD persists across landings —
-# не reset'ится на ground touch (см. handle_gravity); double-jumped → land → first
-# jump immediate, но next double-jump в воздухе всё ещё gated CD'ом.
-const JUMP_COOLDOWN := 1.25
+# Jump CD (rate-limit ТОЛЬКО на double-jump). 1.5с — балансовый pivot M13 (от 1.25),
+# чуть жёстче gating'а ledge-spam mobility, но double-jump всё ещё доступен внутри
+# DASH_COOLDOWN (2.5с) окна. First jump с земли всегда instant и CD не ставит.
+# CD persists across landings — не reset'ится на ground touch (см. handle_gravity);
+# double-jumped → land → first jump immediate, но next double-jump в воздухе всё
+# ещё gated CD'ом.
+const JUMP_COOLDOWN := 1.5
 
 # FOV single-axis cap mapping (docs/feel/feel_spec.md §1, revised 2026-04-27).
 # base_fov = cap_to_fov(velocity_cap):

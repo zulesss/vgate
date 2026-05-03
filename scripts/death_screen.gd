@@ -33,7 +33,10 @@ const OBJECTIVE_FAIL_HEADER := "ЗАДАЧА ПРОВАЛЕНА"
 
 const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 
+const HINT_FADE_IN_SECONDS := 0.5
+
 @onready var black: ColorRect = $Black
+@onready var hint_label: Label = $HintLabel
 @onready var score_box: VBoxContainer = $ScoreBox
 @onready var header_label: Label = $ScoreBox/HeaderLabel
 @onready var score_label: Label = $ScoreBox/ScoreLabel
@@ -47,6 +50,7 @@ func _ready() -> void:
 	visible = false
 	black.modulate.a = 0.0
 	score_box.visible = false
+	hint_label.modulate.a = 0.0
 	restart_btn.disabled = true
 	main_menu_btn.disabled = true
 	restart_btn.pressed.connect(_on_restart)
@@ -147,7 +151,11 @@ func _on_player_died() -> void:
 	best_label.text = "Рекорд: %d" % ScoreState.best_score
 	score_box.visible = true
 
-	# Phase 4: fade-in арены (0.4s) — score остаётся overlay
+	# Phase 4: fade-in арены (0.4s) — score остаётся overlay. HintLabel fade-in
+	# параллельно verdict header pacing'у (0.5s, чуть длиннее arena fade'а — hint
+	# появляется чуть после header'а, не одновременно с ним).
+	var hint_tween := create_tween()
+	hint_tween.tween_property(hint_label, "modulate:a", 1.0, HINT_FADE_IN_SECONDS)
 	var t2 := create_tween()
 	t2.tween_property(black, "modulate:a", 0.0, FADE_FROM_BLACK_SECONDS)
 	await t2.finished
@@ -165,6 +173,7 @@ func _on_restart() -> void:
 	visible = false
 	score_box.visible = false
 	black.modulate.a = 0.0
+	hint_label.modulate.a = 0.0
 	restart_btn.disabled = true
 	main_menu_btn.disabled = true
 	# Симметрично _on_player_died: восстанавливаем CAPTURED перед emit'ом
@@ -180,6 +189,7 @@ func _on_main_menu() -> void:
 	visible = false
 	score_box.visible = false
 	black.modulate.a = 0.0
+	hint_label.modulate.a = 0.0
 	restart_btn.disabled = true
 	main_menu_btn.disabled = true
 	# main_menu._ready() сам глушит drain/heartbeat/music + end_run() — здесь

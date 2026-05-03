@@ -18,7 +18,7 @@ class_name RunHud extends CanvasLayer
 const DASH_COOLDOWN_DURATION := 2.5
 # Mirrors JUMP_COOLDOWN в objects/player.gd. Two-place duplication acceptable —
 # уже такой pattern с DASH_COOLDOWN_DURATION (HUD не зависит от player class).
-const JUMP_COOLDOWN_DURATION := 1.25
+const JUMP_COOLDOWN_DURATION := 1.5
 # M9 conquest: countdown timer (120 → 0) с 3 visual phases:
 #   0–45с  — cyan/normal (settle in)
 #   45–90с — amber (swarm intro warning)
@@ -214,7 +214,7 @@ func _process(_delta: float) -> void:
 		dash_row.visible = false
 
 	# Jump cooldown bar — двойной jump CD визуализация. Сразу после second jump
-	# (consume) bar пуст, плавно заполняется до 1.25с. Light blue (0.4,0.7,1.0)
+	# (consume) bar пуст, плавно заполняется до 1.5с. Light blue (0.4,0.7,1.0)
 	# vs dash light-cyan (0.478,0.906,0.906) — different hue, distinguishable.
 	# visible=false когда CD=0 (на земле либо single jump unused).
 	if _player != null and _player.has_method("get_jump_cooldown_remaining"):
