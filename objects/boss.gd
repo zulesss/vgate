@@ -6,7 +6,7 @@ class_name EnemyBoss extends EnemyMelee
 # теперь читается через phase transitions.
 #
 # Phase tracking (Pkg A, this commit):
-#   - Phase 1 (HP > 67%) — only default melee swing (как раньше)
+#   - Phase 1 (HP > 67%) — default swing + charge (territorial chase + occasional commit)
 #   - Phase 2 (HP 67–34%) — transition cue (audio + emissive flash). Без summon
 #     (swarmling reinforcement удалён playtest round 5 — fight ощущался hectic).
 #   - Phase 3 (HP < 34%)  — transition cue + speed boost 4 → 5
@@ -39,18 +39,19 @@ const PHASE_3_HP_RATIO := 0.34
 const PHASE_3_MOVE_SPEED := 7.8
 
 # ────────────────────────────────────────────────────────────────────
-# Charge attack (Phase 2+) constants
+# Charge attack (Phase 1+) constants
 # ────────────────────────────────────────────────────────────────────
-# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 32.4 u/s = 19.44u в captured
-# direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
-# higher commitment, higher punishment). Direction captured при dash start
-# (реактивный per user lock — игрок может в первые 0.5с telegraph'а сместиться).
-# Skill ceiling note: telegraph 0.5s + dash 0.6s = 1.1s commit window. Player
-# имеет ровно 0.5s reaction window до un-cancellable dash launch — намеренно
-# tight (M9 playtest pivot from 2.0s — 2с давало free dodge каждый раз).
+# Mid-range gap-closer: telegraph 0.6/0.5/0.4s per phase → dash 0.6s × 32.4 u/s
+# = 19.44u в captured direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty
+# 30 (выше swing 25 — higher commitment, higher punishment). Direction captured
+# при dash start (реактивный per user lock — игрок может в telegraph'е сместиться).
+# Skill ceiling note: telegraph + dash 0.6s = commit window. Telegraph escalates
+# threat по фазам — позднее phase = меньше read-time (P1 0.6s, P2 0.5s, P3 0.4s).
 const CHARGE_RANGE_MIN := 6.0
 const CHARGE_RANGE_MAX := 12.0
-const CHARGE_TELEGRAPH_DURATION := 0.5
+const CHARGE_TELEGRAPH_PHASE_1 := 0.6
+const CHARGE_TELEGRAPH_PHASE_2 := 0.5
+const CHARGE_TELEGRAPH_PHASE_3 := 0.4
 const CHARGE_DASH_DURATION := 0.6
 const CHARGE_DASH_SPEED := 32.4
 const CHARGE_RECOVERY := 0.5
@@ -83,10 +84,12 @@ const AOE_PULSE_DURATION := 0.75
 # ────────────────────────────────────────────────────────────────────
 # Pattern selection (Pkg D)
 # ────────────────────────────────────────────────────────────────────
-# Probabilities per phase. Phase 2 в mid-range → 70% charge / 30% chase для default.
-# Phase 3 close → 20% AOE / 55% charge / остальное default по range. Roll
-# на каждой entry'е в _check_should_X. Если roll провалился — set re-roll timer
-# чтобы не re-roll'ить 60Hz и не starve'ить opportunity.
+# Probabilities per phase. Phase 1 в mid-range → 50% charge / иначе chase для default
+# (territorial — ниже чем P2 aggressive). Phase 2 → 70% charge. Phase 3 close →
+# 20% AOE / 55% charge / остальное default по range. Roll на каждой entry'е в
+# _check_should_X. Если roll провалился — set re-roll timer чтобы не re-roll'ить
+# 60Hz и не starve'ить opportunity.
+const PHASE_1_CHARGE_PROB := 0.50
 const PHASE_2_CHARGE_PROB := 0.70
 const PHASE_3_CHARGE_PROB := 0.55
 const PHASE_3_AOE_PROB := 0.20
@@ -137,11 +140,12 @@ var _aoe_pulse_tween: Tween
 # секунду проигрывается ~60 roll'ов и шанс никогда не прокнуть).
 var _special_reroll_timer: float = 0.0
 
-# Anti-kite: если P2+ boss долго не enter'ил default-swing windup (например игрок
+# Anti-kite: если boss долго не enter'ил default-swing windup (например игрок
 # kite'ит за attack_range 2.5u), через 3 секунды force'им charge — bypass
 # probability roll и range gate (но cooldown respected). Reset на _start_attack
 # (default windup) или на successful force-trigger. Charge / AOE НЕ resets timer
-# — намеренно (special attacks ≠ default swing).
+# — намеренно (special attacks ≠ default swing). Работает с P1+ (charge доступен
+# с первой фазы) — на P1 cooldown 4s + 3s timer = 4-7s gap при постоянном kite'е.
 const FORCED_CHARGE_TIMEOUT := 3.0
 var _time_since_last_swing: float = 0.0
 
@@ -334,7 +338,7 @@ func _physics_process(delta: float) -> void:
 
 # Override: в charge-active state'е regular attack pipeline заморожен, иначе
 # super._update_state мог бы стартануть swing поверх dash'а. Charge entry —
-# Phase 2+, cooldown ready, distance в 6-12u range.
+# P1+ (с первой фазы), cooldown ready, distance в 6-12u range.
 func _update_state() -> void:
 	if (
 		_charging_telegraph or _charging_dash or _charge_recovery_timer > 0.0
@@ -346,9 +350,8 @@ func _update_state() -> void:
 		return
 	# Forced charge: anti-kite. После 3s без default swing → commit charge regardless
 	# of probability / range. Cooldown respected (если на cd — нет force'а, ждём).
-	# Phase 1 не имеет charge access — без guard'а P1 boss никогда не charge'ит even
-	# на 3s timeout. Это намеренно (P1 = territorial swing only).
-	if (_current_phase >= 2 and _time_since_last_swing >= FORCED_CHARGE_TIMEOUT
+	# P1+ — charge доступен с первой фазы, anti-kite tоже.
+	if (_time_since_last_swing >= FORCED_CHARGE_TIMEOUT
 			and _charge_cooldown_timer <= 0.0
 			and not _is_winding_up and _attack_cooldown_remaining <= 0.0):
 		_start_charge_telegraph()
@@ -358,8 +361,8 @@ func _update_state() -> void:
 	if _current_phase >= 3 and _check_should_aoe():
 		_start_aoe_telegraph()
 		return
-	# Phase 2+ только: пытаемся charge до regular swing если в mid-range.
-	if _current_phase >= 2 and _check_should_charge():
+	# Charge доступен с P1+ — пытаемся до regular swing если в mid-range.
+	if _check_should_charge():
 		_start_charge_telegraph()
 		return
 	super._update_state()
@@ -395,21 +398,32 @@ func _check_should_charge() -> bool:
 	if dist < CHARGE_RANGE_MIN or dist > CHARGE_RANGE_MAX:
 		return false
 	# Probability gate per phase. Roll fail → set reroll cooldown, boss продолжает
-	# chase. Phase 2: 70%. Phase 3: 55% (плюс AOE забирает 20% — суммарно
-	# 75% special / 25% default per spec).
-	var prob: float = PHASE_2_CHARGE_PROB if _current_phase == 2 else PHASE_3_CHARGE_PROB
+	# chase. Phase 1: 50% (territorial). Phase 2: 70% (aggressive mid-range).
+	# Phase 3: 55% (плюс AOE 20% — суммарно 75% special / 25% default per spec).
+	var prob: float
+	match _current_phase:
+		1: prob = PHASE_1_CHARGE_PROB
+		2: prob = PHASE_2_CHARGE_PROB
+		_: prob = PHASE_3_CHARGE_PROB
 	if randf() < prob:
 		return true
 	_special_reroll_timer = SPECIAL_REROLL_COOLDOWN
 	return false
 
 
+func _charge_telegraph_duration() -> float:
+	match _current_phase:
+		1: return CHARGE_TELEGRAPH_PHASE_1
+		2: return CHARGE_TELEGRAPH_PHASE_2
+		_: return CHARGE_TELEGRAPH_PHASE_3
+
+
 func _start_charge_telegraph() -> void:
 	_charging_telegraph = true
-	_charging_telegraph_timer = CHARGE_TELEGRAPH_DURATION
+	_charging_telegraph_timer = _charge_telegraph_duration()
 	_charge_hit_applied = false
 	# Audio cue (reuse enemy_attack stream — единственный 3D audio под рукой).
-	# Heavier impact чем regular swing telegraph за счёт длинного 2с pulse'а.
+	# Heavier impact чем regular swing telegraph за счёт длинного telegraph window'а.
 	if _telegraph_audio != null:
 		_telegraph_audio.play()
 	# Bright white emission hold на весь telegraph. Snap-возврат к golden в
@@ -419,7 +433,7 @@ func _start_charge_telegraph() -> void:
 		_material.emission = CHARGE_TELEGRAPH_EMISSION_COLOR
 		_material.emission_energy_multiplier = CHARGE_TELEGRAPH_EMISSION_ENERGY
 	# Aim indicator beam — child of body, rotates with _face_player. Игрок видит
-	# куда полетит dash в реальном времени за 0.5с telegraph'а. Скрыт в
+	# куда полетит dash в реальном времени за telegraph window. Скрыт в
 	# _start_charge_dash и die() defensive.
 	if _charge_beam != null:
 		_charge_beam.visible = true
@@ -429,7 +443,7 @@ func _start_charge_dash() -> void:
 	_charging_telegraph = false
 	# Capture direction только сейчас — реактивный lock per spec (не frozen в
 	# момент telegraph start'а). Игрок должен иметь смысл двигаться во время
-	# 2с telegraph'а, но не быть unkillable: capture в dash start.
+	# telegraph'а, но не быть unkillable: capture в dash start.
 	if _player != null:
 		var to_player: Vector3 = _player.global_position - global_position
 		to_player.y = 0.0
