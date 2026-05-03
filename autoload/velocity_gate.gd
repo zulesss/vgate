@@ -18,6 +18,10 @@ const SHOOTER_PENALTY := 10
 const MELEE_PENALTY := 20
 const SWARMLING_PENALTY := 5
 const KILL_RESTORE := 25
+# Boss kill bonus: cathedral final boss → большой cap burst как climax reward.
+# Отдельный const чтобы systems-designer тюнил независимо от regular kills.
+# 50 = 2× regular = "выдох" сильнее обычного, читается как боссовая транзакция.
+const BOSS_KILL_RESTORE := 50
 # M9 Hot Zones playtest tweak (2026-05-02): capture sphere → +cap reward.
 # Sphere objective был pure (без cap/score gain) — playtest показал, что это делало
 # capture'ы "налогом" вместо положительной транзакции. +10 cap превращает sphere
@@ -96,10 +100,15 @@ func apply_hit(penalty: int) -> void:
 func apply_kill_restore(pos: Vector3, type: String = "melee") -> void:
 	if not is_alive:
 		return
+	# Boss kills используют BOSS_KILL_RESTORE (2× regular) как climax reward.
+	# Решение через type-check здесь (не отдельный entry-point) чтобы все existing
+	# kill-listeners (ScoreState, KillChain, SpawnController) получали один и тот
+	# же сигнал shape для всех kill'ов — type discriminator уже в payload'е.
+	var restore: int = BOSS_KILL_RESTORE if type == "boss" else KILL_RESTORE
 	# Effective ceiling = CAP_CEILING + ceiling_boost (Kill Chain Tier 7+ sustained
 	# приподнимает потолок, позволяя cap > 100 пока streak активен).
 	var effective_ceiling: float = CAP_CEILING + ceiling_boost
-	velocity_cap = minf(effective_ceiling, velocity_cap + float(KILL_RESTORE))
+	velocity_cap = minf(effective_ceiling, velocity_cap + float(restore))
 	# Kill = выдох. Если игрок был под threshold — ratio после kill подскакивает,
 	# drain сбрасывается на следующем tick через нормальный путь в _physics_process.
 	# Дополнительно явно стопаем drain если он был активен — feel'у это критично:
@@ -109,7 +118,7 @@ func apply_kill_restore(pos: Vector3, type: String = "melee") -> void:
 		if is_draining:
 			is_draining = false
 			Events.drain_stopped.emit()
-	Events.enemy_killed.emit(KILL_RESTORE, pos, type)
+	Events.enemy_killed.emit(restore, pos, type)
 
 
 # M9 Hot Zones: sphere capture reward. Pure positive cap gain — отдельно от

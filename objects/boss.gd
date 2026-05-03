@@ -72,6 +72,25 @@ const AOE_PULSE_LOW := 0.5
 const AOE_PULSE_HIGH := 2.0
 const AOE_PULSE_DURATION := 0.75
 
+# ────────────────────────────────────────────────────────────────────
+# Pattern selection (Pkg D)
+# ────────────────────────────────────────────────────────────────────
+# Probabilities per phase. Phase 2 в mid-range → 40% charge / 60% chase для default.
+# Phase 3 close → 20% AOE / остальное pипает к charge или default по range. Roll
+# на каждой entry'е в _check_should_X. Если roll провалился — set re-roll timer
+# чтобы не re-roll'ить 60Hz и не starve'ить opportunity.
+const PHASE_2_CHARGE_PROB := 0.40
+const PHASE_3_CHARGE_PROB := 0.30
+const PHASE_3_AOE_PROB := 0.20
+const SPECIAL_REROLL_COOLDOWN := 1.0
+
+# ────────────────────────────────────────────────────────────────────
+# Boss kill polish (Pkg D)
+# ────────────────────────────────────────────────────────────────────
+const BOSS_KILL_FLASH_DURATION := 0.5
+const BOSS_KILL_FLASH_EMISSION_COLOR := Color(4.0, 4.0, 4.0)
+const BOSS_KILL_FLASH_EMISSION_ENERGY := 6.0
+
 # Phase transition flash: bright cream HDR pulse 300мс на _material emission,
 # потом возврат к golden. Заметно отличается от regular telegraph red flash
 # (FLASH_EMISSION_COLOR=(1.0,0.2,0.1)) — читается как «фаза щёлкнула», не attack.
@@ -104,6 +123,11 @@ var _aoe_cooldown_timer: float = 0.0
 var _aoe_pulse_tween: Tween
 @onready var _aoe_decal: CSGCylinder3D = $AOEDecal if has_node("AOEDecal") else null
 
+# Pattern selection re-roll timer (Pkg D). Когда probabilistic roll fail'ится,
+# ставим этот timer, чтобы не re-roll'ить каждый physics-tick (иначе на 60Hz за
+# секунду проигрывается ~60 roll'ов и шанс никогда не прокнуть).
+var _special_reroll_timer: float = 0.0
+
 
 func _ready() -> void:
 	# Stat overrides ДО super._ready (base скопирует hp = max_hp + начальный
@@ -133,6 +157,34 @@ func _ready() -> void:
 
 func _kill_type() -> String:
 	return "boss"
+
+
+# Override: kill polish — bright white emission flash 0.5s до super.die() чтобы
+# kill-моменat читался как climax. apply_kill_restore (внутри super.die()) идёт
+# через type="boss" → BOSS_KILL_RESTORE (2× regular) — большой cap burst.
+# Phase / charge / AOE active tween'ы убираем чтобы не лезли поверх flash'а.
+func die() -> void:
+	if _phase_flash_tween != null and _phase_flash_tween.is_valid():
+		_phase_flash_tween.kill()
+	if _aoe_pulse_tween != null and _aoe_pulse_tween.is_valid():
+		_aoe_pulse_tween.kill()
+	if _aoe_decal != null:
+		_aoe_decal.visible = false
+	if _material != null:
+		_material.emission = BOSS_KILL_FLASH_EMISSION_COLOR
+		_material.emission_energy_multiplier = BOSS_KILL_FLASH_EMISSION_ENERGY
+		# Tween fade обратно к golden за 0.5s — но к этому моменту death animation
+		# почти закончится и queue_free сработает. Tween всё равно ставим — feel'у
+		# нужен видимый decay flash'а на старте death-animation'а.
+		var t := create_tween()
+		t.tween_property(
+			_material, "emission_energy_multiplier", BOSS_EMISSION_ENERGY,
+			BOSS_KILL_FLASH_DURATION
+		).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(
+			_material, "emission", BOSS_EMISSION_COLOR, BOSS_KILL_FLASH_DURATION
+		).set_ease(Tween.EASE_OUT)
+	super.die()
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -214,6 +266,8 @@ func _physics_process(delta: float) -> void:
 		_charge_cooldown_timer = maxf(0.0, _charge_cooldown_timer - delta)
 	if _aoe_cooldown_timer > 0.0:
 		_aoe_cooldown_timer = maxf(0.0, _aoe_cooldown_timer - delta)
+	if _special_reroll_timer > 0.0:
+		_special_reroll_timer = maxf(0.0, _special_reroll_timer - delta)
 	if _charging_telegraph:
 		_charging_telegraph_timer = maxf(0.0, _charging_telegraph_timer - delta)
 		if _charging_telegraph_timer <= 0.0:
@@ -279,8 +333,19 @@ func _check_should_charge() -> bool:
 	# мы только что resolve'нули и cooldown ещё не отгорел.
 	if _is_winding_up or _attack_cooldown_remaining > 0.0:
 		return false
+	if _special_reroll_timer > 0.0:
+		return false
 	var dist := _distance_to_player()
-	return dist >= CHARGE_RANGE_MIN and dist <= CHARGE_RANGE_MAX
+	if dist < CHARGE_RANGE_MIN or dist > CHARGE_RANGE_MAX:
+		return false
+	# Probability gate per phase. Roll fail → set reroll cooldown, boss продолжает
+	# chase. Phase 2: 40%. Phase 3: 30% (потому что AOE забирает 20% — суммарно
+	# 50% special / 50% default per spec).
+	var prob: float = PHASE_2_CHARGE_PROB if _current_phase == 2 else PHASE_3_CHARGE_PROB
+	if randf() < prob:
+		return true
+	_special_reroll_timer = SPECIAL_REROLL_COOLDOWN
+	return false
 
 
 func _start_charge_telegraph() -> void:
@@ -347,7 +412,16 @@ func _check_should_aoe() -> bool:
 	# Skip если regular attack или charge in-flight (пусть отрезолвится).
 	if _is_winding_up or _attack_cooldown_remaining > 0.0:
 		return false
-	return _distance_to_player() <= AOE_RANGE
+	if _special_reroll_timer > 0.0:
+		return false
+	if _distance_to_player() > AOE_RANGE:
+		return false
+	# Phase 3 only (caller'ы это уже фильтруют, но guard на случай прямого вызова).
+	# 20% AOE / иначе reroll.
+	if randf() < PHASE_3_AOE_PROB:
+		return true
+	_special_reroll_timer = SPECIAL_REROLL_COOLDOWN
+	return false
 
 
 func _start_aoe_telegraph() -> void:
