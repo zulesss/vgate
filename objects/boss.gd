@@ -14,9 +14,9 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Stats (locked, unchanged):
 #   - HP 800 (≈ 32s sustained repeater fire — bumped per playtest "too fast")
-#   - move_speed 5.5 (Phase 1/2), 6.5 (Phase 3) — playtest M9 bump (was 4.0/5.0,
-#     boss escapable by walk-back; +37% Phase 1/2 closes the gap-creep without
-#     trivializing kite via dash)
+#   - move_speed 6.6 (Phase 1/2), 7.8 (Phase 3) — playtest M9 round 2 bump
+#     (+20% over 5.5/6.5 — sustained chase теперь ловит игрока на high-cap walk
+#     6.4 u/s; player dash 20u×0.2s=4u burst всё ещё escape, skill ceiling preserved)
 #   - attack_range 2.5 (longer reach, narrow R4)
 #   - attack_penalty 25, cooldown 2.5, windup 0.5, detection_radius 40
 #
@@ -33,12 +33,17 @@ const PHASE_2_HP_RATIO := 0.67
 const PHASE_3_HP_RATIO := 0.34
 
 # Phase 3 speed boost — финальная "свирепеет" фаза должна гнать сильнее.
-const PHASE_3_MOVE_SPEED := 6.5
+const PHASE_3_MOVE_SPEED := 7.8
+
+# Periodic swarmling spawn (Pkg A round-2). Phase 2 entry — first spawn (existing
+# call в _apply_phase_transition), затем каждые 4с пока boss жив. Phase 3 не
+# gating'ит — давление растёт линейно. Concurrent cap отсутствует by design.
+const SWARM_SPAWN_INTERVAL := 4.0
 
 # ────────────────────────────────────────────────────────────────────
 # Charge attack (Phase 2+) constants
 # ────────────────────────────────────────────────────────────────────
-# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 12 u/s = 7.2u в captured
+# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 24 u/s = 14.4u в captured
 # direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
 # higher commitment, higher punishment). Direction captured при dash start
 # (реактивный per user lock — игрок может в первые 0.5с telegraph'а сместиться).
@@ -49,7 +54,7 @@ const CHARGE_RANGE_MIN := 6.0
 const CHARGE_RANGE_MAX := 12.0
 const CHARGE_TELEGRAPH_DURATION := 0.5
 const CHARGE_DASH_DURATION := 0.6
-const CHARGE_DASH_SPEED := 12.0
+const CHARGE_DASH_SPEED := 24.0
 const CHARGE_RECOVERY := 0.5
 const CHARGE_COOLDOWN := 4.0
 const CHARGE_PENALTY := 30
@@ -133,6 +138,12 @@ var _aoe_pulse_tween: Tween
 # секунду проигрывается ~60 roll'ов и шанс никогда не прокнуть).
 var _special_reroll_timer: float = 0.0
 
+# Periodic swarmling spawn (Pkg A round-2). Активируется на P2 entry, тикает
+# каждый physics-tick пока boss жив. die() сбрасывает active=false defensive
+# (super.die() выставит is_dying и physics-loop сам выйдет).
+var _swarm_spawn_active: bool = false
+var _swarm_spawn_timer: float = 0.0
+
 
 func _ready() -> void:
 	# Stat overrides ПОСЛЕ super._ready, иначе EnemyMelee._ready клоббит наши
@@ -146,7 +157,7 @@ func _ready() -> void:
 	super._ready()
 	max_hp = 800
 	hp = max_hp
-	move_speed = 5.5
+	move_speed = 6.6
 	attack_range = 2.5
 	attack_windup = 0.5
 	attack_cooldown = 2.5
@@ -179,6 +190,9 @@ func _kill_type() -> String:
 # через type="boss" → BOSS_KILL_RESTORE (2× regular) — большой cap burst.
 # Phase / charge / AOE active tween'ы убираем чтобы не лезли поверх flash'а.
 func die() -> void:
+	# Defensive: physics loop guard'ится is_dying'ом первой строкой и не дойдёт до
+	# swarm timer'а, но flag сбрасываем on principle.
+	_swarm_spawn_active = false
 	if _phase_flash_tween != null and _phase_flash_tween.is_valid():
 		_phase_flash_tween.kill()
 	if _aoe_pulse_tween != null and _aoe_pulse_tween.is_valid():
@@ -262,7 +276,10 @@ func _apply_phase_transition(phase: int) -> void:
 
 	# Per-phase side-effects.
 	if phase == 2:
+		# First swarmling immediately, periodic loop кикает каждые 4с после.
 		_summon_swarmling()
+		_swarm_spawn_active = true
+		_swarm_spawn_timer = SWARM_SPAWN_INTERVAL
 	elif phase == 3:
 		move_speed = PHASE_3_MOVE_SPEED
 
@@ -301,6 +318,14 @@ func _physics_process(delta: float) -> void:
 		_aoe_telegraph_timer = maxf(0.0, _aoe_telegraph_timer - delta)
 		if _aoe_telegraph_timer <= 0.0:
 			_resolve_aoe()
+	# Periodic swarmling spawn (Pkg A round-2). Activated on Phase 2 entry; ticks
+	# регардлесс of phase после старта (Phase 3 продолжает spawn'ить). is_dying
+	# guard уже стоит в первой строке этого method'а.
+	if _swarm_spawn_active:
+		_swarm_spawn_timer = maxf(0.0, _swarm_spawn_timer - delta)
+		if _swarm_spawn_timer <= 0.0:
+			_swarm_spawn_timer = SWARM_SPAWN_INTERVAL
+			_summon_swarmling()
 	super._physics_process(delta)
 
 
