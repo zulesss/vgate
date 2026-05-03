@@ -114,6 +114,10 @@ func _on_main_menu() -> void:
 	# обработать (paused tree блокирует scene transitions в некоторых edge case'ах).
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	# Кампания: выход в меню = abort run, следующий START должен начать с Плаца.
+	# main_menu._on_start тоже делает reset(), это defense-in-depth (если игрок
+	# перейдёт в credits/settings и обратно в main menu — sequence остаётся 0).
+	LevelSequence.reset()
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 

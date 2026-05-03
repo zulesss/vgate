@@ -37,6 +37,10 @@ func _ready() -> void:
 func _on_start() -> void:
 	# M12 narrative: показываем intro splash перед ареной (только от main menu
 	# START — death-restart loop минует splash, использует RunLoop напрямую).
+	# Кампания: reset() гарантирует что START всегда начинает с index 0 (Плац),
+	# даже если предыдущая сессия завершилась на cathedral final-complete или
+	# pause→main_menu без явного reset'а внутри game scene.
+	LevelSequence.reset()
 	IntroState.target_scene = ARENA_SCENE
 	get_tree().change_scene_to_file(INTRO_SPLASH_SCENE)
 

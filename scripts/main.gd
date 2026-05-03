@@ -29,7 +29,20 @@ var _arena_node: Node = null
 # группа пуста и spawn'ы блокируются навсегда (post-M9 regression).
 # _enter_tree() запускается top-down — Marker3D'ы арены попадают в группу
 # ДО того как Spawner откроет глаза.
+#
+# Sequential campaign override: LevelSequence.current_path() — single source of
+# truth для активной арены. Export-default (`arena_c_cathedral` в .tscn) остаётся
+# для editor standalone testing — если LevelSequence по какой-то причине вернул
+# empty, fallback'аемся на export. Runtime override через autoload потому что
+# main_menu START / win_screen advance переключают current_index, не arena_scene.
 func _enter_tree() -> void:
+	var seq_path: String = LevelSequence.current_path()
+	if seq_path != "":
+		var loaded: PackedScene = load(seq_path)
+		if loaded != null:
+			arena_scene = loaded
+		else:
+			push_error("Main: LevelSequence path '%s' не загрузился — fallback на export" % seq_path)
 	if arena_scene == null:
 		push_error("Main: arena_scene не задан — арена не будет инстанциирована")
 		return
