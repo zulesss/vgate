@@ -200,15 +200,32 @@
 **Original**: Onslaught wave mode (10 предзаданных волн как альтернатива continuous ramp).
 **Outcome**: Cut по решению пользователя — 3 уровня (Плац/Камера/Cathedral) достаточно для slice'а. Onslaught добавил бы balancing overhead + WaveController + mode select UI без proportional payoff. Brainstorm от 2026-05-03 (game/level/systems-designer) сохранён в conversation, не дамплен в docs/ (не approved).
 
-### M12 — Narrative pass
-**Цель**: тон, имя проекта, capsule copy.
-- [ ] narrative-designer: имя проекта (VGate → final name) + tagline (1 строка)
-- [ ] Capsule description (3-5 строк) для Steam page / itch
-- [ ] Environmental tone: ambient audio cues, visual hints на тон (например terminal-style text при death)
-- [ ] Optional: short intro splash 2-3 сек перед main menu
+### M12 — Narrative pass ✅ DONE (2026-05-03 → 2026-05-04)
 
-**Owners**: narrative-designer → godot-engineer
-**Exit**: имя финализировано, tagline ясный, environmental тон присутствует.
+**Direction A "Испытание/Экзекуция" locked** — машинное правосудие проверяет приговор движением. 3 арены = 3 стадии исполнения приговора. Boss = «Исполнитель». Drain justification = «Модуль Кинетического Контроля».
+
+#### Готово
+- [x] Имя проекта: **VGate → КИНЕТИКА** (`project.godot config/name`)
+- [x] Tagline: «Двигайся или умри. Это приговор.»
+- [x] Capsule copy (Steam/itch ready) — в `docs/systems/M12_narrative.md`
+- [x] Полная русская локализация: main menu / pause / settings / credits / death / win / run HUD / intro_text / boss labels — 60+ строк переведено
+- [x] Intro splash terminal-style 2-3s перед ареной (МОДУЛЬ КИНЕТИЧЕСКОГО КОНТРОЛЯ — АКТИВЕН / ЗАПУСК ПРОЦЕДУРЫ ИСПЫТАНИЯ → fade в первую арену), skippable
+- [x] Per-arena narrative intro framing (СТАДИЯ ПЕРВАЯ/ВТОРАЯ/ТРЕТЬЯ — public demo / solitary / ritual execution)
+- [x] Drain death header «СКОРОСТЬ ИСЧЕРПАНА» (single fixed после iteration на RNG variants)
+- [x] Death screen tutorial hint (capsule text как подсказка-tutorial для нового игрока)
+- [x] Sequential level loading: Плац → Камера → Собор campaign + final "ВСЕ ПРИГОВОРЫ ИСПОЛНЕНЫ" complete screen
+- [x] Pickup audio cue на sphere/altar capture
+- [x] Drain/heartbeat audio stops on win (mirror death cleanup)
+- [x] Double jump CD 1.25s (=DASH_COOLDOWN/2) + HUD bar mirror dash pattern
+
+**Spec**: `docs/systems/M12_narrative.md` (LOCKED 2026-05-03)
+**Owners**: narrative-designer (theme) → godot-engineer (impl, multi-round polish)
+**Exit (met)**: имя финализировано, tagline locked, capsule shippable, environmental tone (terminal-style death/intro/per-arena framing) присутствует, sequential campaign + tutorial hint shipped.
+
+#### Открытое (deferred)
+- Ambient audio motifs per arena (Плац drum-march / Камера silence-with-hum / Собор choral drone) — flagged for M13 polish bandwidth
+- Cyrillic font verification — Windows playtest gates rendering quality (default font может потребовать fallback asset)
+- Dedicated pickup .ogg asset (currently reuse kill_confirm.ogg pitch-shifted) — flag for M13 audio polish если tonal confusion
 
 ### M13 — Final balance + shippable
 **Цель**: финальная балансировка после всего контента + capsule art если идём в Next Fest.
