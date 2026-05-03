@@ -384,7 +384,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 18)
 
 ; ====================================================================
 ;  Altar Area3D — 4 capture-zone placeholders (no script, wired next milestone)
-;  collision_mask=2 (player layer); group "altar_zone" для altar_director lookup
+;  collision_mask=6 (player layer 2 | enemy layer 4) — director проверяет
+;  overlapping_bodies на player+enemy, contested state требует обоих типов;
+;  group "altar_zone" для altar_director lookup
 ; ====================================================================
 
 [node name="AltarZones" type="Node3D" parent="."]
@@ -392,7 +394,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 18)
 [node name="AltarArea_NW" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, -15)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 6
 monitoring = true
 monitorable = false
 
@@ -402,7 +404,7 @@ shape = SubResource("Shape_altar_zone")
 [node name="AltarArea_NE" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, -15)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 6
 monitoring = true
 monitorable = false
 
@@ -412,7 +414,7 @@ shape = SubResource("Shape_altar_zone")
 [node name="AltarArea_SE" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, 15)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 6
 monitoring = true
 monitorable = false
 
@@ -422,7 +424,7 @@ shape = SubResource("Shape_altar_zone")
 [node name="AltarArea_SW" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, 15)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 6
 monitoring = true
 monitorable = false
 
