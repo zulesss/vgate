@@ -33,7 +33,7 @@
 | 3 типа врагов: melee, shooter + 1 доп (M8) | 4+ типов |
 | Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | **HP в классике, regen, armor** — конфликт с хуком |
 | Feel must (FOV double-axis, heartbeat, low-pass, bob fade, kill burst, dash feel) + nice-to-have (дыхание, motion blur, kill chain, dash relief — M7) | — |
-| 2 mode'а: continuous spawn ramp + Onslaught (M11 предзаданные волны) | — |
+| 1 mode: continuous spawn ramp (3 arenas, M9) | Onslaught wave mode (M11 cut 2026-05-03 — 3 уровней достаточно) |
 | Adaptive music 2 layers + полный SFX bus | BPM-sync music, custom score (затратно для 1-2 дней) |
 | Score / timer / death / restart loop (2.8 сек cycle) | Online leaderboard, replay system |
 | Main menu, Pause, Settings menu (M6: mouse sens, volume, motion blur toggle) | Run-state save (между сессиями только high-score) |
@@ -196,15 +196,9 @@
 **Original**: Vertical/multi-tier additional arena.
 **Outcome**: Multi-tier nav abandoned (Godot 4 engine bugs prohibitive cost для solo-dev). 3 arenas now part of M9 scope (Plats / Камера / Cathedral — all single-tier flat).
 
-### M11 — Onslaught mode
-**Цель**: альтернативный режим — предзаданные волны вместо continuous ramp.
-- [ ] game-designer + level-designer: 10 предзаданных волн с роста сложности
-- [ ] Mode select на main menu (Continuous / Onslaught)
-- [ ] WaveController отделён от SpawnController (M4)
-- [ ] Score tracked отдельно (per-mode high-score в settings)
-
-**Owners**: game-designer + level-designer (волны) → godot-engineer
-**Exit**: оба режима работают независимо, high-score per-mode в save.
+### M11 — ❌ CUT (2026-05-03)
+**Original**: Onslaught wave mode (10 предзаданных волн как альтернатива continuous ramp).
+**Outcome**: Cut по решению пользователя — 3 уровня (Плац/Камера/Cathedral) достаточно для slice'а. Onslaught добавил бы balancing overhead + WaveController + mode select UI без proportional payoff. Brainstorm от 2026-05-03 (game/level/systems-designer) сохранён в conversation, не дамплен в docs/ (не approved).
 
 ### M12 — Narrative pass
 **Цель**: тон, имя проекта, capsule copy.
