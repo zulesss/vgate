@@ -1,19 +1,19 @@
-[gd_scene format=3 uid="uid://b72k5w0mgo8xc"]
+[gd_scene load_steps=3 format=3 uid="uid://b7lvlsel0001"]
 
-[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_mmenu"]
+[ext_resource type="Script" path="res://scripts/level_select.gd" id="1_lsel"]
 
-[sub_resource type="Theme" id="Theme_mmenu"]
+[sub_resource type="Theme" id="Theme_lsel"]
 default_font_size = 28
 
-[node name="MainMenu" type="Control"]
+[node name="LevelSelect" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = SubResource("Theme_mmenu")
-script = ExtResource("1_mmenu")
+theme = SubResource("Theme_lsel")
+script = ExtResource("1_lsel")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -39,46 +39,37 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
-text = "КИНЕТИКА"
+text = "ВЫБОР УРОВНЯ"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 96
-
-[node name="Tagline" type="Label" parent="Center/VBox"]
-layout_mode = 2
-text = "ДВИЖЕНИЕ — ЖИЗНЬ"
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.6, 0.7, 0.85, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 48
 
 [node name="Spacer" type="Control" parent="Center/VBox"]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 
-[node name="NewGameButton" type="Button" parent="Center/VBox"]
+[node name="PlacButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "НОВАЯ ИГРА"
+text = "ПЛАЦ"
 
-[node name="ContinueButton" type="Button" parent="Center/VBox"]
+[node name="KameraButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "ПРОДОЛЖИТЬ"
+text = "КАМЕРА"
 
-[node name="SettingsButton" type="Button" parent="Center/VBox"]
+[node name="CathedralButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "НАСТРОЙКИ"
+text = "СОБОР"
 
-[node name="CreditsButton" type="Button" parent="Center/VBox"]
+[node name="Spacer2" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
-focus_mode = 2
-text = "АВТОРЫ"
 
-[node name="QuitButton" type="Button" parent="Center/VBox"]
+[node name="BackButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "ВЫХОД"
+text = "НАЗАД"

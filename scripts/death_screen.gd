@@ -31,13 +31,16 @@ const OBJECTIVE_FAIL_HEADER := "ЗАДАЧА ПРОВАЛЕНА"
 # Edge: cap=0 ровно на t=RUN_DURATION — drain путь стреляет в _physics_process
 # первым (frame ordering), классифицируется как drain. Корректно semantically.
 
+const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
+
 @onready var black: ColorRect = $Black
 @onready var score_box: VBoxContainer = $ScoreBox
 @onready var header_label: Label = $ScoreBox/HeaderLabel
 @onready var score_label: Label = $ScoreBox/ScoreLabel
 @onready var sphere_label: Label = $ScoreBox/SphereLabel
 @onready var best_label: Label = $ScoreBox/BestLabel
-@onready var restart_btn: Button = $ScoreBox/RestartButton
+@onready var restart_btn: Button = $ScoreBox/ButtonRow/RestartButton
+@onready var main_menu_btn: Button = $ScoreBox/ButtonRow/MainMenuButton
 
 
 func _ready() -> void:
@@ -45,7 +48,9 @@ func _ready() -> void:
 	black.modulate.a = 0.0
 	score_box.visible = false
 	restart_btn.disabled = true
+	main_menu_btn.disabled = true
 	restart_btn.pressed.connect(_on_restart)
+	main_menu_btn.pressed.connect(_on_main_menu)
 	Events.player_died.connect(_on_player_died)
 
 
@@ -151,6 +156,7 @@ func _on_player_died() -> void:
 	# RESTART сразу при появлении (палец на ЛКМ от последнего выстрела).
 	await get_tree().create_timer(ANTI_ACCIDENTAL_DELAY_SECONDS).timeout
 	restart_btn.disabled = false
+	main_menu_btn.disabled = false
 	restart_btn.grab_focus()
 
 
@@ -160,7 +166,23 @@ func _on_restart() -> void:
 	score_box.visible = false
 	black.modulate.a = 0.0
 	restart_btn.disabled = true
+	main_menu_btn.disabled = true
 	# Симметрично _on_player_died: восстанавливаем CAPTURED перед emit'ом
 	# (run_started → player снова активен, ему нужен locked cursor для FPS-mouselook).
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	Events.run_restart_requested.emit()
+
+
+func _on_main_menu() -> void:
+	# Exit к main menu. CampaignProgress сохраняется (его set'ит win_screen, не
+	# здесь — exit on death не должен advance'ить). LevelSequence reset на 0:
+	# next ПРОДОЛЖИТЬ читает CampaignProgress.highest_unlocked, не stale current_index.
+	visible = false
+	score_box.visible = false
+	black.modulate.a = 0.0
+	restart_btn.disabled = true
+	main_menu_btn.disabled = true
+	# main_menu._ready() сам глушит drain/heartbeat/music + end_run() — здесь
+	# дублировать не нужно. Cursor восстановит main_menu._ready (VISIBLE).
+	LevelSequence.reset()
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE)

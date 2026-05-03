@@ -95,7 +95,17 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 theme_override_font_sizes/font_size = 24
 
-[node name="RestartButton" type="Button" parent="ScoreBox"]
+[node name="ButtonRow" type="HBoxContainer" parent="ScoreBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="RestartButton" type="Button" parent="ScoreBox/ButtonRow"]
 layout_mode = 2
 focus_mode = 2
 text = "ЗАНОВО"
+
+[node name="MainMenuButton" type="Button" parent="ScoreBox/ButtonRow"]
+layout_mode = 2
+focus_mode = 2
+text = "ГЛАВНОЕ МЕНЮ"

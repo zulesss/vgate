@@ -39,7 +39,8 @@ const FINAL_BUTTON_LABEL := "ГЛАВНОЕ МЕНЮ"
 @onready var sphere_label: Label = $Box/SphereLabel
 @onready var score_label: Label = $Box/ScoreLabel
 @onready var best_label: Label = $Box/BestLabel
-@onready var restart_btn: Button = $Box/RestartButton
+@onready var restart_btn: Button = $Box/ButtonRow/RestartButton
+@onready var main_menu_btn: Button = $Box/ButtonRow/MainMenuButton
 
 # Запоминаем is_final на момент run_won — чтобы advance() сам не сместил state
 # между проверкой и handler'ом (advance() меняет current_index → is_final()
@@ -52,7 +53,9 @@ func _ready() -> void:
 	bg.modulate.a = 0.0
 	box.visible = false
 	restart_btn.disabled = true
+	main_menu_btn.disabled = true
 	restart_btn.pressed.connect(_on_button)
+	main_menu_btn.pressed.connect(_on_main_menu)
 	Events.run_won.connect(_on_run_won)
 
 
@@ -89,10 +92,15 @@ func _on_run_won() -> void:
 	else:
 		header.text = "АРЕНА ПРОЙДЕНА"
 	# Button label по статусу — "ДАЛЕЕ" для intermediate / "ГЛАВНОЕ МЕНЮ" для финала.
+	# Final arena — single-button mode (RestartButton сам ведёт в главное меню,
+	# второй ГЛАВНОЕ МЕНЮ button дублирует action → hide). Intermediate —
+	# показываем оба: ДАЛЕЕ + ГЛАВНОЕ МЕНЮ (exit без advance).
 	if _is_final_arena:
 		restart_btn.text = FINAL_BUTTON_LABEL
+		main_menu_btn.visible = false
 	else:
 		restart_btn.text = NEXT_BUTTON_LABEL
+		main_menu_btn.visible = true
 
 	# Заполняем breakdown текущими value'ами из ScoreState (final_score фризится
 	# в _on_run_won самого ScoreState'а — порядок connect'а не критичен, оба
@@ -132,6 +140,7 @@ func _on_run_won() -> void:
 
 	await get_tree().create_timer(ANTI_ACCIDENTAL_DELAY).timeout
 	restart_btn.disabled = false
+	main_menu_btn.disabled = false
 	restart_btn.grab_focus()
 
 
@@ -144,6 +153,7 @@ func _advance_now() -> void:
 	box.visible = false
 	bg.modulate.a = 0.0
 	restart_btn.disabled = true
+	main_menu_btn.disabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if _is_final_arena:
 		# Финал кампании: возвращаем в main menu. Reset() гарантирует следующий
@@ -159,3 +169,17 @@ func _advance_now() -> void:
 		# поймали свежие run_started signals на reload'е main.tscn.
 		LevelSequence.advance()
 		get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+func _on_main_menu() -> void:
+	# Intermediate-only path: exit к main menu без advance. CampaignProgress
+	# уже set'нут в _on_run_won (mark_completed) — игрок не теряет progress.
+	# LevelSequence reset на 0 — next ПРОДОЛЖИТЬ читает CampaignProgress.highest_unlocked,
+	# не stale current_index. main_menu._ready() глушит drain/heartbeat/music + end_run().
+	visible = false
+	box.visible = false
+	bg.modulate.a = 0.0
+	restart_btn.disabled = true
+	main_menu_btn.disabled = true
+	LevelSequence.reset()
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
