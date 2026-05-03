@@ -204,7 +204,7 @@ layout_mode = 2
 
 [node name="BindingsHeader" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS"]
 layout_mode = 2
-text = "CONTROLS"
+text = "УПРАВЛЕНИЕ"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
@@ -218,7 +218,7 @@ columns = 2
 [node name="MoveAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "MOVE"
+text = "ДВИЖЕНИЕ"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
@@ -231,46 +231,72 @@ theme_override_font_sizes/font_size = 22
 [node name="LookAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "LOOK"
+text = "ОБЗОР"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
 [node name="LookKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "MOUSE"
+text = "МЫШЬ"
 theme_override_font_sizes/font_size = 22
 
 [node name="ShootAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "SHOOT"
+text = "СТРЕЛЬБА"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
 [node name="ShootKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "LMB"
+text = "ЛКМ"
+theme_override_font_sizes/font_size = 22
+
+[node name="ReloadAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "ПЕРЕЗАРЯДКА"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="ReloadKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "R"
 theme_override_font_sizes/font_size = 22
 
 [node name="JumpAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "JUMP"
+text = "ПРЫЖОК"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
 [node name="JumpKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "SPACE"
+text = "ПРОБЕЛ"
+theme_override_font_sizes/font_size = 22
+
+[node name="DoubleJumpAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "ДВОЙНОЙ ПРЫЖОК"
+theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="DoubleJumpKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "ПРОБЕЛ В ВОЗДУХЕ"
 theme_override_font_sizes/font_size = 22
 
 [node name="DashAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "DASH"
+text = "РЫВОК"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
@@ -280,23 +306,10 @@ layout_mode = 2
 text = "SHIFT"
 theme_override_font_sizes/font_size = 22
 
-[node name="WeaponAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
-custom_minimum_size = Vector2(220, 0)
-layout_mode = 2
-text = "WEAPON TOGGLE"
-theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
-theme_override_font_sizes/font_size = 22
-
-[node name="WeaponKey" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
-custom_minimum_size = Vector2(220, 0)
-layout_mode = 2
-text = "E"
-theme_override_font_sizes/font_size = 22
-
 [node name="PauseAction" type="Label" parent="Panel/Center/VBox/Tabs/CONTROLS/BindingsList"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-text = "PAUSE"
+text = "ПАУЗА"
 theme_override_colors/font_color = Color(0.48, 0.91, 0.91, 1)
 theme_override_font_sizes/font_size = 22
 
@@ -313,4 +326,4 @@ layout_mode = 2
 [node name="BackButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "BACK"
+text = "НАЗАД"
