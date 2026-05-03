@@ -78,7 +78,6 @@ var _charge_recovery_timer: float = 0.0
 var _charge_cooldown_timer: float = 0.0
 var _charge_dir: Vector3 = Vector3.ZERO
 var _charge_hit_applied: bool = false
-var _charge_telegraph_tween: Tween
 
 
 func _ready() -> void:
@@ -254,16 +253,12 @@ func _start_charge_telegraph() -> void:
 	# Heavier impact чем regular swing telegraph за счёт длинного 2с pulse'а.
 	if _telegraph_audio != null:
 		_telegraph_audio.play()
-	# Bright white pulse на emission. Tween'им energy 3.0 → BOSS_EMISSION_ENERGY
-	# за весь telegraph — растёт натяжение, на пике dash'а snap-возврат к
-	# golden (в _start_charge_dash). Одновременно держим color на белом.
+	# Bright white emission hold на весь telegraph. Snap-возврат к golden в
+	# _start_charge_dash. Без pulsing-tween'а (overengineering под 2с — статичный
+	# bright контраст к golden idle сам по себе читается).
 	if _material != null:
-		if _charge_telegraph_tween != null and _charge_telegraph_tween.is_valid():
-			_charge_telegraph_tween.kill()
 		_material.emission = CHARGE_TELEGRAPH_EMISSION_COLOR
 		_material.emission_energy_multiplier = CHARGE_TELEGRAPH_EMISSION_ENERGY
-		# Лёгкий pulse'инг energy ↔ peak — ритмичный «зарядка»: tween до
-		# 1.5× back-and-forth не делаем (overengineering под 2с), просто hold.
 
 
 func _start_charge_dash() -> void:
@@ -284,8 +279,6 @@ func _start_charge_dash() -> void:
 	_charging_dash_timer = CHARGE_DASH_DURATION
 	# Snap emission обратно к golden — telegraph закончен, dash в moving phase.
 	if _material != null:
-		if _charge_telegraph_tween != null and _charge_telegraph_tween.is_valid():
-			_charge_telegraph_tween.kill()
 		_material.emission = BOSS_EMISSION_COLOR
 		_material.emission_energy_multiplier = BOSS_EMISSION_ENERGY
 
