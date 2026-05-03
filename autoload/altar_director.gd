@@ -516,7 +516,18 @@ func _instantiate_enemy_at(world_pos: Vector3, type: String) -> void:
 	# первый physics-кадр AI отработает на frozen frame'е.
 	if "is_spawning" in enemy:
 		enemy.is_spawning = true
+	# Position ДО add_child: enemy._ready() стреляет синхронно из add_child;
+	# любая spawn-логика которая читает global_position в _ready'е (e.g.
+	# Quaternius shooter — face_player init) должна видеть marker pos, не
+	# (0,0,0). Local==global т.к. _spawn_parent ("Enemies") в origin'е main.tscn.
+	# Playtest 2026-05-03: shooter'ы появлялись в центре (origin) вместо altar
+	# corner'ов — log-артефакт от dbg_log в _ready'е перед position-set'ом, но
+	# в продакшене это также ломало initial nav target (player detection
+	# triggerнулся с origin position'а, враг шёл в центр вместо защиты altar'а).
+	(enemy as Node3D).position = world_pos
 	_spawn_parent.add_child(enemy)
+	# Defensive re-assert через global_position на случай если в будущем Enemies
+	# parent сместится — global semantic correct независимо от parent transform'а.
 	(enemy as Node3D).global_position = world_pos
 	# Без telegraph fade (упрощение для cathedral — врагов спавнит altar director
 	# на видных marker'ах, telegraph fade сложно тестировать через 4 параллельные
@@ -560,6 +571,8 @@ func _spawn_boss() -> void:
 	var boss := BOSS_SCENE.instantiate()
 	if "is_spawning" in boss:
 		boss.is_spawning = true
+	# Position ДО add_child — см. note в _instantiate_enemy_at про _ready timing.
+	(boss as Node3D).position = marker_pos
 	_spawn_parent.add_child(boss)
 	(boss as Node3D).global_position = marker_pos
 	if "is_spawning" in boss:
