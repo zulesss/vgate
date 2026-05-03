@@ -195,7 +195,7 @@ func _collect_altars() -> void:
 		altar.top_mesh = _find_altar_top(area)
 		altar.top_material = _ensure_altar_material(altar.top_mesh)
 		altar.spawn_points = _find_spawn_points_for_altar(area, spawn_markers)
-		_apply_state_visual(altar, true)  # init colour without tween jitter
+		_apply_state_visual(altar)
 		_altars.append(altar)
 
 	if _altars.size() != ALTAR_COUNT:
@@ -243,12 +243,9 @@ func _find_arena_root(node: Node) -> Node:
 func _ensure_altar_material(top: GeometryInstance3D) -> StandardMaterial3D:
 	if top == null:
 		return null
-	# CSGBox3D имеет .material свойство. Material override на per-surface уровне
-	# через get_active_material (если CSG mesh уже built). Самый robust path —
-	# читаем .material напрямую.
-	var src_mat: Material = null
-	if top.has_method("get") and top.get("material") != null:
-		src_mat = top.get("material") as Material
+	# CSGBox3D имеет .material свойство. Читаем через .get() (не typed accessor —
+	# GeometryInstance3D base type не объявляет material, но runtime у CSG-нод оно есть).
+	var src_mat := top.get("material") as Material
 	if src_mat == null:
 		# Fallback на surface override (если CSG ещё не built) — все равно вернём null.
 		push_warning("AltarDirector: altar top '%s' без material — visual cue заблокирован" % top.name)
@@ -303,13 +300,13 @@ func _tick_altar_states(delta: float) -> void:
 				continue
 			if b.is_in_group("player"):
 				has_player = true
-			elif b is EnemyBase or b.is_in_group("enemy"):
+			elif b is EnemyBase:
 				has_enemy = true
 		if has_enemy:
 			# Contested — reset dwell timer, switch to contested visual.
 			if altar.state != 1:
 				altar.state = 1
-				_apply_state_visual(altar, false)
+				_apply_state_visual(altar)
 			altar.dwell_timer = 0.0
 			continue
 		if has_player:
@@ -324,13 +321,13 @@ func _tick_altar_states(delta: float) -> void:
 			# scope этого milestone'а).
 			if altar.state != 0:
 				altar.state = 0
-				_apply_state_visual(altar, false)
+				_apply_state_visual(altar)
 		else:
 			# Empty zone — uncaptured visual, dwell decay (мгновенный reset, чтобы
 			# игрок не "копил" half-progress оставив altar).
 			if altar.state != 0:
 				altar.state = 0
-				_apply_state_visual(altar, false)
+				_apply_state_visual(altar)
 			altar.dwell_timer = 0.0
 
 
@@ -338,7 +335,7 @@ func _capture_altar(altar: AltarState) -> void:
 	altar.state = 2
 	altar.dwell_timer = 0.0
 	captured_count += 1
-	_apply_state_visual(altar, false)
+	_apply_state_visual(altar)
 	VelocityGate.apply_altar_reward()
 	Events.altar_captured.emit(altar.index)
 	# 4/4 — trigger boss phase. _cathedral_phase_complete_emitted guard на случай
@@ -372,9 +369,9 @@ func _tick_visual_pulses(delta: float) -> void:
 		)
 
 
-# Set color emission/albedo по state'у. _initial=true → energy сразу low (чтобы
-# не было spike при rebuild).
-func _apply_state_visual(altar: AltarState, _initial: bool) -> void:
+# Set color emission/albedo по state'у. Energy multiplier живёт в _tick_visual_pulses
+# (pulse loop для uncaptured/contested, static для captured) — не дублируем здесь.
+func _apply_state_visual(altar: AltarState) -> void:
 	if altar.top_material == null:
 		return
 	var color: Color = COLOR_UNCAPTURED
