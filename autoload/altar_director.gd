@@ -263,12 +263,20 @@ func _ensure_altar_material(top: GeometryInstance3D) -> StandardMaterial3D:
 	if dup == null:
 		return null
 	dup.emission_enabled = true
-	# Initial emission color уже uncaptured (red)
+	# Initial emission color уже uncaptured (red). Albedo: preserve scene alpha
+	# (beam material — semi-transparent, alpha~0.4) — иначе RGB-only assignment
+	# даст alpha=1.0 и solid pillar вместо луча.
 	dup.emission = COLOR_UNCAPTURED
 	dup.emission_energy_multiplier = PULSE_ENERGY_LOW
-	dup.albedo_color = COLOR_UNCAPTURED
+	dup.albedo_color = _color_with_alpha(COLOR_UNCAPTURED, dup.albedo_color.a)
 	top.set("material", dup)
 	return dup
+
+
+# Build Color(rgb, a) — preserve scene-defined alpha при state color updates,
+# чтобы semi-transparent beam material'а не превращался в solid.
+static func _color_with_alpha(rgb: Color, a: float) -> Color:
+	return Color(rgb.r, rgb.g, rgb.b, a)
 
 
 # Найти 2 spawn marker'а для altar zone. Suffix = "NW"/"NE"/etc, marker имя
@@ -404,7 +412,7 @@ func _apply_state_visual(altar: AltarState) -> void:
 		3:
 			color = COLOR_CAPTURED
 	altar.top_material.emission = color
-	altar.top_material.albedo_color = color
+	altar.top_material.albedo_color = _color_with_alpha(color, altar.top_material.albedo_color.a)
 
 
 # ────── Spawning (per-altar)

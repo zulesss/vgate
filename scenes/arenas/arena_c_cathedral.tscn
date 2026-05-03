@@ -17,17 +17,11 @@ albedo_color = Color(0.2, 0.2, 0.25, 1)
 albedo_color = Color(0.4, 0.38, 0.4, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_altar_top"]
-albedo_color = Color(0.3, 0.5, 1, 1)
-emission_enabled = true
-emission = Color(0.3, 0.5, 1, 1)
-emission_energy_multiplier = 1.0
-
-[sub_resource type="StandardMaterial3D" id="Mat_altar_beam"]
-albedo_color = Color(0.3, 0.5, 1, 0.35)
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.4)
 emission_enabled = true
 emission = Color(0.3, 0.5, 1, 1)
 emission_energy_multiplier = 1.5
-transparency = 1
 
 [sub_resource type="StandardMaterial3D" id="Mat_pew"]
 albedo_color = Color(0.35, 0.28, 0.22, 1)
@@ -173,18 +167,11 @@ visible = false
 mesh = SubResource("BoxMesh_column")
 
 [node name="Altar_NW_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, -15)
-use_collision = false
-radius = 5.0
-height = 0.05
-material = SubResource("Mat_altar_top")
-
-[node name="Altar_NW_Beam" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 4, -15)
 use_collision = false
-radius = 0.4
+radius = 3.0
 height = 8.0
-material = SubResource("Mat_altar_beam")
+material = SubResource("Mat_altar_top")
 
 ; --- NE cluster (anchor (+15, 0, -15)) ---
 
@@ -219,18 +206,11 @@ visible = false
 mesh = SubResource("BoxMesh_column")
 
 [node name="Altar_NE_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, -15)
-use_collision = false
-radius = 5.0
-height = 0.05
-material = SubResource("Mat_altar_top")
-
-[node name="Altar_NE_Beam" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 4, -15)
 use_collision = false
-radius = 0.4
+radius = 3.0
 height = 8.0
-material = SubResource("Mat_altar_beam")
+material = SubResource("Mat_altar_top")
 
 ; --- SE cluster (anchor (+15, 0, +15)) ---
 
@@ -265,18 +245,11 @@ visible = false
 mesh = SubResource("BoxMesh_column")
 
 [node name="Altar_SE_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, 15)
-use_collision = false
-radius = 5.0
-height = 0.05
-material = SubResource("Mat_altar_top")
-
-[node name="Altar_SE_Beam" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 4, 15)
 use_collision = false
-radius = 0.4
+radius = 3.0
 height = 8.0
-material = SubResource("Mat_altar_beam")
+material = SubResource("Mat_altar_top")
 
 ; --- SW cluster (anchor (-15, 0, +15)) ---
 
@@ -311,18 +284,11 @@ visible = false
 mesh = SubResource("BoxMesh_column")
 
 [node name="Altar_SW_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, 15)
-use_collision = false
-radius = 5.0
-height = 0.05
-material = SubResource("Mat_altar_top")
-
-[node name="Altar_SW_Beam" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 4, 15)
 use_collision = false
-radius = 0.4
+radius = 3.0
 height = 8.0
-material = SubResource("Mat_altar_beam")
+material = SubResource("Mat_altar_top")
 
 ; ====================================================================
 ;  Pews (atmosphere — west/east of central platform)
