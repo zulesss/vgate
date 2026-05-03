@@ -20,6 +20,8 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Visual differentiation — золотой emissive HDR через override material'а после
 # super._ready'я. Mesh scale 1.6 — transform на Visual node в boss.tscn.
+# Collision shape остаётся melee-default (radius 0.5, height 1.7) — boss физически
+# такого же радиуса, не толще, иначе застрянет в narrow R4 6u-corridor'е.
 
 const BOSS_EMISSION_COLOR := Color(2.0, 0.8, 0.3)  # HDR golden — > 1.0 даёт bloom при tonemap'е
 const BOSS_EMISSION_ENERGY := 1.5
@@ -47,7 +49,8 @@ var _phase_flash_tween: Tween
 func _ready() -> void:
 	# Stat overrides ДО super._ready (base скопирует hp = max_hp + начальный
 	# stagger cooldown). Lunge оставляем включённым из melee parent'а — boss
-	# тоже должен закрывать gap в финальные 300мс windup'а.
+	# тоже должен закрывать gap в финальные 300мс windup'а, иначе walk-back
+	# escape'ит даже на slower 4.0 (player walk ~6.4 u/s при cap=80).
 	max_hp = 200
 	move_speed = 4.0
 	attack_range = 2.5
@@ -95,14 +98,11 @@ func _check_phase_transition() -> void:
 		new_phase = 3
 	elif hp_ratio <= PHASE_2_HP_RATIO:
 		new_phase = 2
-	if new_phase == _current_phase:
-		return
-	# Возможен skip phase (одиночный massive hit крайнего range). Идём по
-	# transition'ам по одному, чтобы все side-effect'ы (1→2 summon, 2→3 speed)
-	# отработали даже при хитах через несколько порогов.
-	while _current_phase < new_phase:
-		_current_phase += 1
-		_apply_phase_transition(_current_phase)
+	# Skip-phase scenario не покрываем: max single-hit (charged_blaster Tier 3 ~25dmg)
+	# << HP gap между фазами (200×0.33 = 66hp). YAGNI.
+	if new_phase > _current_phase:
+		_current_phase = new_phase
+		_apply_phase_transition(new_phase)
 
 
 func _apply_phase_transition(phase: int) -> void:
@@ -158,7 +158,6 @@ func _summon_swarmling() -> void:
 			dir = to_player.normalized()
 	if "is_spawning" in swarm:
 		swarm.is_spawning = true
-	swarm.position = global_position + dir * 1.5
 	get_parent().add_child(swarm)
 	swarm.global_position = global_position + dir * 1.5
 	if "is_spawning" in swarm:
