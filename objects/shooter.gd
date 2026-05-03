@@ -64,12 +64,6 @@ func _ready() -> void:
 	_stationary = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 
 	_schedule_next_reposition()
-	# DEBUG-SHOOTER-LOOP: track spawn id+stationary flag (hypothesis check —
-	# cathedral arena should give _stationary=false; если playtest log покажет
-	# stationary=true, kit-detection group hit unexpectedly).
-	_dbg_log("SPAWN pos=%s stationary=%s repo_timer=%.2f cd=%.2f" % [
-		global_position, _stationary, _reposition_timer, _attack_cooldown_remaining
-	])
 
 
 # Override _physics_process: декрементируем reposition_timer ДО super, чтобы он
@@ -90,7 +84,6 @@ func _update_state() -> void:
 		return
 	var dist := _distance_to_player()
 	if dist > detection_radius:
-		_dbg_state_change(State.IDLE, "dist>detection")
 		state = State.IDLE
 		return
 
@@ -108,12 +101,6 @@ func _update_state() -> void:
 
 	if need_reposition and state != State.REPOSITION:
 		_pick_reposition_target()
-		_dbg_state_change(
-			State.REPOSITION,
-			"need_repos timer=%.2f has_target=%s target=%s" % [
-				_reposition_timer, _has_reposition_target, _reposition_target
-			]
-		)
 		state = State.REPOSITION
 		return
 
@@ -131,9 +118,6 @@ func _update_state() -> void:
 			if to_target > REPOSITION_REACH and not nav_agent.is_navigation_finished():
 				return  # ещё едем
 		# Доехали ИЛИ застряли (path dead) → reset, выбираем нормальное поведение.
-		_dbg_log("REPOS-done has_target_was=%s nav_done=%s" % [
-			_has_reposition_target, nav_agent.is_navigation_finished()
-		])
 		_has_reposition_target = false
 		_schedule_next_reposition()
 
@@ -141,46 +125,12 @@ func _update_state() -> void:
 	var los := _has_line_of_sight()
 	if dist <= attack_range and los:
 		if _attack_cooldown_remaining <= 0.0:
-			_dbg_state_change(State.ATTACK, "fire dist=%.1f cd=%.2f" % [dist, _attack_cooldown_remaining])
 			_start_attack()
 			return
 		# В range + есть LOS, но cooldown — стоим (не лезем ближе).
-		_dbg_state_change(State.CHASE, "in_range LOS cd=%.2f" % _attack_cooldown_remaining)
 		state = State.CHASE
 		return
-	_dbg_state_change(State.CHASE, "out_of_range_or_no_LOS dist=%.1f los=%s cd=%.2f" % [dist, los, _attack_cooldown_remaining])
 	state = State.CHASE
-
-
-# DEBUG-SHOOTER-LOOP: state-transition logger. Печатает только при смене state'а
-# (idempotent для CHASE→CHASE spam'а), плюс ad-hoc через _dbg_log. Удалить после
-# воспроизведения "fires once stuck AFK" lookup'а в playtest console.
-var _dbg_last_state: int = -1
-var _dbg_id: int = 0
-
-
-func _dbg_state_change(new_state: int, reason: String) -> void:
-	if new_state == _dbg_last_state:
-		return
-	if _dbg_id == 0:
-		_dbg_id = get_instance_id() & 0xffff
-	_dbg_last_state = new_state
-	print("[SHOOT-%d] %s -> %s | %s" % [_dbg_id, _state_name(state), _state_name(new_state), reason])
-
-
-func _dbg_log(msg: String) -> void:
-	if _dbg_id == 0:
-		_dbg_id = get_instance_id() & 0xffff
-	print("[SHOOT-%d] %s" % [_dbg_id, msg])
-
-
-func _state_name(s: int) -> String:
-	match s:
-		0: return "IDLE"
-		1: return "CHASE"
-		2: return "ATTACK"
-		3: return "REPOSITION"
-	return "?%d" % s
 
 
 # Override: Reposition использует _reposition_target. Остальные состояния
@@ -237,10 +187,8 @@ func _resolve_attack() -> void:
 	# Raycast от shooter'а к player'у. Если LOS потеряна (cover вошёл за windup) — miss.
 	# Spec: damage = SHOOTER_PENALTY (10) к cap. Не используем weapon-stat: shooter
 	# bypassing player.damage() chain, шлём напрямую в VelocityGate (как melee).
-	var fired := not is_dying and _player != null and _has_line_of_sight()
-	if fired:
+	if not is_dying and _player != null and _has_line_of_sight():
 		VelocityGate.apply_hit(attack_penalty)
-	_dbg_log("RESOLVE fired=%s dist=%.1f" % [fired, _distance_to_player()])
 	# Attack one-shot — fire pose. Возврат к Idle через _on_oneshot_finished.
 	_play_oneshot(&"Attack")
 	super._resolve_attack()
