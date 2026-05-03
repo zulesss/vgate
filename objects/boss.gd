@@ -55,6 +55,23 @@ const CHARGE_HIT_RADIUS := 1.5  # contact-radius во время dash'а
 const CHARGE_TELEGRAPH_EMISSION_COLOR := Color(2.0, 2.0, 2.0)
 const CHARGE_TELEGRAPH_EMISSION_ENERGY := 3.0
 
+# ────────────────────────────────────────────────────────────────────
+# AOE swing (Phase 3+) constants
+# ────────────────────────────────────────────────────────────────────
+# Close-range radial: red ground decal pulses 1.5s → resolve damage если игрок
+# в радиусе. Trigger когда player ≤5u (sub-charge range, overlap с default
+# swing range 2.5 — но AOE проседает разовой 25 cap'а с radial coverage:
+# back-step не escape'ит как от swing'а). Cooldown 6s.
+const AOE_RANGE := 5.0
+const AOE_TELEGRAPH_DURATION := 1.5
+const AOE_PENALTY := 25
+const AOE_COOLDOWN := 6.0
+# Pulse: emission energy 0.5 → 2.0 за 0.75s, повторяется (pulse в обе стороны
+# — telegraph length / 2). Mat_aoe_decal в .tscn задаёт base albedo / emission color.
+const AOE_PULSE_LOW := 0.5
+const AOE_PULSE_HIGH := 2.0
+const AOE_PULSE_DURATION := 0.75
+
 # Phase transition flash: bright cream HDR pulse 300мс на _material emission,
 # потом возврат к golden. Заметно отличается от regular telegraph red flash
 # (FLASH_EMISSION_COLOR=(1.0,0.2,0.1)) — читается как «фаза щёлкнула», не attack.
@@ -78,6 +95,14 @@ var _charge_recovery_timer: float = 0.0
 var _charge_cooldown_timer: float = 0.0
 var _charge_dir: Vector3 = Vector3.ZERO
 var _charge_hit_applied: bool = false
+
+# AOE swing state (Pkg C). Telegraph → resolve. Cooldown отдельный от charge'а
+# и regular cooldown'а — каждый attack-type имеет независимый refresh.
+var _aoe_telegraph: bool = false
+var _aoe_telegraph_timer: float = 0.0
+var _aoe_cooldown_timer: float = 0.0
+var _aoe_pulse_tween: Tween
+@onready var _aoe_decal: CSGCylinder3D = $AOEDecal if has_node("AOEDecal") else null
 
 
 func _ready() -> void:
@@ -184,9 +209,11 @@ func _physics_process(delta: float) -> void:
 	if is_dying or is_spawning or not VelocityGate.is_alive:
 		super._physics_process(delta)
 		return
-	# Cooldown тикает всегда (даже на Phase 1 — но триггер заблокирован отдельно).
+	# Cooldowns тикают всегда (даже на Phase 1 — но триггеры заблокированы phase-gate'ом).
 	if _charge_cooldown_timer > 0.0:
 		_charge_cooldown_timer = maxf(0.0, _charge_cooldown_timer - delta)
+	if _aoe_cooldown_timer > 0.0:
+		_aoe_cooldown_timer = maxf(0.0, _aoe_cooldown_timer - delta)
 	if _charging_telegraph:
 		_charging_telegraph_timer = maxf(0.0, _charging_telegraph_timer - delta)
 		if _charging_telegraph_timer <= 0.0:
@@ -198,6 +225,10 @@ func _physics_process(delta: float) -> void:
 			_end_charge_dash()
 	elif _charge_recovery_timer > 0.0:
 		_charge_recovery_timer = maxf(0.0, _charge_recovery_timer - delta)
+	if _aoe_telegraph:
+		_aoe_telegraph_timer = maxf(0.0, _aoe_telegraph_timer - delta)
+		if _aoe_telegraph_timer <= 0.0:
+			_resolve_aoe()
 	super._physics_process(delta)
 
 
@@ -205,10 +236,17 @@ func _physics_process(delta: float) -> void:
 # super._update_state мог бы стартануть swing поверх dash'а. Charge entry —
 # Phase 2+, cooldown ready, distance в 6-12u range.
 func _update_state() -> void:
-	if _charging_telegraph or _charging_dash or _charge_recovery_timer > 0.0:
-		# Charge active → state.IDLE чтобы _apply_movement в base не лез к NavAgent.
+	if (
+		_charging_telegraph or _charging_dash or _charge_recovery_timer > 0.0
+		or _aoe_telegraph
+	):
+		# Special-attack active → state.IDLE чтобы _apply_movement в base не лез к NavAgent.
 		# Movement override ниже перехватывает velocity сам.
 		state = State.IDLE
+		return
+	# Phase 3+ только: AOE до charge до regular swing если в close range.
+	if _current_phase >= 3 and _check_should_aoe():
+		_start_aoe_telegraph()
 		return
 	# Phase 2+ только: пытаемся charge до regular swing если в mid-range.
 	if _current_phase >= 2 and _check_should_charge():
@@ -221,7 +259,7 @@ func _update_state() -> void:
 # (velocity 0), dash — captured direction × CHARGE_DASH_SPEED, recovery —
 # frozen vulnerable. Outside charge'а — fallback к base.
 func _apply_movement(delta: float) -> void:
-	if _charging_telegraph or _charge_recovery_timer > 0.0:
+	if _charging_telegraph or _charge_recovery_timer > 0.0 or _aoe_telegraph:
 		_set_planar_velocity(Vector3.ZERO, delta)
 		move_and_slide()
 		return
@@ -295,6 +333,53 @@ func _end_charge_dash() -> void:
 	_charging_dash = false
 	_charge_recovery_timer = CHARGE_RECOVERY
 	_charge_cooldown_timer = CHARGE_COOLDOWN
+
+
+# ────────────────────────────────────────────────────────────────────
+# AOE swing (Pkg C)
+# ────────────────────────────────────────────────────────────────────
+
+func _check_should_aoe() -> bool:
+	if _aoe_cooldown_timer > 0.0:
+		return false
+	if _player == null:
+		return false
+	# Skip если regular attack или charge in-flight (пусть отрезолвится).
+	if _is_winding_up or _attack_cooldown_remaining > 0.0:
+		return false
+	return _distance_to_player() <= AOE_RANGE
+
+
+func _start_aoe_telegraph() -> void:
+	_aoe_telegraph = true
+	_aoe_telegraph_timer = AOE_TELEGRAPH_DURATION
+	if _aoe_decal != null:
+		_aoe_decal.visible = true
+		# Pulse: emission_energy 0.5 ↔ 2.0 за 0.75s, ping-pong через TWEEN_LOOPS.
+		# Material — sub_resource на decal'е, тянем emission_energy_multiplier.
+		var mat := _aoe_decal.material as StandardMaterial3D
+		if mat != null:
+			if _aoe_pulse_tween != null and _aoe_pulse_tween.is_valid():
+				_aoe_pulse_tween.kill()
+			mat.emission_energy_multiplier = AOE_PULSE_LOW
+			_aoe_pulse_tween = create_tween().set_loops()
+			_aoe_pulse_tween.tween_property(
+				mat, "emission_energy_multiplier", AOE_PULSE_HIGH, AOE_PULSE_DURATION
+			).set_trans(Tween.TRANS_SINE)
+			_aoe_pulse_tween.tween_property(
+				mat, "emission_energy_multiplier", AOE_PULSE_LOW, AOE_PULSE_DURATION
+			).set_trans(Tween.TRANS_SINE)
+
+
+func _resolve_aoe() -> void:
+	_aoe_telegraph = false
+	_aoe_cooldown_timer = AOE_COOLDOWN
+	if _aoe_pulse_tween != null and _aoe_pulse_tween.is_valid():
+		_aoe_pulse_tween.kill()
+	if _aoe_decal != null:
+		_aoe_decal.visible = false
+	if _player != null and _distance_to_player() <= AOE_RANGE:
+		VelocityGate.apply_hit(AOE_PENALTY)
 
 
 func _summon_swarmling() -> void:
