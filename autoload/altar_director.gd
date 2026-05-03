@@ -6,20 +6,25 @@ class_name AltarDirectorNode extends Node
 #
 # Spec (locked, см. milestone brief):
 #   1. 4 altars (NW/NE/SE/SW), все active одновременно с run_started.
-#   2. Capture: player в altar Area3D (3u radius placeholder, scene size 4×2×4)
+#   2. Capture: player в altar Area3D (~5u radius disc footprint, scene size 10×2×10)
 #      4 секунды continuous + zero enemies в той же area → state=captured.
-#   3. Enemy в зоне → state=contested + dwell timer reset.
+#   3. Enemy + player в зоне → state=contested + dwell timer reset.
 #   4. Captured altar: spawn для этой зоны выключен (relief reward).
-#   5. Spawn pressure: каждый uncaptured/contested altar спавнит врагов на
+#   5. Spawn pressure: каждый non-captured altar спавнит врагов на
 #      собственном spawn-interval (~3-5s) из 2 ассоциированных spawn-points.
 #   6. 4/4 captured → 2s silence pause → boss spawn at BossSpawn marker.
 #   7. Win: boss killed AND alive AND 4 captured → Events.run_won (RunLoop'у).
 #   8. Fail: только drain death. No timer.
 #
 # State machine per altar:
-#   0 = UNCAPTURED — dim red emissive (slow pulse), spawn'ит врагов
-#   1 = CONTESTED — orange emissive (fast pulse), spawn'ит, dwell reset
-#   2 = CAPTURED — gold emissive static, spawn off
+#   0 = UNCAPTURED — red emissive (slow pulse), spawn'ит врагов, no dwell
+#   1 = CAPTURING — yellow emissive (medium pulse), spawn'ит, dwell тикает
+#   2 = CONTESTED — red emissive (fast pulse), spawn'ит, dwell reset (signal "враги в зоне")
+#   3 = CAPTURED — green emissive static, spawn off
+# Note: state IDs стабильны с предыдущей реализации только частично — старый
+# CONTESTED был index 1 (теперь CAPTURING), captured переехал с 2 на 3.
+# Listeners (run_hud) знают только captured_count + altar_captured(index) — не
+# зависят от state ID, поэтому safe.
 #
 # Altar→Top mesh mapping: arena scene имеет AltarArea_<XX> (4 штуки в группе
 # "altar_zone") + Altar_<XX>_Top mesh (CSGBox3D, не в группе). Mapping по имени:
@@ -59,15 +64,19 @@ const SPAWN_INITIAL_DELAY := 2.5
 const BOSS_SPAWN_DELAY := 2.0  # 2s silence pause после 4/4 captured
 const BOSS_SPAWN_MARKER_NAME := &"BossSpawn"
 
-# Visual emission colors (per spec)
+# Visual emission colors (per spec — red/yellow/green semantics).
+# UNCAPTURED + CONTESTED share red color: signal "не прогрессирует / прогресс
+# прерван". Distinguished by pulse speed (slow vs fast).
 const COLOR_UNCAPTURED := Color(1.0, 0.2, 0.2)
-const COLOR_CONTESTED := Color(1.0, 0.5, 0.0)
-const COLOR_CAPTURED := Color(1.0, 0.8, 0.2)
-# Pulse params: slow для uncaptured (1.5s period), fast для contested (0.5s).
-# Captured static (no tween — set energy=1.5 константой).
+const COLOR_CAPTURING := Color(1.0, 0.9, 0.0)
+const COLOR_CONTESTED := Color(1.0, 0.2, 0.2)
+const COLOR_CAPTURED := Color(0.2, 1.0, 0.3)
+# Pulse params: slow для uncaptured (1.5s), medium для capturing (1.0s),
+# fast для contested (0.5s). Captured static.
 const PULSE_ENERGY_LOW := 0.5
 const PULSE_ENERGY_HIGH := 1.5
 const PULSE_PERIOD_SLOW := 1.5
+const PULSE_PERIOD_MEDIUM := 1.0
 const PULSE_PERIOD_FAST := 0.5
 const PULSE_ENERGY_CAPTURED := 1.5
 
@@ -98,7 +107,7 @@ class AltarState:
 	var top_mesh: GeometryInstance3D
 	var top_material: StandardMaterial3D
 	var spawn_points: Array[Marker3D] = []
-	var state: int = 0  # 0=uncaptured, 1=contested, 2=captured
+	var state: int = 0  # 0=uncaptured, 1=capturing, 2=contested, 3=captured
 	var dwell_timer: float = 0.0
 	var spawn_timer: float = 0.0
 	var pulse_phase: float = 0.0  # 0..1, для emission energy mod
@@ -290,7 +299,7 @@ func _find_spawn_points_for_altar(area: Area3D, all_markers: Array) -> Array[Mar
 
 func _tick_altar_states(delta: float) -> void:
 	for altar in _altars:
-		if altar.state == 2:
+		if altar.state == 3:
 			continue  # captured, freeze
 		var bodies: Array = altar.area.get_overlapping_bodies()
 		var has_player := false
@@ -302,42 +311,49 @@ func _tick_altar_states(delta: float) -> void:
 				has_player = true
 			elif b is EnemyBase:
 				has_enemy = true
-		if has_enemy:
-			# Contested — reset dwell timer, switch to contested visual.
-			if altar.state != 1:
-				altar.state = 1
+		if has_player and has_enemy:
+			# Contested — player + enemy together. Red fast pulse + dwell reset.
+			if altar.state != 2:
+				altar.state = 2
 				_apply_state_visual(altar)
 			altar.dwell_timer = 0.0
+			Events.altar_dwell_progress.emit(altar.index, 0.0)
 			continue
 		if has_player:
-			# Pure player presence (no enemy) → tick dwell timer.
+			# Pure player → CAPTURING. Yellow medium pulse, dwell тикает.
 			altar.dwell_timer += delta
 			if altar.dwell_timer >= CAPTURE_DWELL_TIME:
 				_capture_altar(altar)
 				continue
-			# Pure player: считается uncaptured visual (slow red pulse), но dwell
-			# тикает. Можно было бы добавить промежуточный progress visual, но
-			# spec'е три state'а — UI/HUD progress bar делается отдельно (не в
-			# scope этого milestone'а).
-			if altar.state != 0:
-				altar.state = 0
+			if altar.state != 1:
+				altar.state = 1
 				_apply_state_visual(altar)
+			Events.altar_dwell_progress.emit(
+				altar.index, clampf(altar.dwell_timer / CAPTURE_DWELL_TIME, 0.0, 1.0)
+			)
 		else:
-			# Empty zone — uncaptured visual, dwell decay (мгновенный reset, чтобы
-			# игрок не "копил" half-progress оставив altar).
+			# Empty zone (no player) — uncaptured red slow pulse, dwell instant reset.
+			# (Enemy alone в zone тоже сюда — не contested без player'а, чтобы враг
+			# не "поднимал тревогу" если игрока рядом нет.)
+			var was_active := altar.state == 1 or altar.state == 2
 			if altar.state != 0:
 				altar.state = 0
 				_apply_state_visual(altar)
 			altar.dwell_timer = 0.0
+			if was_active:
+				# Сообщаем HUD'у что прогресс сброшен → бар скрыть.
+				Events.altar_dwell_progress.emit(altar.index, 0.0)
 
 
 func _capture_altar(altar: AltarState) -> void:
-	altar.state = 2
+	altar.state = 3
 	altar.dwell_timer = 0.0
 	captured_count += 1
 	_apply_state_visual(altar)
 	VelocityGate.apply_altar_reward()
 	Events.altar_captured.emit(altar.index)
+	# Hide progress bar — capture done, no more progress for this altar.
+	Events.altar_dwell_progress.emit(altar.index, 0.0)
 	# 4/4 — trigger boss phase. _cathedral_phase_complete_emitted guard на случай
 	# одновременного capture'а двух altars в одном кадре (shouldn't happen — capture
 	# requires 4s dwell — но defensive).
@@ -354,11 +370,16 @@ func _tick_visual_pulses(delta: float) -> void:
 	for altar in _altars:
 		if altar.top_material == null:
 			continue
-		if altar.state == 2:
-			# Captured — static energy. Set если drift'нул (не должен, но cheap идемпотент).
+		if altar.state == 3:
+			# Captured — static energy.
 			altar.top_material.emission_energy_multiplier = PULSE_ENERGY_CAPTURED
 			continue
-		var period: float = PULSE_PERIOD_SLOW if altar.state == 0 else PULSE_PERIOD_FAST
+		var period: float = PULSE_PERIOD_SLOW
+		match altar.state:
+			1:
+				period = PULSE_PERIOD_MEDIUM
+			2:
+				period = PULSE_PERIOD_FAST
 		altar.pulse_phase += delta / period
 		if altar.pulse_phase >= 1.0:
 			altar.pulse_phase = fmod(altar.pulse_phase, 1.0)
@@ -377,8 +398,10 @@ func _apply_state_visual(altar: AltarState) -> void:
 	var color: Color = COLOR_UNCAPTURED
 	match altar.state:
 		1:
-			color = COLOR_CONTESTED
+			color = COLOR_CAPTURING
 		2:
+			color = COLOR_CONTESTED
+		3:
 			color = COLOR_CAPTURED
 	altar.top_material.emission = color
 	altar.top_material.albedo_color = color
@@ -391,7 +414,7 @@ func _tick_spawning(delta: float) -> void:
 	if _spawn_parent == null:
 		return
 	for altar in _altars:
-		if altar.state == 2:
+		if altar.state == 3:
 			continue  # captured altar — spawn off
 		if altar.spawn_points.is_empty():
 			continue

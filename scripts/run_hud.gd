@@ -47,6 +47,8 @@ const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 @onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
+@onready var capturing_row: HBoxContainer = $BottomCenter/VBox/CapturingRow
+@onready var capturing_fill: ColorRect = $BottomCenter/VBox/CapturingRow/CapturingBarContainer/CapturingBar/Fill
 @onready var cap_bar: ProgressBar = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar
 @onready var cap_fill: ColorRect = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar/Fill
 @onready var cap_value_label: Label = $BottomCenter/VBox/CapRow/CapValue
@@ -57,6 +59,10 @@ const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
 const COLOR_HIGH := Color(0.30, 0.85, 0.40)   # >= 80 cap
+
+# Cathedral capturing-bar fill color (yellow — matches CAPTURING altar emissive).
+# При progress=0 (signal сброса) бар скрывается полностью — separate state visible=false.
+const CAPTURING_FILL_COLOR := Color(1.0, 0.9, 0.0, 1.0)
 
 # M9 Hot Zones sphere counter colors. До target — cyan. >= CAPTURE_TARGET (objective met) —
 # green tint + галочка вместо countdown'а (signal "относительно расслабься").
@@ -77,12 +83,19 @@ var _is_journey: bool = false
 # sphere/hunt counter'а. Boss phase — timer hidden completely.
 var _is_cathedral: bool = false
 
+# Capturing progress bar state. Какой altar index сейчас отображается + текущий
+# progress. -1 = ни один altar не tracked (бар скрыт). При входе в новую zone
+# director эмитит progress > 0 — мы переключаем _capturing_altar_index на её
+# index. При progress == 0 — если индекс совпадает, скрываем бар.
+var _capturing_altar_index: int = -1
+
 
 func _ready() -> void:
 	Events.score_changed.connect(_on_score_changed)
 	Events.sphere_captured.connect(_on_sphere_captured)
 	Events.mark_killed.connect(_on_mark_killed)
 	Events.altar_captured.connect(_on_altar_captured)
+	Events.altar_dwell_progress.connect(_on_altar_dwell_progress)
 	Events.run_started.connect(_on_run_started)
 	score_label.text = "[ 0 ]"
 	_refresh_objective_labels()
@@ -92,6 +105,8 @@ func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player")
 	dash_row.visible = false
 	reload_row.visible = false
+	capturing_row.visible = false
+	capturing_fill.anchor_right = 0.0
 
 
 func _process(_delta: float) -> void:
@@ -191,9 +206,32 @@ func _on_altar_captured(_index: int) -> void:
 	_refresh_objective_labels()
 
 
+# Capturing progress bar follow logic. Multiple altars могут быть в states
+# CAPTURING/CONTESTED одновременно (rare — игрок одновременно в двух zone'ах
+# не помещается, но overlapping zones вокруг corners theoretically возможны),
+# поэтому бар следует за тем altar'ом который последним прислал progress > 0.
+# Progress == 0 от tracked altar'а → скрыть бар. Progress == 0 от другого
+# altar'а → игнорируем (он не tracked).
+func _on_altar_dwell_progress(index: int, progress: float) -> void:
+	if progress > 0.0:
+		_capturing_altar_index = index
+		capturing_row.visible = true
+		capturing_fill.anchor_right = clampf(progress, 0.0, 1.0)
+	else:
+		# Reset signal — скрыть только если касается отслеживаемого altar'а.
+		if index == _capturing_altar_index:
+			_capturing_altar_index = -1
+			capturing_row.visible = false
+			capturing_fill.anchor_right = 0.0
+
+
 func _on_run_started() -> void:
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
 	_is_cathedral = not get_tree().get_nodes_in_group(ARENA_GROUP_CATHEDRAL).is_empty()
+	# Clean capturing bar на каждый run start (предыдущий run'а residue).
+	_capturing_altar_index = -1
+	capturing_row.visible = false
+	capturing_fill.anchor_right = 0.0
 	_refresh_objective_labels()
 
 

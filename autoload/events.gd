@@ -81,3 +81,8 @@ signal altar_captured(index: int)
 signal cathedral_phase_complete()
 signal boss_phase_started()
 signal boss_killed()
+# Altar capturing dwell progress 0..1. Эмитится AltarDirector'ом каждый кадр
+# пока altar в state CAPTURING/CONTESTED (player в zone). 0.0 emit'ится когда
+# прогресс reset'ится (player вышел / altar capture'нулся / contested) — HUD
+# использует это как сигнал "скрыть бар". Index = altar.index (0..3).
+signal altar_dwell_progress(index: int, progress: float)
