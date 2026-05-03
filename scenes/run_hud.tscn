@@ -28,7 +28,7 @@ offset_bottom = -120.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = SubResource("Theme_hud")
-text = "CAPTURED"
+text = "ЗАХВАЧЕНО"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_colors/font_color = Color(0.4, 1.0, 0.5, 1)
@@ -76,7 +76,7 @@ mouse_filter = 2
 
 [node name="HuntLabel" type="Label" parent="TopLeft/VBox"]
 layout_mode = 2
-text = "HUNT 00 / 6"
+text = "ОХОТА 00 / 6"
 horizontal_alignment = 0
 theme_override_colors/font_color = Color(1, 0.45, 0.85, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -86,7 +86,7 @@ mouse_filter = 2
 
 [node name="EnemyLabel" type="Label" parent="TopLeft/VBox"]
 layout_mode = 2
-text = "ENEMIES: 25"
+text = "ВРАГИ: 25"
 horizontal_alignment = 0
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -96,7 +96,7 @@ mouse_filter = 2
 
 [node name="AltarLabel" type="Label" parent="TopLeft/VBox"]
 layout_mode = 2
-text = "ALTARS 0 / 4"
+text = "АЛТАРИ 0 / 4"
 horizontal_alignment = 0
 theme_override_colors/font_color = Color(1, 0.5, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -127,7 +127,7 @@ mouse_filter = 2
 
 [node name="BossLabel" type="Label" parent="TopCenter/VBox"]
 layout_mode = 2
-text = "BOSS"
+text = "ИСПОЛНИТЕЛЬ"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(2.0, 0.8, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -282,7 +282,7 @@ mouse_filter = 2
 [node name="CapturingTitle" type="Label" parent="BottomCenter/VBox/CapturingRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(120, 0)
-text = "CAPTURING"
+text = "ЗАХВАТ"
 theme_override_colors/font_color = Color(1.0, 0.9, 0.0, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -336,7 +336,7 @@ mouse_filter = 2
 [node name="CapTitle" type="Label" parent="BottomCenter/VBox/CapRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(50, 0)
-text = "CAP"
+text = "КАП"
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4

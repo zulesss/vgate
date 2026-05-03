@@ -41,7 +41,7 @@ theme_override_constants/separation = 12
 
 [node name="HeaderLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "ARENA COMPLETE"
+text = "АРЕНА ПРОЙДЕНА"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -50,7 +50,7 @@ theme_override_font_sizes/font_size = 40
 
 [node name="KillsLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "Kills: 0"
+text = "Убийства: 0"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -59,7 +59,7 @@ theme_override_font_sizes/font_size = 22
 
 [node name="AvgCapLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "Avg Cap: 0"
+text = "Средний КАП: 0"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -68,7 +68,7 @@ theme_override_font_sizes/font_size = 22
 
 [node name="TimeLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "Time: 0.0 / 120"
+text = "Время: 0.0 / 120"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -77,7 +77,7 @@ theme_override_font_sizes/font_size = 22
 
 [node name="SphereLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "Spheres: 0 / 25"
+text = "Сферы: 0 / 25"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -86,7 +86,7 @@ theme_override_font_sizes/font_size = 22
 
 [node name="ScoreLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "SCORE: 0"
+text = "СЧЁТ: 0"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -95,7 +95,7 @@ theme_override_font_sizes/font_size = 36
 
 [node name="BestLabel" type="Label" parent="Box"]
 layout_mode = 2
-text = "BEST: 0"
+text = "РЕКОРД: 0"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.78, 0.82, 0.88, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -105,4 +105,4 @@ theme_override_font_sizes/font_size = 24
 [node name="RestartButton" type="Button" parent="Box"]
 layout_mode = 2
 focus_mode = 2
-text = "RESTART"
+text = "ЗАНОВО"

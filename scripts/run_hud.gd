@@ -171,10 +171,10 @@ func _process(_delta: float) -> void:
 	if _is_journey:
 		var alive_enemies: int = get_tree().get_nodes_in_group(ENEMY_GROUP).size()
 		if alive_enemies <= 0:
-			enemy_label.text = "✓ CLEAR"
+			enemy_label.text = "✓ ЗАЧИЩЕНО"
 			enemy_label.modulate = ENEMY_COLOR_DONE
 		else:
-			enemy_label.text = "ENEMIES: %d" % alive_enemies
+			enemy_label.text = "ВРАГИ: %d" % alive_enemies
 			enemy_label.modulate = ENEMY_COLOR_NORMAL
 
 	# Cap meter: VelocityGate.velocity_cap 0..100. Width manual через ColorRect
@@ -374,10 +374,10 @@ func _refresh_hunt_label() -> void:
 	var k: int = MarkDirector.kills
 	var target: int = MarkDirector.KILL_TARGET
 	if k >= target:
-		hunt_label.text = "✓ HUNT %d" % k
+		hunt_label.text = "✓ ОХОТА %d" % k
 		hunt_label.modulate = HUNT_COLOR_DONE
 	else:
-		hunt_label.text = "HUNT %02d / %d" % [k, target]
+		hunt_label.text = "ОХОТА %02d / %d" % [k, target]
 		hunt_label.modulate = HUNT_COLOR_NORMAL
 
 
@@ -387,8 +387,8 @@ func _refresh_altar_label() -> void:
 	var c: int = AltarDirector.captured_count
 	var target: int = AltarDirector.ALTAR_COUNT
 	if c >= target:
-		altar_label.text = "KILL THE BOSS"
+		altar_label.text = "УБЕЙ ИСПОЛНИТЕЛЯ"
 		altar_label.modulate = ALTAR_COLOR_DONE
 	else:
-		altar_label.text = "ALTARS %d / %d" % [c, target]
+		altar_label.text = "АЛТАРИ %d / %d" % [c, target]
 		altar_label.modulate = ALTAR_COLOR_NORMAL

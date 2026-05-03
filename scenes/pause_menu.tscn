@@ -42,7 +42,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Panel/Center/VBox"]
 layout_mode = 2
-text = "PAUSED"
+text = "ПАУЗА"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -56,24 +56,24 @@ layout_mode = 2
 [node name="ResumeButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "RESUME"
+text = "ПРОДОЛЖИТЬ"
 
 [node name="RestartButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "RESTART"
+text = "ЗАНОВО"
 
 [node name="SettingsButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "SETTINGS"
+text = "НАСТРОЙКИ"
 
 [node name="MainMenuButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "MAIN MENU"
+text = "ГЛАВНОЕ МЕНЮ"
 
 [node name="QuitButton" type="Button" parent="Panel/Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "QUIT"
+text = "ВЫХОД"

@@ -41,13 +41,13 @@ func _on_run_started() -> void:
 	# physical objective "дойди до конца не умирая". Detection через group check
 	# на arena root (single source of truth с RunLoop / SpawnController).
 	if not get_tree().get_nodes_in_group(&"objective_journey").is_empty():
-		label.text = "CLEAR ENEMIES AND ESCAPE\nIN 2 MINUTES"
+		label.text = "ЗАЧИСТИ ВРАГОВ И ПОКИНЬ ЗОНУ\nЗА 2 МИНУТЫ"
 	elif AltarDirector._active:
-		label.text = "CAPTURE %d ALTARS\nAND SLAY THE BOSS" % AltarDirector.ALTAR_COUNT
+		label.text = "ЗАХВАТИ %d АЛТАРЕЙ\nИ УБЕЙ ИСПОЛНИТЕЛЯ" % AltarDirector.ALTAR_COUNT
 	elif MarkDirector._active:
-		label.text = "HUNT %d MARKED ENEMIES\nAND SURVIVE 2 MINUTES" % MarkDirector.KILL_TARGET
+		label.text = "УСТРАНИ %d МЕЧЕНЫХ\nИ ВЫЖИВИ 2 МИНУТЫ" % MarkDirector.KILL_TARGET
 	else:
-		label.text = "CAPTURE %d SPHERES\nAND SURVIVE 2 MINUTES" % SphereDirector.CAPTURE_TARGET
+		label.text = "ЗАХВАТИ %d СФЕР\nИ ВЫЖИВИ 2 МИНУТЫ" % SphereDirector.CAPTURE_TARGET
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	backdrop.modulate.a = 0.0

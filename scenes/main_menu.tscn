@@ -39,7 +39,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
-text = "VGATE"
+text = "КИНЕТИКА"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -48,7 +48,7 @@ theme_override_font_sizes/font_size = 96
 
 [node name="Tagline" type="Label" parent="Center/VBox"]
 layout_mode = 2
-text = "MOVEMENT IS LIFE"
+text = "ДВИЖЕНИЕ — ЖИЗНЬ"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.6, 0.7, 0.85, 1)
 theme_override_constants/outline_size = 2
@@ -61,19 +61,19 @@ layout_mode = 2
 [node name="StartButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "START"
+text = "НАЧАТЬ"
 
 [node name="SettingsButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "SETTINGS"
+text = "НАСТРОЙКИ"
 
 [node name="CreditsButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "CREDITS"
+text = "АВТОРЫ"
 
 [node name="QuitButton" type="Button" parent="Center/VBox"]
 layout_mode = 2
 focus_mode = 2
-text = "QUIT"
+text = "ВЫХОД"

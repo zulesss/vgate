@@ -47,40 +47,40 @@ func _on_run_won() -> void:
 	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
 	var is_cathedral: bool = not get_tree().get_nodes_in_group(&"objective_cathedral").is_empty()
 	if is_cathedral:
-		header.text = "CATHEDRAL CLEANSED"
+		header.text = "СОБОР ОЧИЩЕН"
 	elif is_journey:
-		header.text = "AREA CLEARED"
+		header.text = "ЗОНА ЗАЧИЩЕНА"
 	else:
-		header.text = "ARENA COMPLETE"
+		header.text = "АРЕНА ПРОЙДЕНА"
 
 	# Заполняем breakdown текущими value'ами из ScoreState (final_score фризится
 	# в _on_run_won самого ScoreState'а — порядок connect'а не критичен, оба
 	# подписаны до эмита).
-	kills_label.text = "Kills: %d" % ScoreState.kills
+	kills_label.text = "Убийства: %d" % ScoreState.kills
 	var avg_cap: float = VelocityGate.get_avg_cap_over_run()
-	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
+	avg_cap_label.text = "Средний КАП: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
 	if is_cathedral:
 		# Cathedral: no deadline. Time count-up без /120.
-		time_label.text = "Time: %.1f" % t_alive
+		time_label.text = "Время: %.1f" % t_alive
 		sphere_label.visible = true
-		sphere_label.text = "Altars: %d / %d" % [AltarDirector.captured_count, AltarDirector.ALTAR_COUNT]
+		sphere_label.text = "Алтари: %d / %d" % [AltarDirector.captured_count, AltarDirector.ALTAR_COUNT]
 	elif is_journey:
 		# Journey clear-and-escape: deadline активен (120s), показываем как
 		# обычная арена — Time: t / 120. Sphere row скрыт, kills уже в KillsLabel'е.
-		time_label.text = "Time: %.1f / 120" % t_alive
+		time_label.text = "Время: %.1f / 120" % t_alive
 		sphere_label.visible = false
 	else:
-		time_label.text = "Time: %.1f / 120" % t_alive
+		time_label.text = "Время: %.1f / 120" % t_alive
 		sphere_label.visible = true
 		# Active objective metric: sphere counter vs marked-kills counter. Один из
 		# director'ов active (set'ится в run_started через group check'у).
 		if MarkDirector._active:
-			sphere_label.text = "Marked Kills: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
+			sphere_label.text = "Метки: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
 		else:
-			sphere_label.text = "Spheres: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
-	score_label.text = "SCORE: %d" % ScoreState.final_score
-	best_label.text = "BEST: %d" % ScoreState.best_score
+			sphere_label.text = "Сферы: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
+	score_label.text = "СЧЁТ: %d" % ScoreState.final_score
+	best_label.text = "РЕКОРД: %d" % ScoreState.best_score
 
 	box.visible = true
 	# Subtle fade-in: заметный, но не закрывает арену полностью (игрок видит

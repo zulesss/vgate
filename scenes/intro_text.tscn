@@ -35,8 +35,8 @@ offset_bottom = 120.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = SubResource("Theme_introtxt")
-text = "CAPTURE 15 SPHERES
-AND SURVIVE 2 MINUTES"
+text = "ЗАХВАТИ 15 СФЕР
+И ВЫЖИВИ 2 МИНУТЫ"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_colors/font_color = Color(1, 1, 1, 1)
