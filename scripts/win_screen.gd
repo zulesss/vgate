@@ -67,6 +67,12 @@ func _on_run_won() -> void:
 	# race connection эмит произойдёт после внешнего advance'а).
 	_is_final_arena = LevelSequence.is_final()
 
+	# Persist campaign progress — current_index идентифицирует пройденную арену.
+	# mark_completed идемпотентен: повторные win'ы той же арены no-op (highest_unlocked
+	# advance'ит только при new_unlocked > current). Делаем ДО button click — игрок
+	# может exit'нуть в menu через ГЛАВНОЕ МЕНЮ кнопку и progress всё равно сохраняется.
+	CampaignProgress.mark_completed(LevelSequence.current_index)
+
 	# Journey detection — single source of truth с RunLoop / SpawnController через
 	# group check. На journey арене header — clear-and-escape победа, time показываем
 	# с deadline (now /120 актуально — есть timer-fail), sphere row скрываем.

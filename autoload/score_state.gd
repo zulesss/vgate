@@ -1,29 +1,37 @@
 class_name ScoreStateNode extends Node
 
-# M9 conquest score formula (replace M4 kills × time_mult × bonus_mult):
-#   score = floor(kills × avg_cap × time_alive_normalized)
-#   where:
-#     avg_cap = ∫(velocity_cap × dt) / alive_time   (0..100 диапазон)
-#     time_alive_normalized = clamp(alive_time / 120, 0, 1)
+# M13 per-arena scoring (replaces M9 single formula):
+#   Plac (objective_spheres)      → score = floor(avg_cap × kills)
+#   Камера (objective_marked_hunt) → score = floor(avg_cap × kills)
+#   Собор (objective_cathedral)   → score = floor(avg_cap × speed_factor × 50)
+#       speed_factor = clamp(CATHEDRAL_BENCHMARK_TIME / max(t_alive, 1.0), 0.3, 3.0)
+#       par-time anchor: 180с — faster=better, slower=worse, bounded.
 #
-# Score теперь чисто end-of-run / live derived value: kills × avg × tnorm зависит
-# от three running aggregates (kills counter, cap accumulator в gate'е, alive_time
-# в gate'е), поэтому считается заново каждый _process для HUD'а. На death/win
+# Score теперь чисто end-of-run / live derived value: считается заново каждый _process
+# для HUD'а, основанные на arena_key (Plac/Камера/Cathedral). На death/win
 # фиксируется final_score для отображения. Old per-kill accumulation удалён.
 #
-# M10 Journey (Arena C "Дорога"): без timer'а, time_alive_normalized теряет
-# смысл (нет fixed run length). Для journey arena используем formula без time_norm:
-#   score = floor(kills × avg_cap)
-# Detection через group "objective_journey" на arena root — same pattern как
-# RunLoop / SpawnController.
+# Arena key ставится в _on_run_started через group lookup (objective_spheres →
+# "plac", objective_marked_hunt → "kamera", objective_cathedral → "cathedral").
+# Legacy journey arena → "arena_b" fallback (compat с прошлыми save'ами).
 #
 # Persistence: high-score per arena в user://vgate_progress.cfg секция
-# [high_scores], key = arena name. Поддержка multiple arena (M10 ready).
+# [high_scores], key = arena name. Поддержка multiple arena (per-arena best).
 
 const SAVE_PATH := "user://vgate_progress.cfg"
-const RUN_DURATION := 120.0
 const DEFAULT_ARENA_KEY := "arena_b"
-const ARENA_GROUP_JOURNEY := &"objective_journey"
+const ARENA_KEY_PLAC := "plac"
+const ARENA_KEY_KAMERA := "kamera"
+const ARENA_KEY_CATHEDRAL := "cathedral"
+const ARENA_GROUP_SPHERES := &"objective_spheres"
+const ARENA_GROUP_MARKED_HUNT := &"objective_marked_hunt"
+const ARENA_GROUP_CATHEDRAL := &"objective_cathedral"
+# Cathedral par-time anchor (sec). Игрок прошёл за 180с → speed_factor = 1.0;
+# 90с → 2.0 (cap'ed by clamp); 360с → 0.5. Boss-fight pacing reference.
+const CATHEDRAL_BENCHMARK_TIME := 180.0
+const CATHEDRAL_SCORE_MULTIPLIER := 50.0
+const CATHEDRAL_SPEED_FACTOR_MIN := 0.3
+const CATHEDRAL_SPEED_FACTOR_MAX := 3.0
 
 var current_score: int = 0          # live derived value, обновляется каждый _process
 var best_score: int = 0             # best для текущей арены, читается из save
@@ -43,7 +51,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# Run timer mirror'ит VelocityGate.get_alive_time() — для HUD label'а.
-	# Score computed live: kills × avg_cap × time_norm. Death sequence (1.8с +
+	# Score computed live per-arena formula. Death sequence (1.8с +
 	# fade) — VelocityGate.is_alive=false, get_alive_time замораживается, score
 	# зафризится на final_score (выставляется в _on_player_died/_on_run_won).
 	if VelocityGate.is_alive:
@@ -54,21 +62,34 @@ func _process(_delta: float) -> void:
 			Events.score_changed.emit(current_score)
 
 
-# M9: floor(kills × avg_cap × time_norm). Journey: floor(kills × avg_cap)
-# (no time component — нет fixed run length у journey arena, time_norm
-# делал бы бесконечный multiplier ×1.0 с самого старта что бессмысленно).
-# Pure function — testable.
+# Per-arena score formula. Pure function — testable.
+# - Plac/Kamera: floor(avg_cap × kills) — pure efficiency, no time component.
+# - Cathedral: floor(avg_cap × speed_factor × 50) — par-time anchored.
 func _compute_live_score() -> int:
 	var avg_cap: float = VelocityGate.get_avg_cap_over_run()
-	if _is_journey_arena():
-		return int(floor(float(kills) * avg_cap))
-	var t_alive: float = VelocityGate.get_alive_time()
-	var t_norm: float = clampf(t_alive / RUN_DURATION, 0.0, 1.0)
-	return int(floor(float(kills) * avg_cap * t_norm))
+	if current_arena_key == ARENA_KEY_CATHEDRAL:
+		var t_alive: float = VelocityGate.get_alive_time()
+		var speed_factor: float = clampf(
+			CATHEDRAL_BENCHMARK_TIME / maxf(t_alive, 1.0),
+			CATHEDRAL_SPEED_FACTOR_MIN,
+			CATHEDRAL_SPEED_FACTOR_MAX
+		)
+		return int(floor(avg_cap * speed_factor * CATHEDRAL_SCORE_MULTIPLIER))
+	# Plac / Kamera / legacy fallback — pure kills × avg_cap
+	return int(floor(float(kills) * avg_cap))
 
 
-func _is_journey_arena() -> bool:
-	return not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
+func _detect_arena_key() -> String:
+	# Group lookup для определения текущей арены. Per-arena keys persist в save'е
+	# отдельно — best score не cross-pollinates между ареной.
+	var tree := get_tree()
+	if not tree.get_nodes_in_group(ARENA_GROUP_CATHEDRAL).is_empty():
+		return ARENA_KEY_CATHEDRAL
+	if not tree.get_nodes_in_group(ARENA_GROUP_MARKED_HUNT).is_empty():
+		return ARENA_KEY_KAMERA
+	if not tree.get_nodes_in_group(ARENA_GROUP_SPHERES).is_empty():
+		return ARENA_KEY_PLAC
+	return DEFAULT_ARENA_KEY
 
 
 func _on_run_started() -> void:
@@ -76,6 +97,8 @@ func _on_run_started() -> void:
 	final_score = 0
 	run_time = 0.0
 	kills = 0
+	# Detect arena key (per-arena scoring + per-arena best score persistence).
+	current_arena_key = _detect_arena_key()
 	# Re-load best для текущей арены (на случай arena swap'а через main.gd).
 	# Cheap: ConfigFile read раз в run_started, не каждый кадр.
 	_load_best()
@@ -101,7 +124,6 @@ func _on_player_died() -> void:
 
 
 func _on_run_won() -> void:
-	# t_norm = 1.0 на победе → score = kills × avg_cap (full multiplier).
 	# RunLoop set'ит is_alive=false ДО emit'а (freeze spawn/player), поэтому _process
 	# больше не пересчитает. Computed snapshot здесь — deterministic final value.
 	# get_alive_time / get_avg_cap_over_run читают accumulator'ы (не зависят от is_alive).
