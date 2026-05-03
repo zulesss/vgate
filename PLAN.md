@@ -165,32 +165,32 @@
 **Owners**: game-designer → systems-designer → godot-engineer
 **Exit**: 3 типа на арене, identity мгновенно различима, hook не сломан.
 
-### M9 — Time-based Conquest + 3 arenas + boss redesign ⚙️ ACTIVE (2026-05-01 → 2026-05-03+)
+### M9 — Time-based Conquest + 3 arenas + boss redesign ✅ DONE (2026-05-01 → 2026-05-03)
 
 **История**: M9 originally "Weapon variety", cut 2026-05-01 (`43fa3d8`). Re-scoped 2026-05-01 в comprehensive finale milestone:
 - Time-based conquest core (120с timer + drain + objective)
 - 3 distinct arenas с 3 distinct objectives (replace M10 vertical arena)
 - Multi-pivot Arena C (Шахта multi-tier abandoned → Дорога journey abandoned → Cathedral altar capture **locked**)
 - Boss redesign (3-phase + dash-time charge + AOE)
-- Wall-run MVP (pending — final step)
+- ~~Wall-run MVP~~ **CUT** — пользователь решил skip 2026-05-03 (focus на close vs further scope)
 
 #### Готово
 - [x] Time-based core: 120с timer, win/loss conditions, score formula `kills × avg_cap × time_norm`, anti-camping spike, threshold step-up
 - [x] Arena B "Плац" (open 50×50, 4 low walls cross) — sphere capture objective (15/25 + survive 120s), per-arena PlayerStart
 - [x] Arena A "Камера" (claustrophobic hub-and-spoke 26×26, closed dead-end alcoves) — marked enemy hunt (10 marks + survive)
-- [x] Arena C "Собор" (Cathedral 44×44 closed ceiling 12u, 4 altar clusters + center boss spawn) — altar capture (4 altars + boss kill, no timer drain-driven). Spec: `docs/levels/M9_cathedral.md`
+- [x] Arena C "Собор" (Cathedral 44×44 closed ceiling 12u, 4 altar clusters + center boss spawn) — altar capture (4 altars + boss kill, drain-driven, no timer). Spec: `docs/levels/M9_cathedral.md`
 - [x] Multi-arena routing via group (objective_sphere / objective_marked_hunt / objective_cathedral)
 - [x] Per-arena objective directors: SphereDirector / MarkDirector / AltarDirector
-- [x] Boss redesign 3-phase + charge (dash-time vector) + AOE swing + kill polish + HP bar HUD. Spec: `docs/systems/M9_boss_redesign.md`
+- [x] Boss redesign 3-phase + charge (P1+ access, per-phase telegraph 0.6/0.5/0.4) + AOE swing + forced anti-kite charge (3s timer) + ChargeBeam visual aim indicator + kill polish + HP bar HUD. Spec: `docs/systems/M9_boss_redesign.md`
 - [x] Engine-level NavMesh fixes (CSG visibility — detach-from-tree pattern, MESH_INSTANCES parsed_geometry_type)
 - [x] Restart re-instantiate arena (pre-placed enemies respawn)
+- [x] Cathedral 120s win race fix (subscribe-after-emit) + timer UI hidden
+- [x] "CAPTURED" 2s toast on altar capture
+- [x] Drain tolerance bump 0.5→0.2 (harsh feel — no jitter forgiveness)
 
-#### Pending
-- [ ] Wall-run MVP (final M9 step — see research спec from `a7b18461ac17dafd0`, ~6-7h impl, dual side RayCast3D + duration cap + jump-off)
-- [ ] M9 close — playtest verdict + balance pass
-
-**Owners**: game-designer (mechanic spec) → level-designer (geometry) → godot-engineer (impl) → playtest-analyst (cycle)
-**Exit**: 3 arenas finalize'd с distinct objectives, boss feels climactic, wall-run smooth on cathedral perimeter walls.
+**Tagged**: M9-final commit `ead8b1f` (2026-05-03)
+**Owners**: game-designer + level-designer (specs) → godot-engineer (impl) → playtest-analyst (balance cycle, 6+ rounds)
+**Exit (met)**: 3 arenas с distinct objectives shipped, boss feels climactic с per-phase escalation, wall-run dropped per user scope decision.
 
 ### M10 — ❌ FOLDED INTO M9 (2026-05-03)
 **Original**: Vertical/multi-tier additional arena.

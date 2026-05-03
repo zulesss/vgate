@@ -20,9 +20,13 @@ Visual: scale 1.6, golden HDR emissive `Color(2.0, 0.8, 0.3)` energy 1.5.
 
 | Phase | HP Range | Color/Behavior |
 |---|---|---|
-| **Phase 1** | 100-67% (HP > 536) | Default melee chase + swing — territorial |
-| **Phase 2** | 67-34% (HP > 272) | + Charge attack + 1 swarmling summon at transition — aggressive |
-| **Phase 3** | 34-0% (HP ≤ 272) | + AOE swing + speed boost 4→5 — desperate |
+| **Phase 1** | 100-67% (HP > 536) | Default swing + charge (50% prob, 0.6s telegraph) — territorial w/ commit |
+| **Phase 2** | 67-34% (HP > 272) | + charge prob bump (70%, 0.5s telegraph) — aggressive |
+| **Phase 3** | 34-0% (HP ≤ 272) | + AOE swing (20%) + charge faster (55%, 0.4s telegraph) + speed boost 6.6→7.8 — desperate |
+
+**Phase transitions** (no swarmling summon — cut round 5):
+- Phase 1→2: emissive flash (golden→cream HDR pulse 300ms) + audio cue
+- Phase 2→3: emissive flash + audio cue + speed boost (move_speed 6.6→7.8)
 
 **Transitions**:
 - Phase 1→2: emissive flash + audio cue + spawn 1 swarmling at boss position (single, not on every transition — guarded by `_summon_used: bool`)
