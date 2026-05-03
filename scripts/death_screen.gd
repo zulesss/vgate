@@ -14,14 +14,11 @@ const FADE_FROM_BLACK_SECONDS := 0.4
 const ANTI_ACCIDENTAL_DELAY_SECONDS := 0.5
 const PRE_FADE_DEATH_DELAY := 1.8
 
-# M12 narrative — drain death header variants (terminal-style verdict). RNG pick
-# weighted: default 60% / variant-2 25% / variant-3 10%. Fast-death (alive_time
-# < 30s) overrides RNG → fixed self-irony variant.
-const DRAIN_FAST_DEATH_THRESHOLD := 30.0
-const DRAIN_HEADER_DEFAULT := "ПРЕВЫШЕН ПОРОГ СКОРОСТИ\nПРИГОВОР ПРИВЕДЁН В ИСПОЛНЕНИЕ"
-const DRAIN_HEADER_VARIANT_2 := "ДВИЖЕНИЕ НЕДОСТАТОЧНО\nВЕРДИКТ: ПОДТВЕРЖДЁН"
-const DRAIN_HEADER_VARIANT_3 := "КИНЕТИЧЕСКАЯ СИГНАТУРА ПОТЕРЯНА\nИНИЦИАЛИЗАЦИЯ ПРОТОКОЛА ЗАВЕРШЕНИЯ"
-const DRAIN_HEADER_FAST := "ВЫ ОСТАНОВИЛИСЬ.\nИМ И НЕ ПОНАДОБИЛОСЬ."
+# M12 narrative — drain death header. Single fixed string (pivoted 2026-05-03 from
+# 4-variant RNG pool — playtest pass: variants felt random/incoherent, single
+# canonical verdict reads as system signature). Objective-fail uses separate
+# amber header — different failure mode, different language.
+const DRAIN_HEADER := "СКОРОСТЬ ИСЧЕРПАНА"
 const OBJECTIVE_FAIL_HEADER := "ЗАДАЧА ПРОВАЛЕНА"
 
 # M9 Hot Zones playtest tweak (2026-05-02): two distinct failure modes.
@@ -90,7 +87,7 @@ func _on_player_died() -> void:
 		# Cathedral: drain death — единственный fail mode (no timer). Always
 		# drain header. Altar progress показываем для context'а — игрок
 		# мог зацепить 2 altars прежде чем умер от drain, это полезный feedback.
-		header_label.text = _pick_drain_header(alive_time)
+		header_label.text = DRAIN_HEADER
 		header_label.modulate = Color(0.95, 0.30, 0.25, 1)
 		sphere_label.visible = true
 		var c: int = AltarDirector.captured_count
@@ -106,7 +103,7 @@ func _on_player_died() -> void:
 			header_label.text = OBJECTIVE_FAIL_HEADER
 			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
 		else:
-			header_label.text = _pick_drain_header(alive_time)
+			header_label.text = DRAIN_HEADER
 			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 		sphere_label.visible = false
 	else:
@@ -131,7 +128,7 @@ func _on_player_died() -> void:
 			header_label.text = OBJECTIVE_FAIL_HEADER
 			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
 		else:
-			header_label.text = _pick_drain_header(alive_time)
+			header_label.text = DRAIN_HEADER
 			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 		# Objective progress line: green tint если objective met (almost-win), иначе cyan/magenta.
 		sphere_label.visible = true
@@ -155,21 +152,6 @@ func _on_player_died() -> void:
 	await get_tree().create_timer(ANTI_ACCIDENTAL_DELAY_SECONDS).timeout
 	restart_btn.disabled = false
 	restart_btn.grab_focus()
-
-
-func _pick_drain_header(alive_time: float) -> String:
-	# Fast-death override (alive_time < 30s) — fixed self-irony variant. Иначе
-	# weighted RNG pick (per spec): 65% default / 25% variant-2 / 10% variant-3.
-	# Default catches +5% bias по сравнению со spec'ом 60% — сознательно, чтобы
-	# verdict-line чаще была канонической и игрок узнавал её.
-	if alive_time < DRAIN_FAST_DEATH_THRESHOLD:
-		return DRAIN_HEADER_FAST
-	var roll: int = randi() % 100
-	if roll < 65:
-		return DRAIN_HEADER_DEFAULT
-	elif roll < 90:  # 65..89 = 25%
-		return DRAIN_HEADER_VARIANT_2
-	return DRAIN_HEADER_VARIANT_3  # 90..99 = 10%
 
 
 func _on_restart() -> void:

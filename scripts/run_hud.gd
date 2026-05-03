@@ -16,6 +16,9 @@ class_name RunHud extends CanvasLayer
 # только пока boss alive. Phase-color section'ы + 2 vertical tick'а на 67% / 34%.
 
 const DASH_COOLDOWN_DURATION := 2.5
+# Mirrors JUMP_COOLDOWN в objects/player.gd. Two-place duplication acceptable —
+# уже такой pattern с DASH_COOLDOWN_DURATION (HUD не зависит от player class).
+const JUMP_COOLDOWN_DURATION := 1.25
 # M9 conquest: countdown timer (120 → 0) с 3 visual phases:
 #   0–45с  — cyan/normal (settle in)
 #   45–90с — amber (swarm intro warning)
@@ -49,6 +52,8 @@ const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 @onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
+@onready var jump_row: Control = $BottomCenter/VBox/JumpRow
+@onready var jump_fill: ColorRect = $BottomCenter/VBox/JumpRow/JumpFill
 @onready var capturing_row: HBoxContainer = $BottomCenter/VBox/CapturingRow
 @onready var capturing_fill: ColorRect = $BottomCenter/VBox/CapturingRow/CapturingBarContainer/CapturingBar/Fill
 @onready var cap_bar: ProgressBar = $BottomCenter/VBox/CapRow/CapBarContainer/CapBar
@@ -133,6 +138,7 @@ func _ready() -> void:
 	# resolve лениво в _process.
 	_player = get_tree().get_first_node_in_group("player")
 	dash_row.visible = false
+	jump_row.visible = false
 	reload_row.visible = false
 	capturing_row.visible = false
 	capturing_fill.anchor_right = 0.0
@@ -206,6 +212,19 @@ func _process(_delta: float) -> void:
 			dash_row.visible = false
 	else:
 		dash_row.visible = false
+
+	# Jump cooldown bar — двойной jump CD визуализация. Сразу после second jump
+	# (consume) bar пуст, плавно заполняется до 1.25с. Cyan vs dash amber —
+	# distinguishable. visible=false когда CD=0 (на земле либо single jump unused).
+	if _player != null and _player.has_method("get_jump_cooldown_remaining"):
+		var jcd: float = _player.get_jump_cooldown_remaining()
+		if jcd > 0.0:
+			jump_row.visible = true
+			jump_fill.anchor_right = clampf(1.0 - jcd / JUMP_COOLDOWN_DURATION, 0.0, 1.0)
+		else:
+			jump_row.visible = false
+	else:
+		jump_row.visible = false
 
 	# Ammo counter + reload progress. Player-method gated — иначе HUD trash'ит лог
 	# когда RunHud жив без player'а (на arena reload между смертью и spawn'ом).

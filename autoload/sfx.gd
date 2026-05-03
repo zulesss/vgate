@@ -168,6 +168,7 @@ func _ready() -> void:
 	Events.drain_started.connect(_on_drain_started)
 	Events.drain_stopped.connect(_on_drain_stopped)
 	Events.player_died.connect(_on_player_died)
+	Events.run_won.connect(_on_run_won)
 	Events.run_started.connect(_on_run_started)
 	Events.enemy_spawned.connect(_on_enemy_spawned)
 
@@ -283,9 +284,23 @@ func _on_drain_stopped() -> void:
 func _on_player_died() -> void:
 	# Глушим SFX bus немедленно — gun/hit decay не должен болтаться поверх death-state.
 	# Bus-mute через AudioServer chunk'ает все SFX players разом (cleaner чем per-player stop).
+	# UI clicks на death screen tolerated muted (juice не нужен в this UX) — на win screen
+	# bus остаётся live (см. _on_run_won), там SFX UI clicks слышны.
 	if _sfx_bus_idx >= 0:
 		AudioServer.set_bus_mute(_sfx_bus_idx, true)
-	# Drain stop сразу.
+	_stop_run_audio()
+
+
+func _on_run_won() -> void:
+	# Mirror death audio cleanup БЕЗ bus mute — на win screen UI clicks (RESTART /
+	# MAIN MENU button hover/press) должны быть audible. Drain warning + heartbeat
+	# тушатся одинаково: run закончился, эти loop'ы не имеют смысла.
+	_stop_run_audio()
+
+
+func _stop_run_audio() -> void:
+	# Shared run-end audio cleanup (death + win). Drain stop, heartbeat 0.6с fade,
+	# ambient 1.8с fade, breath 0.3с fade. Bus mute — caller'ом (только death).
 	if _drain_player != null and _drain_player.playing:
 		_drain_player.stop()
 	# Heartbeat fade 0.6с (быстрее чем music — "сердце останавливается").

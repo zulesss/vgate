@@ -375,3 +375,17 @@ theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 mouse_filter = 2
+
+[node name="JumpRow" type="Control" parent="BottomCenter/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 6)
+mouse_filter = 2
+
+[node name="JumpFill" type="ColorRect" parent="BottomCenter/VBox/JumpRow"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+anchor_right = 0.0
+grow_vertical = 2
+color = Color(0.4, 0.7, 1.0, 0.8)
+mouse_filter = 2

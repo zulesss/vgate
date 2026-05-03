@@ -14,6 +14,11 @@ const DASH_VELOCITY_BURST := 20.0
 const DASH_DURATION := 0.2
 const DASH_COOLDOWN := 2.5
 
+# Jump CD (между first и second jump'ом). 1.25с = DASH_COOLDOWN / 2 — гарантирует
+# что double-jump доступен между двумя dash'ами, а не как ledge-spam mobility.
+# Reset на ground touch (см. handle_gravity).
+const JUMP_COOLDOWN := 1.25
+
 # FOV single-axis cap mapping (docs/feel/feel_spec.md §1, revised 2026-04-27).
 # base_fov = cap_to_fov(velocity_cap):
 #   cap≥80 (CAP_MID) → linear 90→95° (in-form headroom)
@@ -63,6 +68,10 @@ var tween: Tween
 var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
+
+# Jump CD state. Tick'ается в _tick_dash рядом с dash CD, reset'ится при ground
+# touch одновременно с jumps_remaining (см. handle_gravity).
+var _jump_cooldown_remaining: float = 0.0
 
 # M9 magazine + reload (docs: brief PLAN.md M9). State в player'е (Resource holds spec
 # через weapon.max_ammo). Single source of truth для cost — VelocityGate.RELOAD_COST.
@@ -377,14 +386,22 @@ func handle_gravity(delta):
 	
 	if gravity > 0 and is_on_floor():
 		jumps_remaining = number_of_jumps
+		_jump_cooldown_remaining = 0.0
 		gravity = 0
 
 # Jumping
 
 func action_jump():
+	# CD gate: только для double-jump (jumps_remaining < number_of_jumps означает
+	# что хотя бы один jump уже потрачен). Первый jump с земли — instant. Второй
+	# jump в воздухе требует JUMP_COOLDOWN с момента первого. Reset CD'я — handle_gravity
+	# на ground touch, симметрично jumps_remaining.
+	if jumps_remaining < number_of_jumps and _jump_cooldown_remaining > 0.0:
+		return
 	Audio.play("sounds/jump_a.ogg, sounds/jump_b.ogg, sounds/jump_c.ogg")
 	gravity = - jump_strength
 	jumps_remaining -= 1
+	_jump_cooldown_remaining = JUMP_COOLDOWN
 
 # Shooting
 
@@ -544,11 +561,20 @@ func _tick_dash(delta: float) -> void:
 		_dash_time_remaining = maxf(0.0, _dash_time_remaining - delta)
 	if _dash_cooldown_remaining > 0.0:
 		_dash_cooldown_remaining = maxf(0.0, _dash_cooldown_remaining - delta)
+	# Jump CD ticks параллельно — reset'ится handle_gravity на ground touch.
+	if _jump_cooldown_remaining > 0.0:
+		_jump_cooldown_remaining = maxf(0.0, _jump_cooldown_remaining - delta)
 
 
 # Читается DebugHud'ом. M2 уберём в HUD-проекте отдельным узлом.
 func get_dash_cooldown_remaining() -> float:
 	return _dash_cooldown_remaining
+
+
+# Читается RunHud'ом для cooldown bar (под cap bar'ом). Только double-jump CD —
+# первый jump с земли всегда instant, его нет смысла визуализировать.
+func get_jump_cooldown_remaining() -> float:
+	return _jump_cooldown_remaining
 
 
 # Feel pass §1 — каждый кадр пересчитываем base FOV (single-axis cap) и bob taper.
