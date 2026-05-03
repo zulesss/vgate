@@ -5,23 +5,25 @@ class_name WinScreen extends CanvasLayer
 # breakdown (kills, avg cap, time alive, score), best line, ДАЛЕЕ кнопка.
 #
 # M13 sequential campaign: кнопка repurposed:
-#   - intermediate arenas (Плац / Камера) → label "ДАЛЕЕ", auto-advance 3s timer
-#     или click → LevelSequence.advance() + change_scene_to_file(MAIN_SCENE).
-#     main.gd._enter_tree подхватит новый current_path() и проинстансит next arena.
+#   - intermediate arenas (Плац / Камера) → label "ДАЛЕЕ", click →
+#     LevelSequence.advance() + change_scene_to_file(MAIN_SCENE). main.gd._enter_tree
+#     подхватит новый current_path() и проинстансит next arena.
 #   - final arena (Собор) → header override "ВСЕ ПРИГОВОРЫ ИСПОЛНЕНЫ", label
-#     "ГЛАВНОЕ МЕНЮ", auto-advance 5s или click → LevelSequence.reset() +
-#     change_scene_to_file(MAIN_MENU_SCENE).
+#     "ГЛАВНОЕ МЕНЮ", click → LevelSequence.reset() + change_scene_to_file(MAIN_MENU_SCENE).
+#
+# Auto-advance timer убран (post-M12 polish): игрок ОБЯЗАН нажать кнопку, нет
+# implicit advance'а через timeout — респект к pacing'у (некоторые хотят прочитать
+# breakdown до конца, некоторые — выйти в туалет / посмотреть на счёт). Без
+# гонки timer-vs-click и _advanced guard'а тоже не нужен.
 #
 # Timing проще чем у death_screen — игрок ещё на ногах, без death animation.
 # 0.0 — show + freeze input
 # 0.0–0.5 — fade-in белого тонкого overlay'а (subtle, не black like death)
 # 0.5–1.0 — anti-accidental delay (палец мог быть на shoot в 120-й секунде)
-# 1.0+ — кнопка активна, auto-advance timer тикает в фоне
+# 1.0+ — кнопка активна, ждём click
 
 const FADE_IN_SECONDS := 0.5
 const ANTI_ACCIDENTAL_DELAY := 0.5
-const AUTO_ADVANCE_INTERMEDIATE := 3.0
-const AUTO_ADVANCE_FINAL := 5.0
 const MAIN_SCENE := "res://scenes/main.tscn"
 const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 const FINAL_HEADER := "ВСЕ ПРИГОВОРЫ ИСПОЛНЕНЫ"
@@ -39,10 +41,6 @@ const FINAL_BUTTON_LABEL := "ГЛАВНОЕ МЕНЮ"
 @onready var best_label: Label = $Box/BestLabel
 @onready var restart_btn: Button = $Box/RestartButton
 
-# Guard против double-trigger: кнопка click ИЛИ auto-advance timer — кто первый
-# и сработал. Без флага оба пути дёрнут change_scene_to_file дважды (второй
-# на уже-меняющейся сцене даст cascade ошибок).
-var _advanced: bool = false
 # Запоминаем is_final на момент run_won — чтобы advance() сам не сместил state
 # между проверкой и handler'ом (advance() меняет current_index → is_final()
 # становится true для уже-финального arena, перепутав button label).
@@ -115,7 +113,7 @@ func _on_run_won() -> void:
 		if MarkDirector._active:
 			sphere_label.text = "Метки: %d / %d" % [MarkDirector.kills, MarkDirector.KILL_TARGET]
 		else:
-			sphere_label.text = "Сферы: %d / %d" % [SphereDirector.captured_count, SphereDirector.TOTAL_SPHERES]
+			sphere_label.text = "Сферы: %d / %d" % [SphereDirector.captured_count, SphereDirector.CAPTURE_TARGET]
 	score_label.text = "СЧЁТ: %d" % ScoreState.final_score
 	best_label.text = "РЕКОРД: %d" % ScoreState.best_score
 
@@ -127,33 +125,15 @@ func _on_run_won() -> void:
 	await t1.finished
 
 	await get_tree().create_timer(ANTI_ACCIDENTAL_DELAY).timeout
-	if _advanced:
-		# Игрок мог быстро тыкнуть в окно anti-accidental — но кнопка disabled,
-		# defensive guard здесь только если другой code path вызвал _advance_now.
-		return
 	restart_btn.disabled = false
 	restart_btn.grab_focus()
 
-	# Auto-advance: timer параллельно с manual-click'ом. Кто первый — тот и
-	# триггерит switch (через _advanced флаг).
-	var auto_delay: float = AUTO_ADVANCE_FINAL if _is_final_arena else AUTO_ADVANCE_INTERMEDIATE
-	await get_tree().create_timer(auto_delay).timeout
-	if _advanced:
-		return
-	_advance_now()
-
 
 func _on_button() -> void:
-	if _advanced:
-		return
 	_advance_now()
 
 
 func _advance_now() -> void:
-	# Idempotent guard: оба пути (timer + click) проходят через эту функцию;
-	# флаг ставится ПЕРЕД change_scene_to_file чтобы поздний caller bail'нул на
-	# первой строчке.
-	_advanced = true
 	visible = false
 	box.visible = false
 	bg.modulate.a = 0.0

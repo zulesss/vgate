@@ -18,14 +18,14 @@ class_name SphereDirectorNode extends Node
 # от _last_spawn_pos. Не cumulative — только last (per spec).
 #
 # Capture tracking: captured_count++ on Events.sphere_captured. Когда достигает
-# CAPTURE_TARGET (15) — emit Events.objective_complete (один раз).
+# CAPTURE_TARGET (17) — emit Events.objective_complete (один раз).
 #
 # Lifecycle: Events.run_started — full reset (counter, schedule, free все live spheres).
 # VelocityGate.is_alive=false (death/win) — пауза spawn'а (без despawn — death screen
 # сам остановит run, sphere'ы доживают свой lifetime естественно).
 
 const TOTAL_SPHERES := 25
-const CAPTURE_TARGET := 15
+const CAPTURE_TARGET := 17
 const FIRST_SPAWN_TIME := 3.0
 const LAST_SPAWN_TIME := 115.0
 const SPAWN_JITTER := 1.0
@@ -71,7 +71,11 @@ func _process(delta: float) -> void:
 		return
 	if not VelocityGate.is_alive:
 		return
-	if total_spawned >= TOTAL_SPHERES:
+	# Stop spawning после objective met (early-stop): когда CAPTURE_TARGET hit'нут,
+	# Events.objective_complete уже emit'нулся (см. _on_sphere_captured), нет смысла
+	# плодить новые sphere'ы — existing live spheres остаются для visual continuity.
+	# TOTAL_SPHERES gate остаётся как hard cap на pool size.
+	if captured_count >= CAPTURE_TARGET or total_spawned >= TOTAL_SPHERES:
 		return
 	_run_time += delta
 	if _run_time >= _next_spawn_time:
@@ -125,7 +129,7 @@ func _try_spawn() -> void:
 
 
 func _schedule_next() -> void:
-	if total_spawned >= TOTAL_SPHERES:
+	if captured_count >= CAPTURE_TARGET or total_spawned >= TOTAL_SPHERES:
 		return
 	# Average interval = (LAST_SPAWN_TIME - FIRST_SPAWN_TIME) / (TOTAL_SPHERES - 1)
 	# = 112 / 24 ≈ 4.67с. Spawn'ов после первого: TOTAL_SPHERES-1=24 интервала.

@@ -336,7 +336,7 @@ mouse_filter = 2
 [node name="CapTitle" type="Label" parent="BottomCenter/VBox/CapRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(50, 0)
-text = "КАП"
+text = "СКОР"
 theme_override_colors/font_color = Color(0.478, 0.906, 0.906, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4

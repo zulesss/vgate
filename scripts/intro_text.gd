@@ -41,13 +41,19 @@ func _on_run_started() -> void:
 	# physical objective "дойди до конца не умирая". Detection через group check
 	# на arena root (single source of truth с RunLoop / SpawnController).
 	if not get_tree().get_nodes_in_group(&"objective_journey").is_empty():
+		# Journey arena (deprecated, low ROI) — оставлен старый objective-only formatting
+		# без stage-framing line, sequence-of-3 не включает journey.
 		label.text = "ЗАЧИСТИ ВРАГОВ И ПОКИНЬ ЗОНУ\nЗА 2 МИНУТЫ"
 	elif AltarDirector._active:
-		label.text = "ЗАХВАТИ %d АЛТАРЕЙ\nИ УБЕЙ ИСПОЛНИТЕЛЯ" % AltarDirector.ALTAR_COUNT
+		# ALTAR_COUNT locked = 4. Hardcoded "4 АЛТАРЯ" (genitive singular для 2-4)
+		# вместо %d-interpolation потому что Russian grammar pluralization
+		# требует helper'а который YAGNI для одной call site'у. Если когда-то
+		# поднимут до 5+ — текст потребует ручного редита (выловится в code review).
+		label.text = "СТАДИЯ ТРЕТЬЯ — РИТУАЛЬНОЕ ИСПОЛНЕНИЕ\n\nЗАХВАТИ 4 АЛТАРЯ • УБЕЙ ИСПОЛНИТЕЛЯ"
 	elif MarkDirector._active:
-		label.text = "УСТРАНИ %d МЕЧЕНЫХ\nИ ВЫЖИВИ 2 МИНУТЫ" % MarkDirector.KILL_TARGET
+		label.text = "СТАДИЯ ВТОРАЯ — ОДИНОЧНОЕ ЗАКЛЮЧЕНИЕ\n\nУСТРАНИ %d МЕЧЕНЫХ • ВЫЖИВИ 2 МИНУТЫ" % MarkDirector.KILL_TARGET
 	else:
-		label.text = "ЗАХВАТИ %d СФЕР\nИ ВЫЖИВИ 2 МИНУТЫ" % SphereDirector.CAPTURE_TARGET
+		label.text = "СТАДИЯ ПЕРВАЯ — ПУБЛИЧНАЯ ДЕМОНСТРАЦИЯ\n\nЗАХВАТИ %d СФЕР • ВЫЖИВИ 2 МИНУТЫ" % SphereDirector.CAPTURE_TARGET
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	backdrop.modulate.a = 0.0
