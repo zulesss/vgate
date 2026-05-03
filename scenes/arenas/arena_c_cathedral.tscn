@@ -55,7 +55,7 @@ size = Vector3(1, 0.6, 4)
 ; --- Altar Area3D collision (placeholder, no script — wired in next milestone) ---
 
 [sub_resource type="BoxShape3D" id="Shape_altar_zone"]
-size = Vector3(4, 2, 4)
+size = Vector3(10, 2, 10)
 
 ; --- NavMesh ---
 
@@ -175,7 +175,7 @@ mesh = SubResource("BoxMesh_column")
 [node name="Altar_NW_Top" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, -15)
 use_collision = false
-radius = 1.5
+radius = 5.0
 height = 0.05
 material = SubResource("Mat_altar_top")
 
@@ -221,7 +221,7 @@ mesh = SubResource("BoxMesh_column")
 [node name="Altar_NE_Top" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, -15)
 use_collision = false
-radius = 1.5
+radius = 5.0
 height = 0.05
 material = SubResource("Mat_altar_top")
 
@@ -267,7 +267,7 @@ mesh = SubResource("BoxMesh_column")
 [node name="Altar_SE_Top" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, 15)
 use_collision = false
-radius = 1.5
+radius = 5.0
 height = 0.05
 material = SubResource("Mat_altar_top")
 
@@ -313,7 +313,7 @@ mesh = SubResource("BoxMesh_column")
 [node name="Altar_SW_Top" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, 15)
 use_collision = false
-radius = 1.5
+radius = 5.0
 height = 0.05
 material = SubResource("Mat_altar_top")
 
