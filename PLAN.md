@@ -28,7 +28,7 @@
 
 | ✅ IN (полный слайс + расширения) | ❌ OUT (вырезано окончательно) |
 |---|---|
-| 2 арены: основная 40×40 + 1 vertical/multi-tier (M10) | 3+ арен |
+| 3 арены single-tier flat (B Плац 50×50 / A Камера 26×26 / C Cathedral 44×44, M9) | 4+ арен; multi-tier (Шахта abandoned 2026-05-03) |
 | 1 оружие: blaster (M9 cut 2026-05-01) | 2+ оружий, кастомизация |
 | 3 типа врагов: melee, shooter + 1 доп (M8) | 4+ типов |
 | Velocity Gate полностью реализован (cap, drain, kill burst, dash burst) | **HP в классике, regen, armor** — конфликт с хуком |
@@ -165,18 +165,36 @@
 **Owners**: game-designer → systems-designer → godot-engineer
 **Exit**: 3 типа на арене, identity мгновенно различима, hook не сломан.
 
-### M9 — Weapon variety ❌ CUT (2026-05-01)
-**Решение юзера**: скипаем. Blaster-only — фокус на том что есть. Tactical variety из weapon switch не оправдывает риск что один доминирует + cognitive load клавиш 1/2/wheel поверх dash/move/shoot.
+### M9 — Time-based Conquest + 3 arenas + boss redesign ⚙️ ACTIVE (2026-05-01 → 2026-05-03+)
 
-### M10 — Дополнительная арена
-**Цель**: variety локации.
-- [ ] level-designer: vertical / multi-tier layout vs текущая flat 40×40
-- [ ] Nav mesh + 4+ spawn-points с учётом верт-геометрии
-- [ ] Arena selection в main menu (M5)
-- [ ] Тестирование balance на новой арене (spawn distances, sightlines)
+**История**: M9 originally "Weapon variety", cut 2026-05-01 (`43fa3d8`). Re-scoped 2026-05-01 в comprehensive finale milestone:
+- Time-based conquest core (120с timer + drain + objective)
+- 3 distinct arenas с 3 distinct objectives (replace M10 vertical arena)
+- Multi-pivot Arena C (Шахта multi-tier abandoned → Дорога journey abandoned → Cathedral altar capture **locked**)
+- Boss redesign (3-phase + dash-time charge + AOE)
+- Wall-run MVP (pending — final step)
 
-**Owners**: level-designer → godot-engineer → playtest-analyst
-**Exit**: 2 арены, обе играбельны, баланс не ломается ни на одной.
+#### Готово
+- [x] Time-based core: 120с timer, win/loss conditions, score formula `kills × avg_cap × time_norm`, anti-camping spike, threshold step-up
+- [x] Arena B "Плац" (open 50×50, 4 low walls cross) — sphere capture objective (15/25 + survive 120s), per-arena PlayerStart
+- [x] Arena A "Камера" (claustrophobic hub-and-spoke 26×26, closed dead-end alcoves) — marked enemy hunt (10 marks + survive)
+- [x] Arena C "Собор" (Cathedral 44×44 closed ceiling 12u, 4 altar clusters + center boss spawn) — altar capture (4 altars + boss kill, no timer drain-driven). Spec: `docs/levels/M9_cathedral.md`
+- [x] Multi-arena routing via group (objective_sphere / objective_marked_hunt / objective_cathedral)
+- [x] Per-arena objective directors: SphereDirector / MarkDirector / AltarDirector
+- [x] Boss redesign 3-phase + charge (dash-time vector) + AOE swing + kill polish + HP bar HUD. Spec: `docs/systems/M9_boss_redesign.md`
+- [x] Engine-level NavMesh fixes (CSG visibility — detach-from-tree pattern, MESH_INSTANCES parsed_geometry_type)
+- [x] Restart re-instantiate arena (pre-placed enemies respawn)
+
+#### Pending
+- [ ] Wall-run MVP (final M9 step — see research спec from `a7b18461ac17dafd0`, ~6-7h impl, dual side RayCast3D + duration cap + jump-off)
+- [ ] M9 close — playtest verdict + balance pass
+
+**Owners**: game-designer (mechanic spec) → level-designer (geometry) → godot-engineer (impl) → playtest-analyst (cycle)
+**Exit**: 3 arenas finalize'd с distinct objectives, boss feels climactic, wall-run smooth on cathedral perimeter walls.
+
+### M10 — ❌ FOLDED INTO M9 (2026-05-03)
+**Original**: Vertical/multi-tier additional arena.
+**Outcome**: Multi-tier nav abandoned (Godot 4 engine bugs prohibitive cost для solo-dev). 3 arenas now part of M9 scope (Plats / Камера / Cathedral — all single-tier flat).
 
 ### M11 — Onslaught mode
 **Цель**: альтернативный режим — предзаданные волны вместо continuous ramp.
