@@ -37,10 +37,19 @@ class_name RunLoop extends Node
 # Enemy count: get_tree().get_nodes_in_group("enemy") — EnemyBase.add_to_group("enemy")
 # в _ready'е, decrement через queue_free. Pre-placed + dynamic pursuers
 # одинаково counted.
+#
+# Cathedral arena (Arena C "Собор") win path:
+#   Win   = alive AND boss_killed AND all 4 altars captured
+#   Fail  = drain death only (no timer)
+# AltarDirector эмитит Events.boss_killed на kill — RunLoop ловит, проверяет
+# AltarDirector.captured_count == 4 + alive, эмитит run_won. Spike phase OFF
+# (давление органическое от altar spawns + boss). Timer-fail OFF (drain — единственный
+# fail mode, mirror journey без timer).
 
 const SPIKE_TRIGGER_TIME := 90.0
 const RUN_DURATION := 120.0
 const ARENA_GROUP_JOURNEY := &"objective_journey"
+const ARENA_GROUP_CATHEDRAL := &"objective_cathedral"
 const ENEMY_GROUP := &"enemy"
 
 @export var player_path: NodePath
@@ -52,6 +61,9 @@ var _won: bool = false
 # journey arena — timer-fail активен но win triggers через Events.journey_complete +
 # all_enemies_dead вместо t>=RUN_DURATION objective check.
 var _is_journey: bool = false
+# Cathedral arena: bossfight + altar capture run. Timer-fail OFF, spike OFF.
+# Win triggered via Events.boss_killed + AltarDirector.captured_count check.
+var _is_cathedral: bool = false
 # Player вошёл в journey goal Area3D но territory ещё не cleared — ждём
 # последнего kill'а который finalize'ит win. Reset на run_started.
 var _journey_goal_reached: bool = false
@@ -66,10 +78,17 @@ func _ready() -> void:
 	Events.run_restart_requested.connect(_on_restart)
 	Events.run_started.connect(_on_run_started)
 	Events.journey_complete.connect(_on_journey_complete)
+	Events.boss_killed.connect(_on_boss_killed)
 
 
 func _process(_delta: float) -> void:
 	if not VelocityGate.is_alive or _won:
+		return
+	# Cathedral arena: drain death = единственный fail. Win — через Events.boss_killed
+	# (см. _on_boss_killed). Timer-fail OFF, spike OFF — sequence pacing уже задаётся
+	# AltarDirector'ом (4 altars * dwell + boss phase). Early-return: ни spike-step,
+	# ни 120с win/fail check не применимы.
+	if _is_cathedral:
 		return
 	var t: float = VelocityGate.get_alive_time()
 	# Journey arena: spike phase OFF (давление от pre-placed enemies + pursuers
@@ -179,6 +198,22 @@ func _on_run_started() -> void:
 	# делает свой own just-in-time group lookup для robustness — кэш может быть
 	# stale если signal не пришёл (initial load до первого run_started).
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
+	_is_cathedral = not get_tree().get_nodes_in_group(ARENA_GROUP_CATHEDRAL).is_empty()
+
+
+# Cathedral win path: AltarDirector эмитит boss_killed когда type="boss" enemy
+# убит. Validate: alive AND captured_count == 4 AND boss really killed (signal
+# фильтр в AltarDirector). Если ещё не все 4 altars captured (boss spawn
+# случился через cathedral_phase_complete т.е. требовал 4/4 — но defensive guard
+# на случай rebalance в будущем) — silently no-op (drain или продолжение).
+func _on_boss_killed() -> void:
+	if not _is_cathedral or _won or not VelocityGate.is_alive:
+		return
+	if AltarDirector.captured_count < AltarDirector.ALTAR_COUNT:
+		return
+	_won = true
+	VelocityGate.is_alive = false
+	Events.run_won.emit()
 
 
 func _on_restart() -> void:

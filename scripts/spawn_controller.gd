@@ -87,6 +87,12 @@ var _enemies_paused: bool = false
 # defenders живут в arena scene tree (не Enemies parent), reload арены через
 # restart их инстанцирует заново.
 const ARENA_GROUP_JOURNEY := &"objective_journey"
+# Cathedral arena: spawning fully driven by AltarDirector (per-altar timers,
+# spawn-point pairing). SpawnController dormant via _enemies_paused=true в
+# _on_run_started — mirror journey gating pattern. Cathedral spawn-points
+# в group "spawn_point" не используются этим controller'ом, а AltarDirector
+# собирает их по name-prefix.
+const ARENA_GROUP_CATHEDRAL := &"objective_cathedral"
 
 var _melee_scene: PackedScene = preload("res://objects/melee.tscn")
 var _shooter_scene: PackedScene = preload("res://objects/shooter.tscn")
@@ -493,6 +499,9 @@ func _on_run_started() -> void:
 	# через _enemies_paused=true с самого старта. Mirror existing pause path
 	# (objective_complete) — _process'ится early-return пока флаг true.
 	if not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty():
+		_enemies_paused = true
+	# Cathedral arena: AltarDirector — sole spawn driver. Mirror journey gate.
+	if not get_tree().get_nodes_in_group(ARENA_GROUP_CATHEDRAL).is_empty():
 		_enemies_paused = true
 	# Очистить любых живых врагов (M4 in-place restart). Parent = Enemies-нода;
 	# скрипт сам себя не free'ит (он же child Enemies, не EnemyBase).
