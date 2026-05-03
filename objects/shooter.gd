@@ -36,14 +36,22 @@ var _stationary: bool = false
 func _ready() -> void:
 	# Числа (M3_enemy_numbers): Shooter — HP 60 (×2 на 2026-05-02 user balance tweak,
 	# было 30), speed 4.0, range 18, windup 350ms, cooldown 4.0s,
-	# penalty 10 (SHOOTER_PENALTY), detection 35.
+	# penalty 10 (SHOOTER_PENALTY), detection 50.
+	# Detection bump 35→50 (2026-05-03 cathedral playtest "AFK shooters"):
+	# cathedral 44×44 PlayerStart на south wall (0,1,18). NW/NE spawn-points
+	# (±20,0,−15) дают ~38.6u до player'а — за detection_radius=35 → IDLE на
+	# spawn'е. После kill ближних SE/SW и retreat обратно на center'е дальние
+	# shooter'ы тоже возвращались в IDLE (loop). 50u покрывает диагональ от
+	# любого cathedral spawn-point до любой position'а в arena (max ~45u).
+	# Arena_b_plac / arena_a_camera 40×40 с center-spawn не affected — все
+	# spawn-points были в радиусе 35u.
 	max_hp = 60
 	move_speed = 6.0
 	attack_range = 18.0
 	attack_windup = 0.35
 	attack_cooldown = 4.0
 	attack_penalty = VelocityGate.SHOOTER_PENALTY
-	detection_radius = 35.0
+	detection_radius = 50.0
 	super._ready()
 
 	_telegraph_audio = AudioStreamPlayer3D.new()
