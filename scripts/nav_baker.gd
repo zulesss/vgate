@@ -11,9 +11,12 @@ class_name NavBaker extends Node
 #
 # Group "navmesh_excluded" — opt-out для visible-but-non-blocking geometry
 # (e.g. cathedral altar beams: визуально cylinder, gameplay-wise проходим).
-# CSGShape3D root contributes mesh to nav baker даже при use_collision=false
-# (Godot 4.4+ parses CSG roots in MESH_INSTANCES mode), поэтому нужно прятать
-# через visible=false на время bake.
+#
+# Failed attempt #1 (07b7f88): visible=false toggle на excluded nodes. Не работает
+# для CSGShape3D — Godot 4 nav source parser в MESH_INSTANCES mode дёргает CSG
+# generated mesh напрямую, минуя visibility check (visibility honoured только
+# для MeshInstance3D path). Реальный fix: temporarily remove_child() beam'ов
+# на время bake, потом add_child() обратно — node не в tree = parser его не видит.
 
 const EXCLUDE_GROUP := &"navmesh_excluded"
 
@@ -30,16 +33,26 @@ func _ready() -> void:
 	# Defer bake one physics_frame: hedge against MeshInstance3D children not yet
 	# being registered as parse targets on parent's _ready. Cheap insurance.
 	await get_tree().physics_frame
-	# Hide nav-excluded nodes: CSG/MeshInstance with visible=false не парсятся
-	# baker'ом. Restore visibility сразу после bake — навмеш кэширован.
-	var hidden: Array[Node3D] = []
+	# Detach excluded nodes from tree: parser walks scene-tree descendants of the
+	# nav-source group root, поэтому nodes вне tree не парсятся (works для CSG/Mesh
+	# единообразно, без зависимости от visibility-honoured кодпасов).
+	var detached: Array[Dictionary] = []
 	for n in get_tree().get_nodes_in_group(EXCLUDE_GROUP):
 		var n3d := n as Node3D
-		if n3d != null and n3d.visible:
-			n3d.visible = false
-			hidden.append(n3d)
+		if n3d == null:
+			continue
+		var parent := n3d.get_parent()
+		if parent == null:
+			continue
+		var idx := n3d.get_index()
+		parent.remove_child(n3d)
+		detached.append({"node": n3d, "parent": parent, "index": idx})
 	# Sync bake (headless-safe). Async вариант через NavigationServer3D — не нужен
 	# на 40×40 арене, bake заканчивается за <100мс.
 	region.bake_navigation_mesh(false)
-	for n3d in hidden:
-		n3d.visible = true
+	# Reattach в исходных индексах (restore display order).
+	for d in detached:
+		var p: Node = d.parent
+		var n3d: Node3D = d.node
+		p.add_child(n3d)
+		p.move_child(n3d, d.index)
