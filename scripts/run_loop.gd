@@ -70,15 +70,24 @@ var _journey_goal_reached: bool = false
 
 
 func _ready() -> void:
-	# Первый старт run'а: reset_for_run() флипает VelocityGate.is_alive=true и
-	# эмитит run_started — Player input разлоч'ивается, Sfx/MusicDirector
-	# стартуют loop'ы. До ca9e4e5 дефолт is_alive=true маскировал это, но
-	# теперь VelocityGate dormant by default → нужен явный init.
-	VelocityGate.reset_for_run()
+	# Connect signals FIRST, then defer initial reset_for_run() to next idle frame.
+	# reset_for_run() synchronously emits Events.run_started — на первом запуске
+	# RunLoop._ready ранее эмитил его до того как _on_run_started был connect'нут,
+	# из-за чего _is_cathedral оставался false и cathedral arena ловила 120s win.
+	# Та же race касается других scene-script subscribers (RunHud, IntroText,
+	# SpawnController) — defer спасает всех: их _ready'и успевают connect'нуться
+	# до synchronous emit'а в idle frame.
+	# До ca9e4e5 дефолт is_alive=true маскировал это, но теперь VelocityGate
+	# dormant by default → нужен явный init.
 	Events.run_restart_requested.connect(_on_restart)
 	Events.run_started.connect(_on_run_started)
 	Events.journey_complete.connect(_on_journey_complete)
 	Events.boss_killed.connect(_on_boss_killed)
+	call_deferred("_initial_run_start")
+
+
+func _initial_run_start() -> void:
+	VelocityGate.reset_for_run()
 
 
 func _process(_delta: float) -> void:

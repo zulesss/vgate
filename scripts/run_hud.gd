@@ -149,11 +149,11 @@ func _process(_delta: float) -> void:
 	# tinting — чистая reference value (не давление).
 	var t_alive: float = ScoreState.run_time
 	if _is_cathedral:
-		var m_up: int = int(t_alive / 60.0)
-		var s_up: int = int(t_alive) % 60
-		timer_label.text = "[ %02d:%02d ]" % [m_up, s_up]
-		timer_label.modulate = TIMER_COLOR_NORMAL
+		# Cathedral: no deadline, no reference timer — label hidden completely.
+		# Player tracks progress via altar counter + boss bar, timer не нужен.
+		timer_label.visible = false
 	else:
+		timer_label.visible = true
 		var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
 		var m: int = int(remaining / 60.0)
 		var s: int = int(remaining) % 60
