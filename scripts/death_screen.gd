@@ -74,8 +74,24 @@ func _on_player_died() -> void:
 	#     не зачищена ИЛИ goal не достигнут вовремя.
 	# Sphere/Hunt counter row скрываем (не релевантно journey).
 	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
+	var is_cathedral: bool = not get_tree().get_nodes_in_group(&"objective_cathedral").is_empty()
 	var alive_time: float = VelocityGate.get_alive_time()
-	if is_journey:
+	if is_cathedral:
+		# Cathedral: drain death — единственный fail mode (no timer). Always
+		# "VELOCITY DRAINED". Altar progress показываем для context'а — игрок
+		# мог зацепить 2 altars прежде чем умер от drain, это полезный feedback.
+		header_label.text = "VELOCITY DRAINED"
+		header_label.modulate = Color(0.95, 0.30, 0.25, 1)
+		sphere_label.visible = true
+		var c: int = AltarDirector.captured_count
+		var target: int = AltarDirector.ALTAR_COUNT
+		if c >= target:
+			sphere_label.text = "Altars: %d / %d (boss survived)" % [c, target]
+			sphere_label.modulate = Color(1.0, 0.8, 0.2, 1)  # gold — captured altars
+		else:
+			sphere_label.text = "Altars: %d / %d" % [c, target]
+			sphere_label.modulate = Color(1.0, 0.5, 0.3, 1)  # orange — incomplete
+	elif is_journey:
 		if alive_time >= RunLoop.RUN_DURATION:
 			header_label.text = "OBJECTIVE FAILED"
 			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber

@@ -42,6 +42,8 @@ func _on_run_started() -> void:
 	# на arena root (single source of truth с RunLoop / SpawnController).
 	if not get_tree().get_nodes_in_group(&"objective_journey").is_empty():
 		label.text = "CLEAR ENEMIES AND ESCAPE\nIN 2 MINUTES"
+	elif AltarDirector._active:
+		label.text = "CAPTURE %d ALTARS\nAND SLAY THE BOSS" % AltarDirector.ALTAR_COUNT
 	elif MarkDirector._active:
 		label.text = "HUNT %d MARKED ENEMIES\nAND SURVIVE 2 MINUTES" % MarkDirector.KILL_TARGET
 	else:

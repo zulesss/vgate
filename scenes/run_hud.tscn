@@ -70,6 +70,16 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 22
 mouse_filter = 2
 
+[node name="AltarLabel" type="Label" parent="TopLeft/VBox"]
+layout_mode = 2
+text = "ALTARS 0 / 4"
+horizontal_alignment = 0
+theme_override_colors/font_color = Color(1, 0.5, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 22
+mouse_filter = 2
+
 [node name="TopRight" type="MarginContainer" parent="."]
 anchors_preset = 1
 anchor_left = 1.0

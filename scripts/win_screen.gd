@@ -45,7 +45,10 @@ func _on_run_won() -> void:
 	# group check. На journey арене header — clear-and-escape победа, time показываем
 	# с deadline (now /120 актуально — есть timer-fail), sphere row скрываем.
 	var is_journey: bool = not get_tree().get_nodes_in_group(&"objective_journey").is_empty()
-	if is_journey:
+	var is_cathedral: bool = not get_tree().get_nodes_in_group(&"objective_cathedral").is_empty()
+	if is_cathedral:
+		header.text = "CATHEDRAL CLEANSED"
+	elif is_journey:
 		header.text = "AREA CLEARED"
 	else:
 		header.text = "ARENA COMPLETE"
@@ -57,7 +60,12 @@ func _on_run_won() -> void:
 	var avg_cap: float = VelocityGate.get_avg_cap_over_run()
 	avg_cap_label.text = "Avg Cap: %d" % int(round(avg_cap))
 	var t_alive: float = VelocityGate.get_alive_time()
-	if is_journey:
+	if is_cathedral:
+		# Cathedral: no deadline. Time count-up без /120.
+		time_label.text = "Time: %.1f" % t_alive
+		sphere_label.visible = true
+		sphere_label.text = "Altars: %d / %d" % [AltarDirector.captured_count, AltarDirector.ALTAR_COUNT]
+	elif is_journey:
 		# Journey clear-and-escape: deadline активен (120s), показываем как
 		# обычная арена — Time: t / 120. Sphere row скрыт, kills уже в KillsLabel'е.
 		time_label.text = "Time: %.1f / 120" % t_alive

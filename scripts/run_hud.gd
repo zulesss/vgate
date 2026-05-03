@@ -30,14 +30,20 @@ const TIMER_COLOR_SPIKE := Color(0.95, 0.45, 0.35, 1)
 # sphere/hunt counter показываем "ENEMIES: N" — оставшиеся живые враги в
 # группе "enemy". Decrements автоматически на queue_free.
 const ARENA_GROUP_JOURNEY := &"objective_journey"
+const ARENA_GROUP_CATHEDRAL := &"objective_cathedral"
 const ENEMY_GROUP := &"enemy"
 const ENEMY_COLOR_NORMAL := Color(0.478, 0.906, 0.906, 1)
 const ENEMY_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
+# Cathedral altar counter colors. Orange до target (matches contested altar
+# emissive), gold на done (matches captured altar — instant association).
+const ALTAR_COLOR_NORMAL := Color(1.0, 0.5, 0.3, 1)
+const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 
 @onready var timer_label: Label = $TopLeft/VBox/TimerLabel
 @onready var sphere_label: Label = $TopLeft/VBox/SphereLabel
 @onready var hunt_label: Label = $TopLeft/VBox/HuntLabel
 @onready var enemy_label: Label = $TopLeft/VBox/EnemyLabel
+@onready var altar_label: Label = $TopLeft/VBox/AltarLabel
 @onready var score_label: Label = $TopRight/ScoreLabel
 @onready var dash_row: Control = $BottomCenter/VBox/DashRow
 @onready var dash_fill: ColorRect = $BottomCenter/VBox/DashRow/DashFill
@@ -67,12 +73,16 @@ var _player: Node = null
 # Set per-run в _on_run_started через group check. Журней-арена → timer count-up
 # без phase tinting (timer не дедлайн). Иначе — countdown 120→0 с phases.
 var _is_journey: bool = false
+# Cathedral arena: timer-less (no deadline), altar counter visible вместо
+# sphere/hunt counter'а. Boss phase — timer hidden completely.
+var _is_cathedral: bool = false
 
 
 func _ready() -> void:
 	Events.score_changed.connect(_on_score_changed)
 	Events.sphere_captured.connect(_on_sphere_captured)
 	Events.mark_killed.connect(_on_mark_killed)
+	Events.altar_captured.connect(_on_altar_captured)
 	Events.run_started.connect(_on_run_started)
 	score_label.text = "[ 0 ]"
 	_refresh_objective_labels()
@@ -89,17 +99,25 @@ func _process(_delta: float) -> void:
 	# amber / red на t=0/45/90. Каждая граница — instant swap, signal что давление
 	# шагнуло вверх. Journey arena использует те же phases — clear-and-escape
 	# теперь deadline-driven (см. RunLoop).
+	# Cathedral: no deadline. Timer label показывает alive time count-up без phase
+	# tinting — чистая reference value (не давление).
 	var t_alive: float = ScoreState.run_time
-	var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
-	var m: int = int(remaining / 60.0)
-	var s: int = int(remaining) % 60
-	timer_label.text = "[ %02d:%02d ]" % [m, s]
-	if t_alive >= SPIKE_TIME:
-		timer_label.modulate = TIMER_COLOR_SPIKE
-	elif t_alive >= WARN_TIME:
-		timer_label.modulate = TIMER_COLOR_WARN
-	else:
+	if _is_cathedral:
+		var m_up: int = int(t_alive / 60.0)
+		var s_up: int = int(t_alive) % 60
+		timer_label.text = "[ %02d:%02d ]" % [m_up, s_up]
 		timer_label.modulate = TIMER_COLOR_NORMAL
+	else:
+		var remaining: float = maxf(0.0, RUN_DURATION - t_alive)
+		var m: int = int(remaining / 60.0)
+		var s: int = int(remaining) % 60
+		timer_label.text = "[ %02d:%02d ]" % [m, s]
+		if t_alive >= SPIKE_TIME:
+			timer_label.modulate = TIMER_COLOR_SPIKE
+		elif t_alive >= WARN_TIME:
+			timer_label.modulate = TIMER_COLOR_WARN
+		else:
+			timer_label.modulate = TIMER_COLOR_NORMAL
 
 	# Journey enemy counter: live update каждый кадр (нет дешёвого signal'а на
 	# enemy spawn — pursuers spawn'ятся async из spawn_controller). Group size
@@ -169,8 +187,13 @@ func _on_mark_killed() -> void:
 	_refresh_objective_labels()
 
 
+func _on_altar_captured(_index: int) -> void:
+	_refresh_objective_labels()
+
+
 func _on_run_started() -> void:
 	_is_journey = not get_tree().get_nodes_in_group(ARENA_GROUP_JOURNEY).is_empty()
+	_is_cathedral = not get_tree().get_nodes_in_group(ARENA_GROUP_CATHEDRAL).is_empty()
 	_refresh_objective_labels()
 
 
@@ -179,25 +202,35 @@ func _refresh_objective_labels() -> void:
 	# по group check'у). Активный label видим, неактивный hidden — без dimmed
 	# варианта чтобы HUD не cluttered'ил. Journey arena: enemy counter, остальные
 	# скрыты — counter обновляется per-frame в _process.
-	if _is_journey:
+	if _is_cathedral:
+		sphere_label.visible = false
+		hunt_label.visible = false
+		enemy_label.visible = false
+		altar_label.visible = true
+		_refresh_altar_label()
+	elif _is_journey:
 		sphere_label.visible = false
 		hunt_label.visible = false
 		enemy_label.visible = true
+		altar_label.visible = false
 	elif SphereDirector._active:
 		sphere_label.visible = true
 		hunt_label.visible = false
 		enemy_label.visible = false
+		altar_label.visible = false
 		_refresh_sphere_label()
 	elif MarkDirector._active:
 		sphere_label.visible = false
 		hunt_label.visible = true
 		enemy_label.visible = false
+		altar_label.visible = false
 		_refresh_hunt_label()
 	else:
 		# До run_started все директора dormant. Hide — main_menu / pre-run state.
 		sphere_label.visible = false
 		hunt_label.visible = false
 		enemy_label.visible = false
+		altar_label.visible = false
 
 
 func _refresh_sphere_label() -> void:
@@ -224,3 +257,16 @@ func _refresh_hunt_label() -> void:
 	else:
 		hunt_label.text = "HUNT %02d / %d" % [k, target]
 		hunt_label.modulate = HUNT_COLOR_NORMAL
+
+
+func _refresh_altar_label() -> void:
+	# Orange до 4/4 ("ALTARS 2 / 4"), gold на 4/4 — "BOSS PHASE" hint после
+	# capture'а 4-го altar'а. Гарантирует игроку что осталось — kill the boss.
+	var c: int = AltarDirector.captured_count
+	var target: int = AltarDirector.ALTAR_COUNT
+	if c >= target:
+		altar_label.text = "✓ KILL THE BOSS"
+		altar_label.modulate = ALTAR_COLOR_DONE
+	else:
+		altar_label.text = "ALTARS %d / %d" % [c, target]
+		altar_label.modulate = ALTAR_COLOR_NORMAL
