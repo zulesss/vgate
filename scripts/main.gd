@@ -10,7 +10,7 @@ class_name Main extends Node3D
 #   2. Внутри: CSGBox'ы + NavigationRegion3D + NavBaker + SpawnPoints/S* Marker3D'ы
 #   3. Marker3D'ы в группе "spawn_point" — SpawnController подхватит их сам
 
-@export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_c_journey.tscn")
+@export var arena_scene: PackedScene = preload("res://scenes/arenas/arena_c_cathedral.tscn")
 
 # Кэш текущего arena instance для re-instantiation на restart. Pre-placed
 # defenders в arena scene (под Defenders/) на первом run'е queue_free'ятся

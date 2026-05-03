@@ -13,7 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://b72n6a5eoo8xc" path="res://scenes/pause_menu.tscn" id="13_pmenu"]
 [ext_resource type="PackedScene" uid="uid://bdllyyo8pgpf1" path="res://scenes/kill_chain_flash.tscn" id="14_kcflash"]
 [ext_resource type="PackedScene" uid="uid://b0vgintrotxt01" path="res://scenes/intro_text.tscn" id="18_introtxt"]
-[ext_resource type="PackedScene" uid="uid://vgateac2journey" path="res://scenes/arenas/arena_c_journey.tscn" id="15_arena_c"]
+[ext_resource type="PackedScene" uid="uid://vgateaccathedral" path="res://scenes/arenas/arena_c_cathedral.tscn" id="15_arena_c"]
 [ext_resource type="Script" uid="uid://dyll6yqtwkcpr" path="res://scripts/main.gd" id="16_mainscript"]
 
 [sub_resource type="PanoramaSkyMaterial" id="SkyMat_main"]
