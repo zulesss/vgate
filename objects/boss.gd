@@ -33,6 +33,28 @@ const PHASE_3_HP_RATIO := 0.34
 # Phase 3 speed boost — финальная "свирепеет" фаза должна гнать сильнее.
 const PHASE_3_MOVE_SPEED := 5.0
 
+# ────────────────────────────────────────────────────────────────────
+# Charge attack (Phase 2+) constants
+# ────────────────────────────────────────────────────────────────────
+# Mid-range gap-closer: telegraph 2s → dash 0.6s × 12 u/s = 7.2u в captured
+# direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
+# higher commitment, higher punishment). Direction captured при dash start
+# (реактивный per user lock — игрок может в первые 2с telegraph'а сместиться).
+const CHARGE_RANGE_MIN := 6.0
+const CHARGE_RANGE_MAX := 12.0
+const CHARGE_TELEGRAPH_DURATION := 2.0
+const CHARGE_DASH_DURATION := 0.6
+const CHARGE_DASH_SPEED := 12.0
+const CHARGE_RECOVERY := 0.5
+const CHARGE_COOLDOWN := 4.0
+const CHARGE_PENALTY := 30
+const CHARGE_HIT_RADIUS := 1.5  # contact-radius во время dash'а
+# Telegraph emission: bright white pulse на _material — отличается от phase
+# transition flash (cream gold) и от regular telegraph (ярко-красный) — игрок
+# должен читать "boss готовится к dash'у", не "phase change" / "regular swing".
+const CHARGE_TELEGRAPH_EMISSION_COLOR := Color(2.0, 2.0, 2.0)
+const CHARGE_TELEGRAPH_EMISSION_ENERGY := 3.0
+
 # Phase transition flash: bright cream HDR pulse 300мс на _material emission,
 # потом возврат к golden. Заметно отличается от regular telegraph red flash
 # (FLASH_EMISSION_COLOR=(1.0,0.2,0.1)) — читается как «фаза щёлкнула», не attack.
@@ -44,6 +66,19 @@ const PHASE_FLASH_DURATION := 0.30
 # при падении hp под threshold (вызывается после damage()).
 var _current_phase: int = 1
 var _phase_flash_tween: Tween
+
+# Charge attack state. Telegraph → dash → recovery. Cooldown отдельно от regular
+# attack_cooldown (boss может swing'нуть пока charge cooling, и наоборот).
+# Hit-once flag: одно попадание per dash (multi-frame overlap не должен 3× drain'ить cap).
+var _charging_telegraph: bool = false
+var _charging_telegraph_timer: float = 0.0
+var _charging_dash: bool = false
+var _charging_dash_timer: float = 0.0
+var _charge_recovery_timer: float = 0.0
+var _charge_cooldown_timer: float = 0.0
+var _charge_dir: Vector3 = Vector3.ZERO
+var _charge_hit_applied: bool = false
+var _charge_telegraph_tween: Tween
 
 
 func _ready() -> void:
@@ -136,6 +171,137 @@ func _apply_phase_transition(phase: int) -> void:
 		_summon_swarmling()
 	elif phase == 3:
 		move_speed = PHASE_3_MOVE_SPEED
+
+
+# ────────────────────────────────────────────────────────────────────
+# Charge attack (Pkg B)
+# ────────────────────────────────────────────────────────────────────
+
+# Tick charge state machine + cooldown perевычитание. Зовётся ПЕРЕД super
+# чтобы charge state мог преэмптить regular attack pipeline (если active —
+# super._physics_process читает _is_winding_up=false, обычный flow skip'нется
+# через override _update_state / _apply_movement ниже).
+func _physics_process(delta: float) -> void:
+	if is_dying or is_spawning or not VelocityGate.is_alive:
+		super._physics_process(delta)
+		return
+	# Cooldown тикает всегда (даже на Phase 1 — но триггер заблокирован отдельно).
+	if _charge_cooldown_timer > 0.0:
+		_charge_cooldown_timer = maxf(0.0, _charge_cooldown_timer - delta)
+	if _charging_telegraph:
+		_charging_telegraph_timer = maxf(0.0, _charging_telegraph_timer - delta)
+		if _charging_telegraph_timer <= 0.0:
+			_start_charge_dash()
+	elif _charging_dash:
+		_charging_dash_timer = maxf(0.0, _charging_dash_timer - delta)
+		_check_charge_hit()
+		if _charging_dash_timer <= 0.0:
+			_end_charge_dash()
+	elif _charge_recovery_timer > 0.0:
+		_charge_recovery_timer = maxf(0.0, _charge_recovery_timer - delta)
+	super._physics_process(delta)
+
+
+# Override: в charge-active state'е regular attack pipeline заморожен, иначе
+# super._update_state мог бы стартануть swing поверх dash'а. Charge entry —
+# Phase 2+, cooldown ready, distance в 6-12u range.
+func _update_state() -> void:
+	if _charging_telegraph or _charging_dash or _charge_recovery_timer > 0.0:
+		# Charge active → state.IDLE чтобы _apply_movement в base не лез к NavAgent.
+		# Movement override ниже перехватывает velocity сам.
+		state = State.IDLE
+		return
+	# Phase 2+ только: пытаемся charge до regular swing если в mid-range.
+	if _current_phase >= 2 and _check_should_charge():
+		_start_charge_telegraph()
+		return
+	super._update_state()
+
+
+# Override: во время charge state'а перехватываем movement. Telegraph — frozen
+# (velocity 0), dash — captured direction × CHARGE_DASH_SPEED, recovery —
+# frozen vulnerable. Outside charge'а — fallback к base.
+func _apply_movement(delta: float) -> void:
+	if _charging_telegraph or _charge_recovery_timer > 0.0:
+		_set_planar_velocity(Vector3.ZERO, delta)
+		move_and_slide()
+		return
+	if _charging_dash:
+		_set_planar_velocity(_charge_dir * CHARGE_DASH_SPEED, delta)
+		move_and_slide()
+		return
+	super._apply_movement(delta)
+
+
+func _check_should_charge() -> bool:
+	if _charge_cooldown_timer > 0.0:
+		return false
+	if _player == null:
+		return false
+	# Skip charge если regular attack уже windup'ится (telegraph race) или
+	# мы только что resolve'нули и cooldown ещё не отгорел.
+	if _is_winding_up or _attack_cooldown_remaining > 0.0:
+		return false
+	var dist := _distance_to_player()
+	return dist >= CHARGE_RANGE_MIN and dist <= CHARGE_RANGE_MAX
+
+
+func _start_charge_telegraph() -> void:
+	_charging_telegraph = true
+	_charging_telegraph_timer = CHARGE_TELEGRAPH_DURATION
+	_charge_hit_applied = false
+	# Audio cue (reuse enemy_attack stream — единственный 3D audio под рукой).
+	# Heavier impact чем regular swing telegraph за счёт длинного 2с pulse'а.
+	if _telegraph_audio != null:
+		_telegraph_audio.play()
+	# Bright white pulse на emission. Tween'им energy 3.0 → BOSS_EMISSION_ENERGY
+	# за весь telegraph — растёт натяжение, на пике dash'а snap-возврат к
+	# golden (в _start_charge_dash). Одновременно держим color на белом.
+	if _material != null:
+		if _charge_telegraph_tween != null and _charge_telegraph_tween.is_valid():
+			_charge_telegraph_tween.kill()
+		_material.emission = CHARGE_TELEGRAPH_EMISSION_COLOR
+		_material.emission_energy_multiplier = CHARGE_TELEGRAPH_EMISSION_ENERGY
+		# Лёгкий pulse'инг energy ↔ peak — ритмичный «зарядка»: tween до
+		# 1.5× back-and-forth не делаем (overengineering под 2с), просто hold.
+
+
+func _start_charge_dash() -> void:
+	_charging_telegraph = false
+	# Capture direction только сейчас — реактивный lock per spec (не frozen в
+	# момент telegraph start'а). Игрок должен иметь смысл двигаться во время
+	# 2с telegraph'а, но не быть unkillable: capture в dash start.
+	if _player != null:
+		var to_player: Vector3 = _player.global_position - global_position
+		to_player.y = 0.0
+		if to_player.length() > 0.001:
+			_charge_dir = to_player.normalized()
+		else:
+			_charge_dir = -global_transform.basis.z  # fallback forward
+	else:
+		_charge_dir = -global_transform.basis.z
+	_charging_dash = true
+	_charging_dash_timer = CHARGE_DASH_DURATION
+	# Snap emission обратно к golden — telegraph закончен, dash в moving phase.
+	if _material != null:
+		if _charge_telegraph_tween != null and _charge_telegraph_tween.is_valid():
+			_charge_telegraph_tween.kill()
+		_material.emission = BOSS_EMISSION_COLOR
+		_material.emission_energy_multiplier = BOSS_EMISSION_ENERGY
+
+
+func _check_charge_hit() -> void:
+	if _charge_hit_applied or _player == null:
+		return
+	if _distance_to_player() <= CHARGE_HIT_RADIUS:
+		VelocityGate.apply_hit(CHARGE_PENALTY)
+		_charge_hit_applied = true
+
+
+func _end_charge_dash() -> void:
+	_charging_dash = false
+	_charge_recovery_timer = CHARGE_RECOVERY
+	_charge_cooldown_timer = CHARGE_COOLDOWN
 
 
 func _summon_swarmling() -> void:
