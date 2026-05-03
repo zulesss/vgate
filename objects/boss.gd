@@ -130,18 +130,23 @@ var _special_reroll_timer: float = 0.0
 
 
 func _ready() -> void:
-	# Stat overrides ДО super._ready (base скопирует hp = max_hp + начальный
-	# stagger cooldown). Lunge оставляем включённым из melee parent'а — boss
-	# тоже должен закрывать gap в финальные 300мс windup'а, иначе walk-back
-	# escape'ит даже на slower 4.0 (player walk ~6.4 u/s при cap=80).
+	# Stat overrides ПОСЛЕ super._ready, иначе EnemyMelee._ready клоббит наши
+	# values своими defaults (max_hp=40, move_speed=5.5, attack_range=1.5, ...) и
+	# EnemyBase._ready ставит hp = max_hp = 40 — boss всегда жил на melee stats.
+	# После super выставляем boss values + явный hp = max_hp re-init, чтобы
+	# перетереть hp=40 которое base зафиксировал из melee'шного max_hp.
+	# Lunge оставляем включённым из melee parent'а — boss тоже должен закрывать
+	# gap в финальные 300мс windup'а, иначе walk-back escape'ит даже на slower
+	# 4.0 (player walk ~6.4 u/s при cap=80).
+	super._ready()
 	max_hp = 800
+	hp = max_hp
 	move_speed = 4.0
 	attack_range = 2.5
 	attack_windup = 0.5
 	attack_cooldown = 2.5
 	attack_penalty = 25
 	detection_radius = 40.0
-	super._ready()
 
 	# Material override: super._ready клонировал base material из mesh'а (telegraph
 	# flash работает на _material из base'а). Перезаписываем emission на golden HDR
@@ -156,7 +161,7 @@ func _ready() -> void:
 
 	# HUD boss bar (Pkg B): первичный emit чтобы bar нарисовался full сразу
 	# после spawn'а. AltarDirector instance'ит boss'а из boss_phase_started и
-	# add_child'ит в parent; super._ready() выставил hp = max_hp.
+	# add_child'ит в parent; hp re-init'нут вручную выше как max_hp = 800.
 	Events.boss_hp_changed.emit(hp, max_hp)
 
 
