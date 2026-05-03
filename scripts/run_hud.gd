@@ -59,6 +59,7 @@ const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 @onready var reload_fill: ColorRect = $BottomRight/VBox/ReloadRow/ReloadFill
 @onready var boss_root: MarginContainer = $TopCenter
 @onready var boss_bar_fill: ColorRect = $TopCenter/VBox/BossBarContainer/BossBarFill
+@onready var captured_toast: Label = $CapturedToast
 
 const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
@@ -67,6 +68,12 @@ const COLOR_HIGH := Color(0.30, 0.85, 0.40)   # >= 80 cap
 # Cathedral capturing-bar fill color (yellow — matches CAPTURING altar emissive).
 # При progress=0 (signal сброса) бар скрывается полностью — separate state visible=false.
 const CAPTURING_FILL_COLOR := Color(1.0, 0.9, 0.0, 1.0)
+
+# CAPTURED toast: hold 1.5s full opacity → fade 0.5s = 2.0s total. Latest-wins
+# semantics — rapid back-to-back captures kill prior tween, restart from full
+# alpha. Гарантирует bounded visual life и no overlapping fades.
+const CAPTURED_TOAST_HOLD := 1.5
+const CAPTURED_TOAST_FADE := 0.5
 
 # M9 Hot Zones sphere counter colors. До target — cyan. >= CAPTURE_TARGET (objective met) —
 # green tint + галочка вместо countdown'а (signal "относительно расслабься").
@@ -102,6 +109,10 @@ var _is_cathedral: bool = false
 # director эмитит progress > 0 — мы переключаем _capturing_altar_index на её
 # index. При progress == 0 — если индекс совпадает, скрываем бар.
 var _capturing_altar_index: int = -1
+
+# CAPTURED toast tween handle. Хранится чтобы kill старый при back-to-back
+# capture (otherwise двойной fade накладывается → mid-alpha glitch).
+var _captured_toast_tween: Tween = null
 
 
 func _ready() -> void:
@@ -224,6 +235,20 @@ func _on_mark_killed() -> void:
 
 func _on_altar_captured(_index: int) -> void:
 	_refresh_objective_labels()
+	_show_captured_toast()
+
+
+func _show_captured_toast() -> void:
+	# Latest-wins: kill любой in-flight tween, restart from full alpha. Без kill'а
+	# старый fade продолжит mute'ить нашу свежую entry'ю → flicker.
+	if _captured_toast_tween != null and _captured_toast_tween.is_valid():
+		_captured_toast_tween.kill()
+	captured_toast.visible = true
+	captured_toast.modulate = Color(1, 1, 1, 1)
+	_captured_toast_tween = create_tween()
+	_captured_toast_tween.tween_interval(CAPTURED_TOAST_HOLD)
+	_captured_toast_tween.tween_property(captured_toast, "modulate:a", 0.0, CAPTURED_TOAST_FADE)
+	_captured_toast_tween.tween_callback(func() -> void: captured_toast.visible = false)
 
 
 # Capturing progress bar follow logic. Multiple altars могут быть в states
@@ -255,6 +280,13 @@ func _on_run_started() -> void:
 	# Boss bar — hide на каждый run start. Show по boss_phase_started signal'у
 	# (cathedral specific) — другие арены никогда не эмитят, бар не появится.
 	boss_root.visible = false
+	# CAPTURED toast — kill in-flight tween, hide. Reload во время mid-fade
+	# иначе оставит residue alpha при start'е следующего run'а.
+	if _captured_toast_tween != null and _captured_toast_tween.is_valid():
+		_captured_toast_tween.kill()
+	_captured_toast_tween = null
+	captured_toast.visible = false
+	captured_toast.modulate = Color(1, 1, 1, 0)
 	_refresh_objective_labels()
 
 

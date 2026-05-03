@@ -14,7 +14,9 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Stats (locked, unchanged):
 #   - HP 800 (≈ 32s sustained repeater fire — bumped per playtest "too fast")
-#   - move_speed 4.0 (Phase 1/2), 5.0 (Phase 3)
+#   - move_speed 5.5 (Phase 1/2), 6.5 (Phase 3) — playtest M9 bump (was 4.0/5.0,
+#     boss escapable by walk-back; +37% Phase 1/2 closes the gap-creep without
+#     trivializing kite via dash)
 #   - attack_range 2.5 (longer reach, narrow R4)
 #   - attack_penalty 25, cooldown 2.5, windup 0.5, detection_radius 40
 #
@@ -31,18 +33,21 @@ const PHASE_2_HP_RATIO := 0.67
 const PHASE_3_HP_RATIO := 0.34
 
 # Phase 3 speed boost — финальная "свирепеет" фаза должна гнать сильнее.
-const PHASE_3_MOVE_SPEED := 5.0
+const PHASE_3_MOVE_SPEED := 6.5
 
 # ────────────────────────────────────────────────────────────────────
 # Charge attack (Phase 2+) constants
 # ────────────────────────────────────────────────────────────────────
-# Mid-range gap-closer: telegraph 2s → dash 0.6s × 12 u/s = 7.2u в captured
+# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 12 u/s = 7.2u в captured
 # direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
 # higher commitment, higher punishment). Direction captured при dash start
-# (реактивный per user lock — игрок может в первые 2с telegraph'а сместиться).
+# (реактивный per user lock — игрок может в первые 0.5с telegraph'а сместиться).
+# Skill ceiling note: telegraph 0.5s + dash 0.6s = 1.1s commit window. Player
+# имеет ровно 0.5s reaction window до un-cancellable dash launch — намеренно
+# tight (M9 playtest pivot from 2.0s — 2с давало free dodge каждый раз).
 const CHARGE_RANGE_MIN := 6.0
 const CHARGE_RANGE_MAX := 12.0
-const CHARGE_TELEGRAPH_DURATION := 2.0
+const CHARGE_TELEGRAPH_DURATION := 0.5
 const CHARGE_DASH_DURATION := 0.6
 const CHARGE_DASH_SPEED := 12.0
 const CHARGE_RECOVERY := 0.5
@@ -141,7 +146,7 @@ func _ready() -> void:
 	super._ready()
 	max_hp = 800
 	hp = max_hp
-	move_speed = 4.0
+	move_speed = 5.5
 	attack_range = 2.5
 	attack_windup = 0.5
 	attack_cooldown = 2.5
