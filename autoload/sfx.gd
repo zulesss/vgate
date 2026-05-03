@@ -90,6 +90,10 @@ var _heartbeat_player: AudioStreamPlayer
 var _drain_player: AudioStreamPlayer
 var _ambient_player: AudioStreamPlayer
 var _melee_spawn_proto: AudioStream
+# Pickup chime для sphere/altar capture. Reuse kill_confirm.ogg с pitch +1.4 (выше →
+# "ling"-vibe) и volume_db -8 (тише чем kill_confirm чтобы не путать с kill cue).
+# Без dedicated asset — flag для potential будущего dedicated pickup.ogg ассета.
+var _pickup_player: AudioStreamPlayer
 
 # Smoothed heartbeat volume — чтобы не дёргалось от мгновенных hit/kill изменений sr.
 var _heartbeat_vol_current: float = HEARTBEAT_MUTE_DB
@@ -117,6 +121,11 @@ func _ready() -> void:
 	# артефактом. Файл оставлен на диске на случай будущей замены.
 	_hit_player = _make_3d("hit_impact.ogg", -6.0, 8.0)
 	_kill_player = _make_2d("kill_confirm.ogg", -6.0)
+	# Pickup chime — reuse kill_confirm.ogg с higher pitch + lower volume чтобы
+	# tonally отличался от kill cue. Один-shot, AudioStreamPlayer.play() cut'ит
+	# существующее воспроизведение → back-to-back captures play чисто без overlap'а.
+	_pickup_player = _make_2d("kill_confirm.ogg", -8.0)
+	_pickup_player.pitch_scale = 1.4
 	_heartbeat_player = _make_2d("heartbeat_60bpm.ogg", HEARTBEAT_MUTE_DB)
 	# pause замораживает heartbeat (юзер flip'нул feel-decision 2026-04-29 — pause =
 	# full silence, including heartbeat). Явный PAUSABLE override т.к. родитель ALWAYS.
@@ -171,6 +180,8 @@ func _ready() -> void:
 	Events.run_won.connect(_on_run_won)
 	Events.run_started.connect(_on_run_started)
 	Events.enemy_spawned.connect(_on_enemy_spawned)
+	Events.sphere_captured.connect(_on_sphere_captured)
+	Events.altar_captured.connect(_on_altar_captured)
 
 
 func _process(delta: float) -> void:
@@ -393,6 +404,19 @@ func _on_enemy_spawned(enemy: Node) -> void:
 		player.global_position = (enemy as Node3D).global_position
 	player.finished.connect(player.queue_free)
 	player.play()
+
+
+func _on_sphere_captured(_world_pos: Vector3) -> void:
+	_play_pickup()
+
+
+func _on_altar_captured(_index: int) -> void:
+	_play_pickup()
+
+
+func _play_pickup() -> void:
+	if _pickup_player != null and _pickup_player.stream != null:
+		_pickup_player.play()
 
 
 # ────── Helpers

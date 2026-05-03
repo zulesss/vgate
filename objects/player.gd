@@ -14,9 +14,11 @@ const DASH_VELOCITY_BURST := 20.0
 const DASH_DURATION := 0.2
 const DASH_COOLDOWN := 2.5
 
-# Jump CD (между first и second jump'ом). 1.25с = DASH_COOLDOWN / 2 — гарантирует
+# Jump CD (rate-limit ТОЛЬКО на double-jump). 1.25с = DASH_COOLDOWN / 2 — гарантирует
 # что double-jump доступен между двумя dash'ами, а не как ledge-spam mobility.
-# Reset на ground touch (см. handle_gravity).
+# First jump с земли всегда instant и CD не ставит. CD persists across landings —
+# не reset'ится на ground touch (см. handle_gravity); double-jumped → land → first
+# jump immediate, но next double-jump в воздухе всё ещё gated CD'ом.
 const JUMP_COOLDOWN := 1.25
 
 # FOV single-axis cap mapping (docs/feel/feel_spec.md §1, revised 2026-04-27).
@@ -69,8 +71,8 @@ var _dash_time_remaining: float = 0.0
 var _dash_cooldown_remaining: float = 0.0
 var _dash_velocity: Vector3 = Vector3.ZERO
 
-# Jump CD state. Tick'ается в _tick_dash рядом с dash CD, reset'ится при ground
-# touch одновременно с jumps_remaining (см. handle_gravity).
+# Jump CD state. Tick'ается в _tick_dash рядом с dash CD. НЕ reset'ится при ground
+# touch — CD это rate-limit на double-jump globally, persists across landings.
 var _jump_cooldown_remaining: float = 0.0
 
 # M9 magazine + reload (docs: brief PLAN.md M9). State в player'е (Resource holds spec
@@ -386,22 +388,23 @@ func handle_gravity(delta):
 	
 	if gravity > 0 and is_on_floor():
 		jumps_remaining = number_of_jumps
-		_jump_cooldown_remaining = 0.0
 		gravity = 0
 
 # Jumping
 
 func action_jump():
-	# CD gate: только для double-jump (jumps_remaining < number_of_jumps означает
-	# что хотя бы один jump уже потрачен). Первый jump с земли — instant. Второй
-	# jump в воздухе требует JUMP_COOLDOWN с момента первого. Reset CD'я — handle_gravity
-	# на ground touch, симметрично jumps_remaining.
-	if jumps_remaining < number_of_jumps and _jump_cooldown_remaining > 0.0:
+	# CD gate ТОЛЬКО для double-jump (second jump в воздухе). First jump с земли
+	# всегда instant и CD не ставит — bar HUD не появляется на первый jump.
+	# JUMP_COOLDOWN ставится только после consume'а double-jump'а; persists across
+	# landings (rate-limit на double-jump globally).
+	var is_first_jump: bool = jumps_remaining == number_of_jumps
+	if not is_first_jump and _jump_cooldown_remaining > 0.0:
 		return
 	Audio.play("sounds/jump_a.ogg, sounds/jump_b.ogg, sounds/jump_c.ogg")
 	gravity = - jump_strength
 	jumps_remaining -= 1
-	_jump_cooldown_remaining = JUMP_COOLDOWN
+	if not is_first_jump:
+		_jump_cooldown_remaining = JUMP_COOLDOWN
 
 # Shooting
 
