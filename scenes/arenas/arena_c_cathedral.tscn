@@ -1,44 +1,15 @@
-[gd_scene load_steps=22 format=3 uid="uid://vgateaccathedral"]
+[gd_scene format=3 uid="uid://bftwr787knxml"]
 
 [ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
-
-; --- Materials ---
 
 [sub_resource type="StandardMaterial3D" id="Mat_floor"]
 albedo_color = Color(0.5, 0.48, 0.5, 1)
 
-[sub_resource type="StandardMaterial3D" id="Mat_wall"]
-albedo_color = Color(0.3, 0.3, 0.35, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_ceiling"]
-albedo_color = Color(0.2, 0.2, 0.25, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_central"]
-albedo_color = Color(0.7, 0.65, 0.55, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_column"]
-albedo_color = Color(0.4, 0.38, 0.4, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_altar_top"]
-albedo_color = Color(0.3, 0.5, 1, 1)
-emission_enabled = true
-emission = Color(0.3, 0.5, 1, 1)
-emission_energy_multiplier = 1.0
-
-[sub_resource type="StandardMaterial3D" id="Mat_altar_beam"]
-albedo_color = Color(0.3, 0.5, 1, 0.35)
-emission_enabled = true
-emission = Color(0.3, 0.5, 1, 1)
-emission_energy_multiplier = 1.5
-transparency = 1
-
-[sub_resource type="StandardMaterial3D" id="Mat_pew"]
-albedo_color = Color(0.35, 0.28, 0.22, 1)
-
-; --- Mesh resources for NavMesh source (mirror MeshInstance3D pattern, csg-bug-fix 357c9d1) ---
-
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
 size = Vector3(44, 0.1, 44)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wallNS"]
 size = Vector3(44, 12, 0.5)
@@ -46,24 +17,41 @@ size = Vector3(44, 12, 0.5)
 [sub_resource type="BoxMesh" id="BoxMesh_wallEW"]
 size = Vector3(0.5, 12, 44)
 
+[sub_resource type="StandardMaterial3D" id="Mat_ceiling"]
+albedo_color = Color(0.2, 0.2, 0.25, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
 size = Vector3(44, 0.1, 44)
+
+[sub_resource type="StandardMaterial3D" id="Mat_central"]
+albedo_color = Color(0.7, 0.65, 0.55, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_central"]
 size = Vector3(10, 0.5, 10)
 
+[sub_resource type="StandardMaterial3D" id="Mat_column"]
+albedo_color = Color(0.4, 0.38, 0.4, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_column"]
 size = Vector3(2, 4, 2)
 
+[sub_resource type="StandardMaterial3D" id="Mat_altar_top"]
+albedo_color = Color(0.3, 0.5, 1, 1)
+emission_enabled = true
+emission = Color(0.3, 0.5, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_altar_beam"]
+transparency = 1
+albedo_color = Color(0.3, 0.5, 1, 0.35)
+emission_enabled = true
+emission = Color(0.3, 0.5, 1, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_pew"]
+albedo_color = Color(0.35, 0.28, 0.22, 1)
+
 [sub_resource type="BoxMesh" id="BoxMesh_pew"]
 size = Vector3(1, 0.6, 4)
-
-; --- Altar Area3D collision (placeholder, no script — wired in next milestone) ---
-
-[sub_resource type="BoxShape3D" id="Shape_altar_zone"]
-size = Vector3(4, 2, 4)
-
-; --- NavMesh ---
 
 [sub_resource type="NavigationMesh" id="NavMesh_arena_c_cathedral"]
 geometry_parsed_geometry_type = 0
@@ -72,420 +60,363 @@ geometry_source_group_name = &"navigation_geometry"
 agent_height = 1.8
 agent_radius = 0.3
 agent_max_climb = 0.6
-agent_max_slope = 45.0
 
-; --- Arena root ---
+[sub_resource type="BoxShape3D" id="Shape_altar_zone"]
+size = Vector3(4, 2, 4)
 
-[node name="ArenaCathedral" type="Node3D" groups=["navigation_geometry", "objective_cathedral"]]
+[node name="ArenaCathedral" type="Node3D" unique_id=59298612 groups=["navigation_geometry", "objective_cathedral"]]
 
-; ====================================================================
-;  Outer shell — floor / 4 walls / ceiling (44×44 footprint, 12u high)
-; ====================================================================
-
-[node name="Floor" type="CSGBox3D" parent="."]
+[node name="Floor" type="CSGBox3D" parent="." unique_id=1227719883]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
 use_collision = true
 size = Vector3(44, 0.1, 44)
 material = SubResource("Mat_floor")
 
-[node name="NavMeshFloor" type="MeshInstance3D" parent="Floor"]
+[node name="NavMeshFloor" type="MeshInstance3D" parent="Floor" unique_id=1097994413]
 visible = false
 mesh = SubResource("BoxMesh_floor")
 
-[node name="WallNorth" type="CSGBox3D" parent="."]
+[node name="WallNorth" type="CSGBox3D" parent="." unique_id=543661369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -22)
 use_collision = true
 size = Vector3(44, 12, 0.5)
 material = SubResource("Mat_wall")
 
-[node name="NavMeshWallNorth" type="MeshInstance3D" parent="WallNorth"]
+[node name="NavMeshWallNorth" type="MeshInstance3D" parent="WallNorth" unique_id=1216246755]
 visible = false
 mesh = SubResource("BoxMesh_wallNS")
 
-[node name="WallSouth" type="CSGBox3D" parent="."]
+[node name="WallSouth" type="CSGBox3D" parent="." unique_id=82049537]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 22)
 use_collision = true
 size = Vector3(44, 12, 0.5)
 material = SubResource("Mat_wall")
 
-[node name="NavMeshWallSouth" type="MeshInstance3D" parent="WallSouth"]
+[node name="NavMeshWallSouth" type="MeshInstance3D" parent="WallSouth" unique_id=1373298637]
 visible = false
 mesh = SubResource("BoxMesh_wallNS")
 
-[node name="WallEast" type="CSGBox3D" parent="."]
+[node name="WallEast" type="CSGBox3D" parent="." unique_id=17991549]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 6, 0)
 use_collision = true
 size = Vector3(0.5, 12, 44)
 material = SubResource("Mat_wall")
 
-[node name="NavMeshWallEast" type="MeshInstance3D" parent="WallEast"]
+[node name="NavMeshWallEast" type="MeshInstance3D" parent="WallEast" unique_id=1853472309]
 visible = false
 mesh = SubResource("BoxMesh_wallEW")
 
-[node name="WallWest" type="CSGBox3D" parent="."]
+[node name="WallWest" type="CSGBox3D" parent="." unique_id=13721166]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 6, 0)
 use_collision = true
 size = Vector3(0.5, 12, 44)
 material = SubResource("Mat_wall")
 
-[node name="NavMeshWallWest" type="MeshInstance3D" parent="WallWest"]
+[node name="NavMeshWallWest" type="MeshInstance3D" parent="WallWest" unique_id=102831455]
 visible = false
 mesh = SubResource("BoxMesh_wallEW")
 
-[node name="Ceiling" type="CSGBox3D" parent="."]
+[node name="Ceiling" type="CSGBox3D" parent="." unique_id=351819356]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.05, 0)
 use_collision = true
 size = Vector3(44, 0.1, 44)
 material = SubResource("Mat_ceiling")
 
-[node name="NavMeshCeiling" type="MeshInstance3D" parent="Ceiling"]
+[node name="NavMeshCeiling" type="MeshInstance3D" parent="Ceiling" unique_id=12315936]
 visible = false
 mesh = SubResource("BoxMesh_ceiling")
 
-; ====================================================================
-;  Central platform — 10×10×0.5 stone podium, +0.5u stepup
-; ====================================================================
-
-[node name="CentralPlatform" type="CSGBox3D" parent="."]
+[node name="CentralPlatform" type="CSGBox3D" parent="." unique_id=1374394441]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 use_collision = true
 size = Vector3(10, 0.5, 10)
 material = SubResource("Mat_central")
 
-[node name="NavMeshCentral" type="MeshInstance3D" parent="CentralPlatform"]
+[node name="NavMeshCentral" type="MeshInstance3D" parent="CentralPlatform" unique_id=332990483]
 visible = false
 mesh = SubResource("BoxMesh_central")
 
-; ====================================================================
-;  Altar clusters — 4 corners (NW/NE/SE/SW), 3 columns (П-shape) + altar
-; ====================================================================
-
-; --- NW cluster (anchor (-15, 0, -15)) ---
-
-[node name="Col_NW_A" type="CSGBox3D" parent="."]
+[node name="Col_NW_A" type="CSGBox3D" parent="." unique_id=814459594]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2, -17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_A"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_A" unique_id=1096990160]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_NW_B" type="CSGBox3D" parent="."]
+[node name="Col_NW_B" type="CSGBox3D" parent="." unique_id=398870146]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 2, -17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_B"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_B" unique_id=743074198]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_NW_C" type="CSGBox3D" parent="."]
+[node name="Col_NW_C" type="CSGBox3D" parent="." unique_id=1636068780]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2, -13)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_C"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NW_C" unique_id=577383958]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Altar_NW_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, -15)
-use_collision = false
+[node name="Altar_NW_Top" type="CSGCylinder3D" parent="." unique_id=459464779]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, -0.02, -15)
 radius = 1.5
 height = 0.05
 material = SubResource("Mat_altar_top")
 
-[node name="Altar_NW_Beam" type="CSGCylinder3D" parent="."]
+[node name="Altar_NW_Beam" type="CSGCylinder3D" parent="." unique_id=1925342614]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 4, -15)
-use_collision = false
 radius = 0.4
 height = 8.0
 material = SubResource("Mat_altar_beam")
 
-; --- NE cluster (anchor (+15, 0, -15)) ---
-
-[node name="Col_NE_A" type="CSGBox3D" parent="."]
+[node name="Col_NE_A" type="CSGBox3D" parent="." unique_id=465868542]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 2, -17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_A"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_A" unique_id=481935837]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_NE_B" type="CSGBox3D" parent="."]
+[node name="Col_NE_B" type="CSGBox3D" parent="." unique_id=1911432278]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, -17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_B"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_B" unique_id=1580937741]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_NE_C" type="CSGBox3D" parent="."]
+[node name="Col_NE_C" type="CSGBox3D" parent="." unique_id=1156740336]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 2, -13)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_C"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_NE_C" unique_id=1665012887]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Altar_NE_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, -15)
-use_collision = false
+[node name="Altar_NE_Top" type="CSGCylinder3D" parent="." unique_id=551340513]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -0.02, -15)
 radius = 1.5
 height = 0.05
 material = SubResource("Mat_altar_top")
 
-[node name="Altar_NE_Beam" type="CSGCylinder3D" parent="."]
+[node name="Altar_NE_Beam" type="CSGCylinder3D" parent="." unique_id=2002716584]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 4, -15)
-use_collision = false
 radius = 0.4
 height = 8.0
 material = SubResource("Mat_altar_beam")
 
-; --- SE cluster (anchor (+15, 0, +15)) ---
-
-[node name="Col_SE_A" type="CSGBox3D" parent="."]
+[node name="Col_SE_A" type="CSGBox3D" parent="." unique_id=776469142]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 2, 17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_A"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_A" unique_id=801688408]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_SE_B" type="CSGBox3D" parent="."]
+[node name="Col_SE_B" type="CSGBox3D" parent="." unique_id=369500825]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, 17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_B"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_B" unique_id=1244594331]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_SE_C" type="CSGBox3D" parent="."]
+[node name="Col_SE_C" type="CSGBox3D" parent="." unique_id=2136390076]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 2, 13)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_C"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SE_C" unique_id=645991736]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Altar_SE_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.05, 15)
-use_collision = false
+[node name="Altar_SE_Top" type="CSGCylinder3D" parent="." unique_id=2121781637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -0.02, 15)
 radius = 1.5
 height = 0.05
 material = SubResource("Mat_altar_top")
 
-[node name="Altar_SE_Beam" type="CSGCylinder3D" parent="."]
+[node name="Altar_SE_Beam" type="CSGCylinder3D" parent="." unique_id=1609497731]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 4, 15)
-use_collision = false
 radius = 0.4
 height = 8.0
 material = SubResource("Mat_altar_beam")
 
-; --- SW cluster (anchor (-15, 0, +15)) ---
-
-[node name="Col_SW_A" type="CSGBox3D" parent="."]
+[node name="Col_SW_A" type="CSGBox3D" parent="." unique_id=542010725]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2, 17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_A"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_A" unique_id=675014141]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_SW_B" type="CSGBox3D" parent="."]
+[node name="Col_SW_B" type="CSGBox3D" parent="." unique_id=528089508]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 2, 17)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_B"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_B" unique_id=688417744]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Col_SW_C" type="CSGBox3D" parent="."]
+[node name="Col_SW_C" type="CSGBox3D" parent="." unique_id=230820031]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 2, 13)
 use_collision = true
 size = Vector3(2, 4, 2)
 material = SubResource("Mat_column")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_C"]
+[node name="NavMesh" type="MeshInstance3D" parent="Col_SW_C" unique_id=28840719]
 visible = false
 mesh = SubResource("BoxMesh_column")
 
-[node name="Altar_SW_Top" type="CSGCylinder3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.05, 15)
-use_collision = false
+[node name="Altar_SW_Top" type="CSGCylinder3D" parent="." unique_id=471477789]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, -0.023923796, 15)
 radius = 1.5
 height = 0.05
 material = SubResource("Mat_altar_top")
 
-[node name="Altar_SW_Beam" type="CSGCylinder3D" parent="."]
+[node name="Altar_SW_Beam" type="CSGCylinder3D" parent="." unique_id=2022013945]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 4, 15)
-use_collision = false
 radius = 0.4
 height = 8.0
 material = SubResource("Mat_altar_beam")
 
-; ====================================================================
-;  Pews (atmosphere — west/east of central platform)
-; ====================================================================
-
-[node name="Pew_W1" type="CSGBox3D" parent="."]
+[node name="Pew_W1" type="CSGBox3D" parent="." unique_id=1863827386]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.3, -6)
 use_collision = true
 size = Vector3(1, 0.6, 4)
 material = SubResource("Mat_pew")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Pew_W1"]
+[node name="NavMesh" type="MeshInstance3D" parent="Pew_W1" unique_id=1286658562]
 visible = false
 mesh = SubResource("BoxMesh_pew")
 
-[node name="Pew_W2" type="CSGBox3D" parent="."]
+[node name="Pew_W2" type="CSGBox3D" parent="." unique_id=1490168320]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.3, 2)
 use_collision = true
 size = Vector3(1, 0.6, 4)
 material = SubResource("Mat_pew")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Pew_W2"]
+[node name="NavMesh" type="MeshInstance3D" parent="Pew_W2" unique_id=1895123004]
 visible = false
 mesh = SubResource("BoxMesh_pew")
 
-[node name="Pew_E1" type="CSGBox3D" parent="."]
+[node name="Pew_E1" type="CSGBox3D" parent="." unique_id=1305896621]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.3, -6)
 use_collision = true
 size = Vector3(1, 0.6, 4)
 material = SubResource("Mat_pew")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Pew_E1"]
+[node name="NavMesh" type="MeshInstance3D" parent="Pew_E1" unique_id=721625039]
 visible = false
 mesh = SubResource("BoxMesh_pew")
 
-[node name="Pew_E2" type="CSGBox3D" parent="."]
+[node name="Pew_E2" type="CSGBox3D" parent="." unique_id=324416632]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.3, 2)
 use_collision = true
 size = Vector3(1, 0.6, 4)
 material = SubResource("Mat_pew")
 
-[node name="NavMesh" type="MeshInstance3D" parent="Pew_E2"]
+[node name="NavMesh" type="MeshInstance3D" parent="Pew_E2" unique_id=1276484455]
 visible = false
 mesh = SubResource("BoxMesh_pew")
 
-; ====================================================================
-;  NavigationRegion + Baker (rebuilds on _ready, csg-bug-fix 357c9d1)
-; ====================================================================
-
-[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=794500668]
 navigation_mesh = SubResource("NavMesh_arena_c_cathedral")
 
-[node name="NavBaker" type="Node" parent="." node_paths=PackedStringArray("region")]
+[node name="NavBaker" type="Node" parent="." unique_id=459801007 node_paths=PackedStringArray("region")]
 script = ExtResource("1_navbaker")
 region = NodePath("../NavigationRegion3D")
 
-; ====================================================================
-;  PlayerStart — south wall, facing north (toward center along -Z)
-; ====================================================================
-
-[node name="PlayerStart" type="Marker3D" parent="." groups=["player_start"]]
+[node name="PlayerStart" type="Marker3D" parent="." unique_id=799960496 groups=["player_start"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 18)
 
-; ====================================================================
-;  Spawn-points — 8 markers, 2 per altar zone (group "spawn_point")
-; ====================================================================
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=533661969]
 
-[node name="SpawnPoints" type="Node3D" parent="."]
-
-[node name="SpawnNW_1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnNW_1" type="Marker3D" parent="SpawnPoints" unique_id=154160525 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -18)
 
-[node name="SpawnNW_2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnNW_2" type="Marker3D" parent="SpawnPoints" unique_id=1499778744 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -18)
 
-[node name="SpawnNE_1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnNE_1" type="Marker3D" parent="SpawnPoints" unique_id=94092492 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -18)
 
-[node name="SpawnNE_2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnNE_2" type="Marker3D" parent="SpawnPoints" unique_id=1734085216 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -18)
 
-[node name="SpawnSE_1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnSE_1" type="Marker3D" parent="SpawnPoints" unique_id=2050236127 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 18)
 
-[node name="SpawnSE_2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnSE_2" type="Marker3D" parent="SpawnPoints" unique_id=1616684427 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 18)
 
-[node name="SpawnSW_1" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnSW_1" type="Marker3D" parent="SpawnPoints" unique_id=1394341072 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, 18)
 
-[node name="SpawnSW_2" type="Marker3D" parent="SpawnPoints" groups=["spawn_point"]]
+[node name="SpawnSW_2" type="Marker3D" parent="SpawnPoints" unique_id=1013136109 groups=["spawn_point"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 18)
 
-; ====================================================================
-;  Altar Area3D — 4 capture-zone placeholders (no script, wired next milestone)
-;  collision_mask=2 (player layer); group "altar_zone" для altar_director lookup
-; ====================================================================
+[node name="AltarZones" type="Node3D" parent="." unique_id=517977680]
 
-[node name="AltarZones" type="Node3D" parent="."]
-
-[node name="AltarArea_NW" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
+[node name="AltarArea_NW" type="Area3D" parent="AltarZones" unique_id=1931853778 groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, -15)
 collision_layer = 0
 collision_mask = 2
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_NW"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_NW" unique_id=2059137774]
 shape = SubResource("Shape_altar_zone")
 
-[node name="AltarArea_NE" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
+[node name="AltarArea_NE" type="Area3D" parent="AltarZones" unique_id=803307031 groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, -15)
 collision_layer = 0
 collision_mask = 2
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_NE"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_NE" unique_id=1208933035]
 shape = SubResource("Shape_altar_zone")
 
-[node name="AltarArea_SE" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
+[node name="AltarArea_SE" type="Area3D" parent="AltarZones" unique_id=7520990 groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, 15)
 collision_layer = 0
 collision_mask = 2
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_SE"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_SE" unique_id=1797112903]
 shape = SubResource("Shape_altar_zone")
 
-[node name="AltarArea_SW" type="Area3D" parent="AltarZones" groups=["altar_zone"]]
+[node name="AltarArea_SW" type="Area3D" parent="AltarZones" unique_id=1163760288 groups=["altar_zone"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, 15)
 collision_layer = 0
 collision_mask = 2
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_SW"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AltarZones/AltarArea_SW" unique_id=2076545200]
 shape = SubResource("Shape_altar_zone")
 
-; ====================================================================
-;  BossSpawn — Marker3D at center for future boss instantiate (M3 redesign)
-; ====================================================================
-
-[node name="BossSpawn" type="Marker3D" parent="."]
+[node name="BossSpawn" type="Marker3D" parent="." unique_id=940725954]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
