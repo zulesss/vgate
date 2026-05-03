@@ -14,6 +14,16 @@ const FADE_FROM_BLACK_SECONDS := 0.4
 const ANTI_ACCIDENTAL_DELAY_SECONDS := 0.5
 const PRE_FADE_DEATH_DELAY := 1.8
 
+# M12 narrative — drain death header variants (terminal-style verdict). RNG pick
+# weighted: default 60% / variant-2 25% / variant-3 10%. Fast-death (alive_time
+# < 30s) overrides RNG → fixed self-irony variant.
+const DRAIN_FAST_DEATH_THRESHOLD := 30.0
+const DRAIN_HEADER_DEFAULT := "ПРЕВЫШЕН ПОРОГ СКОРОСТИ\nПРИГОВОР ПРИВЕДЁН В ИСПОЛНЕНИЕ"
+const DRAIN_HEADER_VARIANT_2 := "ДВИЖЕНИЕ НЕДОСТАТОЧНО\nВЕРДИКТ: ПОДТВЕРЖДЁН"
+const DRAIN_HEADER_VARIANT_3 := "КИНЕТИЧЕСКАЯ СИГНАТУРА ПОТЕРЯНА\nИНИЦИАЛИЗАЦИЯ ПРОТОКОЛА ЗАВЕРШЕНИЯ"
+const DRAIN_HEADER_FAST := "ВЫ ОСТАНОВИЛИСЬ.\nИМ И НЕ ПОНАДОБИЛОСЬ."
+const OBJECTIVE_FAIL_HEADER := "ЗАДАЧА ПРОВАЛЕНА"
+
 # M9 Hot Zones playtest tweak (2026-05-02): two distinct failure modes.
 #   - Drain death (cap → 0 при t<RunLoop.RUN_DURATION) → "VELOCITY DRAINED"
 #   - Objective fail (alive at t>=RunLoop.RUN_DURATION + <20 captures) → "OBJECTIVE FAILED"
@@ -78,61 +88,61 @@ func _on_player_died() -> void:
 	var alive_time: float = VelocityGate.get_alive_time()
 	if is_cathedral:
 		# Cathedral: drain death — единственный fail mode (no timer). Always
-		# "VELOCITY DRAINED". Altar progress показываем для context'а — игрок
+		# drain header. Altar progress показываем для context'а — игрок
 		# мог зацепить 2 altars прежде чем умер от drain, это полезный feedback.
-		header_label.text = "VELOCITY DRAINED"
+		header_label.text = _pick_drain_header(alive_time)
 		header_label.modulate = Color(0.95, 0.30, 0.25, 1)
 		sphere_label.visible = true
 		var c: int = AltarDirector.captured_count
 		var target: int = AltarDirector.ALTAR_COUNT
 		if c >= target:
-			sphere_label.text = "Altars: %d / %d (boss survived)" % [c, target]
+			sphere_label.text = "Алтари: %d / %d (босс выжил)" % [c, target]
 			sphere_label.modulate = Color(1.0, 0.8, 0.2, 1)  # gold — captured altars
 		else:
-			sphere_label.text = "Altars: %d / %d" % [c, target]
+			sphere_label.text = "Алтари: %d / %d" % [c, target]
 			sphere_label.modulate = Color(1.0, 0.5, 0.3, 1)  # orange — incomplete
 	elif is_journey:
 		if alive_time >= RunLoop.RUN_DURATION:
-			header_label.text = "OBJECTIVE FAILED"
+			header_label.text = OBJECTIVE_FAIL_HEADER
 			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
 		else:
-			header_label.text = "VELOCITY DRAINED"
+			header_label.text = _pick_drain_header(alive_time)
 			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 		sphere_label.visible = false
 	else:
 		var progress: int = 0
 		var target: int = 1
 		var total_pool: int = 1  # Default fallback
-		var metric_label: String = "Spheres"
+		var metric_label: String = "Сферы"
 		if MarkDirector._active:
 			progress = MarkDirector.kills
 			target = MarkDirector.KILL_TARGET
 			total_pool = MarkDirector.KILL_TARGET  # Mark hunt не имеет отдельного "TOTAL" — KILL_TARGET и есть pool
-			metric_label = "Marked Kills"
+			metric_label = "Метки"
 		else:
 			progress = SphereDirector.captured_count
 			target = SphereDirector.CAPTURE_TARGET
 			total_pool = SphereDirector.TOTAL_SPHERES
-			metric_label = "Spheres"
+			metric_label = "Сферы"
 		# Failure mode discriminator: alive_time >= RUN_DURATION → объект fail
 		# (игрок дожил, но objective не выполнен). Иначе — drain death.
 		var objective_fail: bool = alive_time >= RunLoop.RUN_DURATION and progress < target
 		if objective_fail:
-			header_label.text = "OBJECTIVE FAILED"
+			header_label.text = OBJECTIVE_FAIL_HEADER
 			header_label.modulate = Color(0.95, 0.65, 0.30, 1)  # warning amber
 		else:
-			header_label.text = "VELOCITY DRAINED"
+			header_label.text = _pick_drain_header(alive_time)
 			header_label.modulate = Color(0.95, 0.30, 0.25, 1)  # drain red
 		# Objective progress line: green tint если objective met (almost-win), иначе cyan/magenta.
 		sphere_label.visible = true
 		if progress >= target:
-			sphere_label.text = "%s: %d / %d (objective met)" % [metric_label, progress, total_pool]
+			sphere_label.text = "%s: %d / %d (задача выполнена)" % [metric_label, progress, total_pool]
 			sphere_label.modulate = Color(0.30, 0.85, 0.40, 1)
 		else:
 			sphere_label.text = "%s: %d / %d" % [metric_label, progress, target]
 			sphere_label.modulate = Color(0.478, 0.906, 0.906, 1)
-	score_label.text = "Score: %d" % ScoreState.final_score
-	best_label.text = "Best: %d" % ScoreState.best_score
+	score_label.text = "Счёт: %d" % ScoreState.final_score
+	best_label.text = "Рекорд: %d" % ScoreState.best_score
 	score_box.visible = true
 
 	# Phase 4: fade-in арены (0.4s) — score остаётся overlay
@@ -145,6 +155,22 @@ func _on_player_died() -> void:
 	await get_tree().create_timer(ANTI_ACCIDENTAL_DELAY_SECONDS).timeout
 	restart_btn.disabled = false
 	restart_btn.grab_focus()
+
+
+func _pick_drain_header(alive_time: float) -> String:
+	# Fast-death override (alive_time < 30s) — fixed self-irony variant. Иначе
+	# weighted RNG pick: 60% default / 25% variant-2 / 10% variant-3 / +5% default
+	# (catch-all fallback). randi_range(0, 99) inclusive.
+	if alive_time < DRAIN_FAST_DEATH_THRESHOLD:
+		return DRAIN_HEADER_FAST
+	var roll: int = randi() % 100
+	if roll < 60:
+		return DRAIN_HEADER_DEFAULT
+	elif roll < 85:  # 60..84 = 25%
+		return DRAIN_HEADER_VARIANT_2
+	elif roll < 95:  # 85..94 = 10%
+		return DRAIN_HEADER_VARIANT_3
+	return DRAIN_HEADER_DEFAULT
 
 
 func _on_restart() -> void:

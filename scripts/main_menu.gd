@@ -7,6 +7,7 @@ class_name MainMenu extends Control
 const ARENA_SCENE := "res://scenes/main.tscn"
 const CREDITS_SCENE := "res://scenes/credits.tscn"
 const SETTINGS_SCENE := "res://scenes/settings_menu.tscn"
+const INTRO_SPLASH_SCENE := "res://scenes/intro_splash.tscn"
 
 @onready var start_btn: Button = $Center/VBox/StartButton
 @onready var settings_btn: Button = $Center/VBox/SettingsButton
@@ -34,7 +35,10 @@ func _ready() -> void:
 
 
 func _on_start() -> void:
-	get_tree().change_scene_to_file(ARENA_SCENE)
+	# M12 narrative: показываем intro splash перед ареной (только от main menu
+	# START — death-restart loop минует splash, использует RunLoop напрямую).
+	IntroState.target_scene = ARENA_SCENE
+	get_tree().change_scene_to_file(INTRO_SPLASH_SCENE)
 
 
 func _on_settings() -> void:

@@ -31,6 +31,7 @@ KillChain="*res://autoload/kill_chain.gd"
 SphereDirector="*res://autoload/sphere_director.gd"
 MarkDirector="*res://autoload/mark_director.gd"
 AltarDirector="*res://autoload/altar_director.gd"
+IntroState="*res://autoload/intro_state.gd"
 
 [display]
 
