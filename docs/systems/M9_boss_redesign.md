@@ -6,7 +6,7 @@
 
 ## Stats (after redesign)
 
-- **HP**: 400 (was 200, doubled per user feedback for longer fight, ~16s sustained @ 25 DPS)
+- **HP**: 800 (was 200 → 400 → 800, scaled per playtest feedback for finale-worthy fight, ~32s sustained @ 25 DPS)
 - **move_speed**: 4.0 (Phase 1-2), boost 5.0 in Phase 3
 - **attack_range**: 2.5 (default melee swing reach)
 - **attack_penalty**: 25 (default), 30 (charge hit), 25 (AOE hit)
@@ -20,15 +20,15 @@ Visual: scale 1.6, golden HDR emissive `Color(2.0, 0.8, 0.3)` energy 1.5.
 
 | Phase | HP Range | Color/Behavior |
 |---|---|---|
-| **Phase 1** | 100-67% (HP > 268) | Default melee chase + swing — territorial |
-| **Phase 2** | 67-34% (HP > 136) | + Charge attack + 1 swarmling summon at transition — aggressive |
-| **Phase 3** | 34-0% (HP ≤ 136) | + AOE swing + speed boost 4→5 — desperate |
+| **Phase 1** | 100-67% (HP > 536) | Default melee chase + swing — territorial |
+| **Phase 2** | 67-34% (HP > 272) | + Charge attack + 1 swarmling summon at transition — aggressive |
+| **Phase 3** | 34-0% (HP ≤ 272) | + AOE swing + speed boost 4→5 — desperate |
 
 **Transitions**:
 - Phase 1→2: emissive flash + audio cue + spawn 1 swarmling at boss position (single, not on every transition — guarded by `_summon_used: bool`)
 - Phase 2→3: emissive flash + audio cue + speed boost (move_speed 4→5)
 
-**Skip-phase scenario** (P1→P3 directly): NOT possible at current numbers (HP 400 / max repeater dmg 5 → max 1 phase per hit). YAGNI per karpathy. Single transition step per damage event, not while-loop.
+**Skip-phase scenario** (P1→P3 directly): NOT possible at current numbers (HP 800 / max repeater dmg 5 → max 1 phase per hit). YAGNI per karpathy. Single transition step per damage event, not while-loop.
 
 ## Attack Patterns
 
