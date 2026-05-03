@@ -25,6 +25,15 @@ var _telegraph_audio: AudioStreamPlayer3D
 var _reposition_timer: float = 0.0
 var _reposition_target: Vector3 = Vector3.ZERO
 var _has_reposition_target: bool = false
+# Liveliness check: NavAgent может рапортовать "ещё едем" (is_navigation_finished=false)
+# когда shooter физически заблокирован (collision с другим врагом, колонной, geometry
+# spawn-point'а). Без этого guard'а REPOSITION return executed every frame → infinite
+# stuck loop ("стоит на месте, головой крутит" — cathedral playtest 2026-05-03).
+# Bail если не двигались meaningfully > 1.5с в REPOSITION → drop target, fall back.
+var _reposition_stuck_timer: float = 0.0
+var _reposition_last_pos: Vector3 = Vector3.ZERO
+const REPOSITION_STUCK_THRESHOLD := 1.5
+const REPOSITION_STUCK_EPSILON := 0.1
 # Journey-arena turret-mode: shooter не репозится и не chase'ит (стоит на месте,
 # крутится к player'у, стреляет по LOS). Detect через group `objective_journey`
 # на arena root в _ready (consistent с run_loop / spawn_controller pattern).
@@ -102,12 +111,24 @@ func _update_state() -> void:
 	if need_reposition and state != State.REPOSITION:
 		_pick_reposition_target()
 		state = State.REPOSITION
+		_reposition_stuck_timer = 0.0
+		_reposition_last_pos = global_position
 		return
 
 	# Если уже репозиционируемся — продолжаем пока не дошли до цели.
 	if state == State.REPOSITION:
 		if _has_reposition_target:
 			var to_target: float = global_position.distance_to(_reposition_target)
+			# Liveliness check: NavAgent может рапортовать "ещё едем" но shooter
+			# физически заблокирован (collision с врагом/колонной/geometry). Если
+			# не двигались > REPOSITION_STUCK_THRESHOLD секунд — bail force.
+			var moved_recently := global_position.distance_to(_reposition_last_pos) > REPOSITION_STUCK_EPSILON
+			if moved_recently:
+				_reposition_stuck_timer = 0.0
+				_reposition_last_pos = global_position
+			else:
+				_reposition_stuck_timer += get_physics_process_delta_time()
+			var stuck_too_long := _reposition_stuck_timer > REPOSITION_STUCK_THRESHOLD
 			# Stuck-detection: если NavAgent рапортует path finished но мы ещё далеко
 			# от target'а — значит NavMesh path найти не смог (target недостижим, типа
 			# на другом nav-tier'е до которого ramp-эрозия не дотягивает, или цель
@@ -115,10 +136,11 @@ func _update_state() -> void:
 			# навечно: `return` ниже не пускает в attack-логику, и при потере player'ом
 			# tier'а "снайперы перестают по нему стрелять" (playtest 2026-05-02).
 			# Bail-through: drop target, fall в normal dist/LOS логику ниже.
-			if to_target > REPOSITION_REACH and not nav_agent.is_navigation_finished():
+			if to_target > REPOSITION_REACH and not nav_agent.is_navigation_finished() and not stuck_too_long:
 				return  # ещё едем
-		# Доехали ИЛИ застряли (path dead) → reset, выбираем нормальное поведение.
+		# Доехали / nav dead / liveliness exhausted → reset, normal behavior.
 		_has_reposition_target = false
+		_reposition_stuck_timer = 0.0
 		_schedule_next_reposition()
 
 	# Стандартная логика (без attack по контакту — нужна line-of-sight для shooter'а).
