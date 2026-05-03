@@ -20,7 +20,7 @@ const DASH_COOLDOWN := 2.5
 # CD persists across landings — не reset'ится на ground touch (см. handle_gravity);
 # double-jumped → land → first jump immediate, но next double-jump в воздухе всё
 # ещё gated CD'ом.
-const JUMP_COOLDOWN := 1.5
+const JUMP_COOLDOWN := 1.8
 
 # FOV single-axis cap mapping (docs/feel/feel_spec.md §1, revised 2026-04-27).
 # base_fov = cap_to_fov(velocity_cap):

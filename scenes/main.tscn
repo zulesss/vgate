@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://vgatemainm0"]
 
 [ext_resource type="PackedScene" uid="uid://dl2ed4gkybggf" path="res://objects/player.tscn" id="1_player"]
-[ext_resource type="PackedScene" uid="uid://b72cap7gjvqxc" path="res://scenes/debug_hud.tscn" id="3_dhud"]
 [ext_resource type="Shader" uid="uid://ds3c4ocsiuko2" path="res://shaders/vignette_flash.gdshader" id="5_vshader"]
 [ext_resource type="Script" uid="uid://chsy2efwlde77" path="res://scripts/vignette_flash.gd" id="6_vflash"]
 [ext_resource type="Script" uid="uid://q18sp2l3a7ej" path="res://scripts/spawn_controller.gd" id="8_spawn"]
@@ -65,8 +64,6 @@ grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(0.175, 0.175)
 pivot_offset = Vector2(64, 64)
-
-[node name="DebugHud" parent="." unique_id=21246251 instance=ExtResource("3_dhud")]
 
 [node name="RunHud" parent="." unique_id=1451071255 instance=ExtResource("9_runhud")]
 

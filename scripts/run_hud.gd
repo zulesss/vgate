@@ -18,7 +18,7 @@ class_name RunHud extends CanvasLayer
 const DASH_COOLDOWN_DURATION := 2.5
 # Mirrors JUMP_COOLDOWN в objects/player.gd. Two-place duplication acceptable —
 # уже такой pattern с DASH_COOLDOWN_DURATION (HUD не зависит от player class).
-const JUMP_COOLDOWN_DURATION := 1.5
+const JUMP_COOLDOWN_DURATION := 1.8
 # M9 conquest: countdown timer (120 → 0) с 3 visual phases:
 #   0–45с  — cyan/normal (settle in)
 #   45–90с — amber (swarm intro warning)

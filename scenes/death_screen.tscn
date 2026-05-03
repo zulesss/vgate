@@ -19,31 +19,6 @@ mouse_filter = 2
 color = Color(0, 0, 0, 1)
 modulate = Color(1, 1, 1, 0)
 
-[node name="HintLabel" type="Label" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.0
-anchor_right = 0.5
-anchor_bottom = 0.0
-offset_left = -325.0
-offset_top = 70.0
-offset_right = 325.0
-offset_bottom = 280.0
-grow_horizontal = 2
-mouse_filter = 2
-modulate = Color(1, 1, 1, 0)
-text = "Твой запас скорости — единственная нить жизни.
-Получаешь урон — он сжимается.
-Стоишь слишком долго — он опускается до нуля.
-Убивай, чтобы восполнить.
-Угроза — не враги. Угроза — неподвижность."
-horizontal_alignment = 1
-autowrap_mode = 3
-theme_override_colors/font_color = Color(0.95, 0.95, 0.85, 0.9)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 24
-
 [node name="ScoreBox" type="VBoxContainer" parent="."]
 anchors_preset = 8
 anchor_left = 0.5
@@ -111,3 +86,17 @@ text = "ЗАНОВО"
 layout_mode = 2
 focus_mode = 2
 text = "ГЛАВНОЕ МЕНЮ"
+
+[node name="HintLabel" type="Label" parent="ScoreBox"]
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0)
+text = "Твой запас скорости — единственная нить жизни. Получаешь урон — он сжимается. Стоишь слишком долго — он опускается до нуля. Убивай, чтобы восполнить. Угроза — не враги. Угроза — неподвижность."
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.95, 0.95, 0.85, 0.9)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 24

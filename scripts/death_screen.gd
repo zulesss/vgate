@@ -36,7 +36,7 @@ const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 const HINT_FADE_IN_SECONDS := 0.5
 
 @onready var black: ColorRect = $Black
-@onready var hint_label: Label = $HintLabel
+@onready var hint_label: Label = $ScoreBox/HintLabel
 @onready var score_box: VBoxContainer = $ScoreBox
 @onready var header_label: Label = $ScoreBox/HeaderLabel
 @onready var score_label: Label = $ScoreBox/ScoreLabel
