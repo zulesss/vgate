@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://vgateaccathedral"]
+[gd_scene format=3 uid="uid://bftwr787knxml"]
 
 [ext_resource type="Script" uid="uid://c3ijwbuj77ylg" path="res://scripts/nav_baker.gd" id="1_navbaker"]
 
@@ -12,9 +12,6 @@ albedo_color = Color(0.3, 0.3, 0.35, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_ceiling"]
 albedo_color = Color(0.2, 0.2, 0.25, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_central"]
-albedo_color = Color(0.7, 0.65, 0.55, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_column"]
 albedo_color = Color(0.4, 0.38, 0.4, 1)
@@ -48,9 +45,6 @@ size = Vector3(0.5, 12, 44)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
 size = Vector3(44, 0.1, 44)
-
-[sub_resource type="BoxMesh" id="BoxMesh_central"]
-size = Vector3(10, 0.5, 10)
 
 [sub_resource type="BoxMesh" id="BoxMesh_column"]
 size = Vector3(2, 4, 2)
@@ -141,20 +135,6 @@ material = SubResource("Mat_ceiling")
 [node name="NavMeshCeiling" type="MeshInstance3D" parent="Ceiling"]
 visible = false
 mesh = SubResource("BoxMesh_ceiling")
-
-; ====================================================================
-;  Central platform — 10×10×0.5 stone podium, +0.5u stepup
-; ====================================================================
-
-[node name="CentralPlatform" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
-use_collision = true
-size = Vector3(10, 0.5, 10)
-material = SubResource("Mat_central")
-
-[node name="NavMeshCentral" type="MeshInstance3D" parent="CentralPlatform"]
-visible = false
-mesh = SubResource("BoxMesh_central")
 
 ; ====================================================================
 ;  Altar clusters — 4 corners (NW/NE/SE/SW), 3 columns (П-shape) + altar
