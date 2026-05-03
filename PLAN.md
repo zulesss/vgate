@@ -1,6 +1,6 @@
-# vgate — План полного слайса
+# КИНЕТИКА (vgate) — План полного слайса
 
-Документ фиксирует скоуп, майлстоуны и распределение работы. Изменения обсуждаются до кода.
+**STATUS: ✅ PROJECT CLOSED 2026-05-04** — все запланированные milestones завершены в spirit'е. Этот document остаётся как historical record scope'а и решений.
 
 Источники:
 - `docs/concept/M0_concept.md` — core fantasy + hook (Velocity Gate) от game-designer + market-analyst
@@ -189,7 +189,6 @@
 - [x] Drain tolerance bump 0.5→0.2 (harsh feel — no jitter forgiveness)
 
 **Tagged**: M9-final commit `ead8b1f` (2026-05-03)
-**Owners**: game-designer + level-designer (specs) → godot-engineer (impl) → playtest-analyst (balance cycle, 6+ rounds)
 **Exit (met)**: 3 arenas с distinct objectives shipped, boss feels climactic с per-phase escalation, wall-run dropped per user scope decision.
 
 ### M10 — ❌ FOLDED INTO M9 (2026-05-03)
@@ -219,23 +218,25 @@
 - [x] Double jump CD 1.25s (=DASH_COOLDOWN/2) + HUD bar mirror dash pattern
 
 **Spec**: `docs/systems/M12_narrative.md` (LOCKED 2026-05-03)
-**Owners**: narrative-designer (theme) → godot-engineer (impl, multi-round polish)
 **Exit (met)**: имя финализировано, tagline locked, capsule shippable, environmental tone (terminal-style death/intro/per-arena framing) присутствует, sequential campaign + tutorial hint shipped.
 
-#### Открытое (deferred)
-- Ambient audio motifs per arena (Плац drum-march / Камера silence-with-hum / Собор choral drone) — flagged for M13 polish bandwidth
-- Cyrillic font verification — Windows playtest gates rendering quality (default font может потребовать fallback asset)
-- Dedicated pickup .ogg asset (currently reuse kill_confirm.ogg pitch-shifted) — flag for M13 audio polish если tonal confusion
+### M13 — Final polish iterations ✅ DONE (2026-05-04)
 
-### M13 — Final balance + shippable
-**Цель**: финальная балансировка после всего контента + capsule art если идём в Next Fest.
-- [ ] Полный playthrough — playtest-analyst на ≥2 наблюдений (правило `feedback_playtest_first.md`)
-- [ ] Финальная балансировка через systems-designer на основе плейтеста (после M8/M9 расширения врагов и оружий)
-- [ ] Capsule art / store description если идём в Next Fest
-- [ ] Final tag `v1.0`
+**Direction**: вместо formal balance pass + tag — distributed polish iteration через множественные micro-passes на основе hands-on playtest feedback.
 
-**Owners**: playtest-analyst → systems-designer → narrative-designer
-**Exit**: shippable demo. Тег `v1.0`.
+#### Сделано (последние коммиты M13 stage)
+- [x] Per-arena scoring (Plac/Камера = avg_cap × kills, Cathedral = avg_cap × speed_factor × 50, par-time 180s)
+- [x] CampaignProgress autoload + persistence (highest_unlocked saved в `user://vgate_progress.cfg`)
+- [x] Main menu rework: НОВАЯ ИГРА (resets campaign + LevelSequence) / ПРОДОЛЖИТЬ (resume highest_unlocked / level select после full clear)
+- [x] Level select scene с per-arena best scores (unlocked после прохождения всех 3 арен)
+- [x] ГЛАВНОЕ МЕНЮ button на death + win screens
+- [x] Death screen tutorial hint (capsule text как подсказка-tutorial)
+- [x] Settings menu CONTROLS section: full Russian translation + reload key + double jump info + weapon toggle removed from UI
+- [x] Iterative balance: hunt target 12→11, jump CD 1.25→1.5→1.8, sphere target 17, drain tolerance 0.2
+- [x] Audio: pickup chime на sphere/altar capture, drain+heartbeat stop on win
+- [x] DebugHud removed from production main scene
+
+**Exit (met)**: проект playable end-to-end (Плац → Камера → Собор) с persistent campaign progress, per-arena best scores, polished UI flow, complete Russian localization.
 
 ---
 

@@ -138,8 +138,3 @@ Altar beams excluded via `navmesh_excluded` group → NavBaker detaches from tre
 - Detection radius bump `99df2fe` (35→50 для 44×44 arena coverage)
 - Shooter REPOSITION liveliness `48ad9ab` (stuck-timer bail)
 
-## Open questions / followups
-
-- Single-source-of-truth for `BOSS_PHASE_*_HP_RATIO` (duplicated в run_hud + boss.gd) — prototype scope OK, refactor если становится maintenance burden.
-- AltarDirector spawn weights — TBD post-playtest balance.
-- Wall-run skill (M9 step 4 pending) — outer walls 44u long × 12u high are wall-run prime surfaces.

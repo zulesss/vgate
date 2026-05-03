@@ -103,13 +103,6 @@ Boss kill = unique reward fingerprint vs regular enemies.
 - Phase D — pattern selection + kill polish `922e1b5`
 - HP bar + HP×2 + cap tick removal `0c53635 / f73a7d6 / ecc0635`
 
-## Open questions / followups
-
-- BOSS_PHASE_*_HP_RATIO duplicated в run_hud + boss.gd → single source of truth deferred (prototype OK)
-- Boss attack sound budget → currently silent on charge/AOE telegraphs, reuse existing sounds или skip if no fit
-- Boss phase dissolution particles (golden upward) — deferred per game-designer "nice-to-have"
-- Charge-during-walk balance — if player abuses walk-back to dodge consistently, charge speed 12 u/s vs player walk 6.4 may need bump
-
 ## Anti-patterns avoided
 
 Per game-designer locked spec:

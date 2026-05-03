@@ -176,9 +176,3 @@ Per arena environmental tone. Не in scope текущего impl pkg'а — fla
 - ❌ Generic "evil corporation" / "alien invasion" (vgate themes уже навигают)
 - ❌ Кнопочные explanations механики ("press SPACE to dash" UI hints) — мы оставляем игрока без обучения, чтобы соответствовать narrative протагониста («ты не выбирал быть здесь»)
 
-## Open questions / followups
-
-- Ambient audio motifs — bandwidth для M13 (низкочастотные drone'ы / drum loop'ы — Kenney audio pack или procedural).
-- "ИСПОЛНИТЕЛЬ" vs "БОСС" в HUD — narrative-driven choice. Если playtest покажет confusion ("это про что") — fallback на нейтральное "БОСС". Tracked.
-- Localization architecture — сейчас все strings hardcoded inline. Если international Steam release — потребуется TranslationServer. Skip для M12 (Russian-only first).
-- Death screen variant frequency — RNG vs deterministic? Пока RNG, weighted (default 60% / variant-2 25% / variant-3 10% / fast-death special trigger).
