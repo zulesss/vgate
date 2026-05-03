@@ -38,7 +38,7 @@ const PHASE_3_MOVE_SPEED := 7.8
 # ────────────────────────────────────────────────────────────────────
 # Charge attack (Phase 2+) constants
 # ────────────────────────────────────────────────────────────────────
-# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 24 u/s = 14.4u в captured
+# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 36 u/s = 21.6u в captured
 # direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
 # higher commitment, higher punishment). Direction captured при dash start
 # (реактивный per user lock — игрок может в первые 0.5с telegraph'а сместиться).
@@ -49,7 +49,7 @@ const CHARGE_RANGE_MIN := 6.0
 const CHARGE_RANGE_MAX := 12.0
 const CHARGE_TELEGRAPH_DURATION := 0.5
 const CHARGE_DASH_DURATION := 0.6
-const CHARGE_DASH_SPEED := 24.0
+const CHARGE_DASH_SPEED := 36.0
 const CHARGE_RECOVERY := 0.5
 const CHARGE_COOLDOWN := 4.0
 const CHARGE_PENALTY := 30
@@ -64,10 +64,10 @@ const CHARGE_TELEGRAPH_EMISSION_ENERGY := 3.0
 # AOE swing (Phase 3+) constants
 # ────────────────────────────────────────────────────────────────────
 # Close-range radial: red ground decal pulses 1.5s → resolve damage если игрок
-# в радиусе. Trigger когда player ≤5u (sub-charge range, overlap с default
+# в радиусе. Trigger когда player ≤7.5u (sub-charge range, overlap с default
 # swing range 2.5 — но AOE проседает разовой 25 cap'а с radial coverage:
 # back-step не escape'ит как от swing'а). Cooldown 6s.
-const AOE_RANGE := 5.0
+const AOE_RANGE := 7.5
 const AOE_TELEGRAPH_DURATION := 1.5
 const AOE_PENALTY := 25
 const AOE_COOLDOWN := 6.0
@@ -127,6 +127,7 @@ var _aoe_telegraph_timer: float = 0.0
 var _aoe_cooldown_timer: float = 0.0
 var _aoe_pulse_tween: Tween
 @onready var _aoe_decal: CSGCylinder3D = $AOEDecal if has_node("AOEDecal") else null
+@onready var _charge_beam: CSGBox3D = $ChargeBeam if has_node("ChargeBeam") else null
 
 # Pattern selection re-roll timer (Pkg D). Когда probabilistic roll fail'ится,
 # ставим этот timer, чтобы не re-roll'ить каждый physics-tick (иначе на 60Hz за
@@ -184,6 +185,8 @@ func die() -> void:
 		_aoe_pulse_tween.kill()
 	if _aoe_decal != null:
 		_aoe_decal.visible = false
+	if _charge_beam != null:
+		_charge_beam.visible = false
 	if _material != null:
 		_material.emission = BOSS_KILL_FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = BOSS_KILL_FLASH_EMISSION_ENERGY
@@ -381,6 +384,11 @@ func _start_charge_telegraph() -> void:
 	if _material != null:
 		_material.emission = CHARGE_TELEGRAPH_EMISSION_COLOR
 		_material.emission_energy_multiplier = CHARGE_TELEGRAPH_EMISSION_ENERGY
+	# Aim indicator beam — child of body, rotates with _face_player. Игрок видит
+	# куда полетит dash в реальном времени за 0.5с telegraph'а. Скрыт в
+	# _start_charge_dash и die() defensive.
+	if _charge_beam != null:
+		_charge_beam.visible = true
 
 
 func _start_charge_dash() -> void:
@@ -403,6 +411,8 @@ func _start_charge_dash() -> void:
 	if _material != null:
 		_material.emission = BOSS_EMISSION_COLOR
 		_material.emission_energy_multiplier = BOSS_EMISSION_ENERGY
+	if _charge_beam != null:
+		_charge_beam.visible = false
 
 
 func _check_charge_hit() -> void:
