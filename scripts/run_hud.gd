@@ -12,6 +12,8 @@ class_name RunHud extends CanvasLayer
 # threshold tick (30%, статичный). Сверху над cap bar — DashRow: тонкий cooldown
 # индикатор (пустой → полный за 2.5 сек). Игрок берётся через group "player" +
 # публичный метод get_dash_cooldown_remaining().
+# Cathedral boss arena: поверх HUD — top-center BossBar (Pkg B): VISIBLE
+# только пока boss alive. Phase-color section'ы + 2 vertical tick'а на 67% / 34%.
 
 const DASH_COOLDOWN_DURATION := 2.5
 # M9 conquest: countdown timer (120 → 0) с 3 visual phases:
@@ -55,6 +57,8 @@ const ALTAR_COLOR_DONE := Color(1.0, 0.8, 0.2, 1)
 @onready var ammo_label: Label = $BottomRight/VBox/AmmoLabel
 @onready var reload_row: Control = $BottomRight/VBox/ReloadRow
 @onready var reload_fill: ColorRect = $BottomRight/VBox/ReloadRow/ReloadFill
+@onready var boss_root: MarginContainer = $TopCenter
+@onready var boss_bar_fill: ColorRect = $TopCenter/VBox/BossBarContainer/BossBarFill
 
 const COLOR_LOW := Color(0.95, 0.25, 0.20)    # < 50 cap
 const COLOR_MID := Color(0.95, 0.85, 0.20)    # 50-80 cap
@@ -74,6 +78,16 @@ const SPHERE_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
 # green на done. Target из MarkDirector.KILL_TARGET — single source of truth.
 const HUNT_COLOR_NORMAL := Color(1.0, 0.45, 0.85, 1)
 const HUNT_COLOR_DONE := Color(0.30, 0.85, 0.40, 1)
+
+# Boss HP bar colors. Phase 1 (>67% HP) — green/healthy. Phase 2 (34-67%) —
+# orange/caution (matches charge telegraph contrast vs. golden idle). Phase 3
+# (<34%) — red/finale. Lerp нет — discrete switch on phase boundary совпадает с
+# audio cue + emissive flash boss'а (читается как «фаза щёлкнула», not gradient).
+const BOSS_PHASE_2_HP_RATIO := 0.67
+const BOSS_PHASE_3_HP_RATIO := 0.34
+const BOSS_BAR_PHASE1_COLOR := Color(0.30, 0.85, 0.40, 1)
+const BOSS_BAR_PHASE2_COLOR := Color(1.0, 0.55, 0.20, 1)
+const BOSS_BAR_PHASE3_COLOR := Color(0.95, 0.25, 0.20, 1)
 
 var _player: Node = null
 # Set per-run в _on_run_started через group check. Журней-арена → timer count-up
@@ -97,6 +111,10 @@ func _ready() -> void:
 	Events.altar_captured.connect(_on_altar_captured)
 	Events.altar_dwell_progress.connect(_on_altar_dwell_progress)
 	Events.run_started.connect(_on_run_started)
+	Events.boss_phase_started.connect(_on_boss_phase_started)
+	Events.boss_hp_changed.connect(_on_boss_hp_changed)
+	Events.boss_killed.connect(_on_boss_phase_ended)
+	Events.player_died.connect(_on_boss_phase_ended)
 	score_label.text = "[ 0 ]"
 	_refresh_objective_labels()
 	# Player reference: нет explicit signal'а, читаем напрямую из группы "player"
@@ -107,6 +125,8 @@ func _ready() -> void:
 	reload_row.visible = false
 	capturing_row.visible = false
 	capturing_fill.anchor_right = 0.0
+	boss_root.visible = false
+	boss_bar_fill.anchor_right = 1.0
 
 
 func _process(_delta: float) -> void:
@@ -232,7 +252,39 @@ func _on_run_started() -> void:
 	_capturing_altar_index = -1
 	capturing_row.visible = false
 	capturing_fill.anchor_right = 0.0
+	# Boss bar — hide на каждый run start. Show по boss_phase_started signal'у
+	# (cathedral specific) — другие арены никогда не эмитят, бар не появится.
+	boss_root.visible = false
 	_refresh_objective_labels()
+
+
+func _on_boss_phase_started() -> void:
+	# Boss instantiate'нут AltarDirector'ом — bar visible. Boss._ready() уже
+	# emit'ит boss_hp_changed(max, max), но show до того как первый damage пришёл —
+	# fill anchor_right = 1.0 (set из _ready'я выше).
+	boss_root.visible = true
+	boss_bar_fill.anchor_right = 1.0
+	boss_bar_fill.color = BOSS_BAR_PHASE1_COLOR
+
+
+func _on_boss_hp_changed(current: int, max_value: int) -> void:
+	if max_value <= 0:
+		return
+	var ratio: float = clampf(float(current) / float(max_value), 0.0, 1.0)
+	boss_bar_fill.anchor_right = ratio
+	# Phase color shift — discrete на boundary. Совпадает с boss phase
+	# transition flash + audio cue, читается как unified «фаза щёлкнула».
+	if ratio > BOSS_PHASE_2_HP_RATIO:
+		boss_bar_fill.color = BOSS_BAR_PHASE1_COLOR
+	elif ratio > BOSS_PHASE_3_HP_RATIO:
+		boss_bar_fill.color = BOSS_BAR_PHASE2_COLOR
+	else:
+		boss_bar_fill.color = BOSS_BAR_PHASE3_COLOR
+
+
+func _on_boss_phase_ended() -> void:
+	# Скрыть bar на boss death OR player death. Идемпотентно — multi-emit ok.
+	boss_root.visible = false
 
 
 func _refresh_objective_labels() -> void:

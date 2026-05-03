@@ -154,6 +154,11 @@ func _ready() -> void:
 		_base_emission_color = BOSS_EMISSION_COLOR
 		_base_emission_energy = BOSS_EMISSION_ENERGY
 
+	# HUD boss bar (Pkg B): первичный emit чтобы bar нарисовался full сразу
+	# после spawn'а. AltarDirector instance'ит boss'а из boss_phase_started и
+	# add_child'ит в parent; super._ready() выставил hp = max_hp.
+	Events.boss_hp_changed.emit(hp, max_hp)
+
 
 func _kill_type() -> String:
 	return "boss"
@@ -198,6 +203,9 @@ func damage(amount) -> void:
 	if is_dying:
 		return
 	super.damage(amount)
+	# HUD bar refresh ПОСЛЕ super.damage(). Если boss умер — emit hp=0, HUD
+	# скроет bar по boss_killed signal'у (RunLoop эмитит из enemy_killed type).
+	Events.boss_hp_changed.emit(maxi(hp, 0), max_hp)
 	if not is_dying:
 		_check_phase_transition()
 

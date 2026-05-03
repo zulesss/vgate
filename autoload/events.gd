@@ -81,6 +81,10 @@ signal altar_captured(index: int)
 signal cathedral_phase_complete()
 signal boss_phase_started()
 signal boss_killed()
+# Boss HP bar (Pkg B). Boss emit'ит current/max после каждого damage()-tick'а
+# (включая первый _ready frame чтобы HUD сразу нарисовал full bar). HUD subscribe
+# в run_hud.gd, показывает top-center bar с phase-color sections.
+signal boss_hp_changed(current: int, max_value: int)
 # Altar capturing dwell progress 0..1. Эмитится AltarDirector'ом каждый кадр
 # пока altar в state CAPTURING/CONTESTED (player в zone). 0.0 emit'ится когда
 # прогресс reset'ится (player вышел / altar capture'нулся / contested) — HUD
