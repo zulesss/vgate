@@ -159,18 +159,17 @@ func _on_player_died() -> void:
 
 func _pick_drain_header(alive_time: float) -> String:
 	# Fast-death override (alive_time < 30s) — fixed self-irony variant. Иначе
-	# weighted RNG pick: 60% default / 25% variant-2 / 10% variant-3 / +5% default
-	# (catch-all fallback). randi_range(0, 99) inclusive.
+	# weighted RNG pick (per spec): 65% default / 25% variant-2 / 10% variant-3.
+	# Default catches +5% bias по сравнению со spec'ом 60% — сознательно, чтобы
+	# verdict-line чаще была канонической и игрок узнавал её.
 	if alive_time < DRAIN_FAST_DEATH_THRESHOLD:
 		return DRAIN_HEADER_FAST
 	var roll: int = randi() % 100
-	if roll < 60:
+	if roll < 65:
 		return DRAIN_HEADER_DEFAULT
-	elif roll < 85:  # 60..84 = 25%
+	elif roll < 90:  # 65..89 = 25%
 		return DRAIN_HEADER_VARIANT_2
-	elif roll < 95:  # 85..94 = 10%
-		return DRAIN_HEADER_VARIANT_3
-	return DRAIN_HEADER_DEFAULT
+	return DRAIN_HEADER_VARIANT_3  # 90..99 = 10%
 
 
 func _on_restart() -> void:
