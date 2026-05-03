@@ -7,7 +7,7 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Phase tracking (Pkg A, this commit):
 #   - Phase 1 (HP > 67%) — only default melee swing (как раньше)
-#   - Phase 2 (HP 67–34%) — transition cue + spawn 1 swarmling reinforcement
+#   - Phase 2 (HP 67–34%) — transition cue + one-shot swarmling reinforcement
 #   - Phase 3 (HP < 34%)  — transition cue + speed boost 4 → 5
 # Transitions: audio cue (enemy_destroy reuse via _telegraph_audio) + bright
 # cream emissive flash 300мс на body. Pattern variety per-фаза приходит в Pkg B/C/D.
@@ -34,11 +34,6 @@ const PHASE_3_HP_RATIO := 0.34
 
 # Phase 3 speed boost — финальная "свирепеет" фаза должна гнать сильнее.
 const PHASE_3_MOVE_SPEED := 7.8
-
-# Periodic swarmling spawn (Pkg A round-2). Phase 2 entry — first spawn (existing
-# call в _apply_phase_transition), затем каждые 4с пока boss жив. Phase 3 не
-# gating'ит — давление растёт линейно. Concurrent cap отсутствует by design.
-const SWARM_SPAWN_INTERVAL := 4.0
 
 # ────────────────────────────────────────────────────────────────────
 # Charge attack (Phase 2+) constants
@@ -138,13 +133,6 @@ var _aoe_pulse_tween: Tween
 # секунду проигрывается ~60 roll'ов и шанс никогда не прокнуть).
 var _special_reroll_timer: float = 0.0
 
-# Periodic swarmling spawn (Pkg A round-2). Активируется на P2 entry, тикает
-# каждый physics-tick пока boss жив. die() сбрасывает active=false defensive
-# (super.die() выставит is_dying и physics-loop сам выйдет).
-var _swarm_spawn_active: bool = false
-var _swarm_spawn_timer: float = 0.0
-
-
 func _ready() -> void:
 	# Stat overrides ПОСЛЕ super._ready, иначе EnemyMelee._ready клоббит наши
 	# values своими defaults (max_hp=40, move_speed=5.5, attack_range=1.5, ...) и
@@ -190,9 +178,6 @@ func _kill_type() -> String:
 # через type="boss" → BOSS_KILL_RESTORE (2× regular) — большой cap burst.
 # Phase / charge / AOE active tween'ы убираем чтобы не лезли поверх flash'а.
 func die() -> void:
-	# Defensive: physics loop guard'ится is_dying'ом первой строкой и не дойдёт до
-	# swarm timer'а, но flag сбрасываем on principle.
-	_swarm_spawn_active = false
 	if _phase_flash_tween != null and _phase_flash_tween.is_valid():
 		_phase_flash_tween.kill()
 	if _aoe_pulse_tween != null and _aoe_pulse_tween.is_valid():
@@ -276,10 +261,9 @@ func _apply_phase_transition(phase: int) -> void:
 
 	# Per-phase side-effects.
 	if phase == 2:
-		# First swarmling immediately, periodic loop кикает каждые 4с после.
+		# One-shot swarmling reinforcement on P2 entry — single mid-fight spawn,
+		# never repeats (no periodic timer). Phase 3 has no spawn — moves to speed boost.
 		_summon_swarmling()
-		_swarm_spawn_active = true
-		_swarm_spawn_timer = SWARM_SPAWN_INTERVAL
 	elif phase == 3:
 		move_speed = PHASE_3_MOVE_SPEED
 
@@ -318,14 +302,6 @@ func _physics_process(delta: float) -> void:
 		_aoe_telegraph_timer = maxf(0.0, _aoe_telegraph_timer - delta)
 		if _aoe_telegraph_timer <= 0.0:
 			_resolve_aoe()
-	# Periodic swarmling spawn (Pkg A round-2). Activated on Phase 2 entry; ticks
-	# регардлесс of phase после старта (Phase 3 продолжает spawn'ить). is_dying
-	# guard уже стоит в первой строке этого method'а.
-	if _swarm_spawn_active:
-		_swarm_spawn_timer = maxf(0.0, _swarm_spawn_timer - delta)
-		if _swarm_spawn_timer <= 0.0:
-			_swarm_spawn_timer = SWARM_SPAWN_INTERVAL
-			_summon_swarmling()
 	super._physics_process(delta)
 
 

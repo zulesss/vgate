@@ -12,7 +12,7 @@ const RESPAWN_CAP := 80.0
 # default value для reset_for_run() и для legacy callers (debug_hud, sfx breath).
 const THRESHOLD := 0.3
 const SPIKE_THRESHOLD := 0.45
-const TOLERANCE_BELOW_THRESHOLD := 0.5
+const TOLERANCE_BELOW_THRESHOLD := 0.2
 const DRAIN_RATE := 15.0
 const SHOOTER_PENALTY := 10
 const MELEE_PENALTY := 20
