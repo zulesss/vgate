@@ -13,7 +13,7 @@ class_name EnemyBoss extends EnemyMelee
 # cream emissive flash 300мс на body. Pattern variety per-фаза приходит в Pkg B/C/D.
 #
 # Stats (locked, unchanged):
-#   - HP 400 (≈ 16s sustained repeater fire — 2× longer fight per playtest)
+#   - HP 800 (≈ 32s sustained repeater fire — bumped per playtest "too fast")
 #   - move_speed 4.0 (Phase 1/2), 5.0 (Phase 3)
 #   - attack_range 2.5 (longer reach, narrow R4)
 #   - attack_penalty 25, cooldown 2.5, windup 0.5, detection_radius 40
@@ -26,7 +26,7 @@ class_name EnemyBoss extends EnemyMelee
 const BOSS_EMISSION_COLOR := Color(2.0, 0.8, 0.3)  # HDR golden — > 1.0 даёт bloom при tonemap'е
 const BOSS_EMISSION_ENERGY := 1.5
 
-# Phase thresholds (как доли max_hp). При HP=400: Phase 2 на ≤268, Phase 3 на ≤136.
+# Phase thresholds (как доли max_hp). При HP=800: Phase 2 на ≤536, Phase 3 на ≤272.
 const PHASE_2_HP_RATIO := 0.67
 const PHASE_3_HP_RATIO := 0.34
 
@@ -134,7 +134,7 @@ func _ready() -> void:
 	# stagger cooldown). Lunge оставляем включённым из melee parent'а — boss
 	# тоже должен закрывать gap в финальные 300мс windup'а, иначе walk-back
 	# escape'ит даже на slower 4.0 (player walk ~6.4 u/s при cap=80).
-	max_hp = 400
+	max_hp = 800
 	move_speed = 4.0
 	attack_range = 2.5
 	attack_windup = 0.5
