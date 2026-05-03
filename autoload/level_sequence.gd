@@ -33,15 +33,6 @@ func current_path() -> String:
 	return ARENA_PATHS[i]
 
 
-func next_path() -> String:
-	# Возвращает path следующей арены или "" если уже на финале.
-	# Win screen использует для preload'а и для discriminator'а финал/не-финал.
-	var nxt: int = current_index + 1
-	if nxt >= ARENA_PATHS.size():
-		return ""
-	return ARENA_PATHS[nxt]
-
-
 func is_final() -> bool:
 	return current_index >= ARENA_PATHS.size() - 1
 

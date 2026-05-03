@@ -31,18 +31,15 @@ var _arena_node: Node = null
 # ДО того как Spawner откроет глаза.
 #
 # Sequential campaign override: LevelSequence.current_path() — single source of
-# truth для активной арены. Export-default (`arena_c_cathedral` в .tscn) остаётся
-# для editor standalone testing — если LevelSequence по какой-то причине вернул
-# empty, fallback'аемся на export. Runtime override через autoload потому что
-# main_menu START / win_screen advance переключают current_index, не arena_scene.
+# truth для активной арены. current_path() всегда возвращает non-empty (clamp'нут).
+# load() failure (повреждённый ресурс) — fallback на export-default (arena_c
+# в .tscn), чтобы editor standalone testing продолжал работать. Runtime override
+# через autoload потому что main_menu START / win_screen advance переключают
+# current_index, не arena_scene.
 func _enter_tree() -> void:
-	var seq_path: String = LevelSequence.current_path()
-	if seq_path != "":
-		var loaded: PackedScene = load(seq_path)
-		if loaded != null:
-			arena_scene = loaded
-		else:
-			push_error("Main: LevelSequence path '%s' не загрузился — fallback на export" % seq_path)
+	var loaded: PackedScene = load(LevelSequence.current_path())
+	if loaded != null:
+		arena_scene = loaded
 	if arena_scene == null:
 		push_error("Main: arena_scene не задан — арена не будет инстанциирована")
 		return

@@ -60,7 +60,6 @@ func _ready() -> void:
 
 func _on_run_won() -> void:
 	visible = true
-	_advanced = false  # Reset flag для re-show'а (на случай повторного run_won)
 	# UI mode: симметрично DeathScreen — отпускаем cursor чтобы игрок мог нажать
 	# ДАЛЕЕ. RunLoop._won гард + VelocityGate.is_alive продолжают блокировать
 	# spawn/score/AI пока handler не сработает.
