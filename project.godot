@@ -30,6 +30,7 @@ MusicDirector="*res://autoload/music_director.gd"
 KillChain="*res://autoload/kill_chain.gd"
 SphereDirector="*res://autoload/sphere_director.gd"
 MarkDirector="*res://autoload/mark_director.gd"
+AltarDirector="*res://autoload/altar_director.gd"
 
 [display]
 

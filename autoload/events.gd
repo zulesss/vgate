@@ -62,3 +62,22 @@ signal mark_killed()
 # Failure режим — drain death (cap → 0). Timer fail отсутствует (run длится
 # пока игрок не дойдёт / не умрёт от drain).
 signal journey_complete()
+
+
+# Cathedral altar capture objective (Arena C "Собор"). Четвёртая axis к
+# sphere/mark/journey: arena в группе "objective_cathedral" → AltarDirector
+# активен (driver спавна + altar state machine), SpawnController dormant.
+# Phase ordering:
+#   - run_started → 4 altars uncaptured, AltarDirector spawn'ит врагов от каждого
+#   - altar dwell 4s clean → altar_captured(index) emit, +cap reward, spawn
+#     point этой зоны выключается
+#   - 4/4 captured → cathedral_phase_complete (2s pause silence)
+#   - 2s timeout → boss_phase_started (boss instantiate at BossSpawn)
+#   - boss killed → boss_killed (RunLoop детектит из enemy_killed type="boss",
+#     перепаблишит сюда чтобы AltarDirector / любой listener мог hook'нуться)
+#   - alive AND boss_killed AND 4 captured → run_won
+# Failure: только drain death. No timer.
+signal altar_captured(index: int)
+signal cathedral_phase_complete()
+signal boss_phase_started()
+signal boss_killed()

@@ -123,6 +123,21 @@ func apply_sphere_reward(amount: int = SPHERE_REWARD) -> void:
 	velocity_cap = minf(effective_ceiling, velocity_cap + float(amount))
 
 
+# Cathedral altar capture reward. Same shape as apply_sphere_reward — positive cap
+# gain без player_hit/enemy_killed/i-frames. Default amount меньше sphere (10 vs 10
+# по числам; сейчас идентично — отдельный API сохраняем чтобы балансировщик мог
+# тюнить altar reward отдельно от sphere без double-edit). Effective ceiling берём
+# из ceiling_boost (Kill Chain Tier 7+) как и sphere.
+const ALTAR_REWARD := 10
+
+
+func apply_altar_reward(amount: int = ALTAR_REWARD) -> void:
+	if not is_alive:
+		return
+	var effective_ceiling: float = CAP_CEILING + ceiling_boost
+	velocity_cap = minf(effective_ceiling, velocity_cap + float(amount))
+
+
 func reset_for_run() -> void:
 	velocity_cap = RESPAWN_CAP
 	current_speed = 0.0
