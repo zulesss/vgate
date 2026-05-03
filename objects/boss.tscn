@@ -53,8 +53,8 @@ sides = 32
 material = SubResource("Mat_aoe_decal")
 
 [node name="ChargeBeam" type="CSGBox3D" parent="." groups=["navmesh_excluded"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, -10.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, -9.72)
 visible = false
 use_collision = false
-size = Vector3(0.4, 0.05, 21.6)
+size = Vector3(0.4, 0.05, 19.44)
 material = SubResource("Mat_charge_beam")

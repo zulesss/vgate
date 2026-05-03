@@ -7,7 +7,8 @@ class_name EnemyBoss extends EnemyMelee
 #
 # Phase tracking (Pkg A, this commit):
 #   - Phase 1 (HP > 67%) — only default melee swing (как раньше)
-#   - Phase 2 (HP 67–34%) — transition cue + one-shot swarmling reinforcement
+#   - Phase 2 (HP 67–34%) — transition cue (audio + emissive flash). Без summon
+#     (swarmling reinforcement удалён playtest round 5 — fight ощущался hectic).
 #   - Phase 3 (HP < 34%)  — transition cue + speed boost 4 → 5
 # Transitions: audio cue (enemy_destroy reuse via _telegraph_audio) + bright
 # cream emissive flash 300мс на body. Pattern variety per-фаза приходит в Pkg B/C/D.
@@ -19,6 +20,8 @@ class_name EnemyBoss extends EnemyMelee
 #     6.4 u/s; player dash 20u×0.2s=4u burst всё ещё escape, skill ceiling preserved)
 #   - attack_range 2.5 (longer reach, narrow R4)
 #   - attack_penalty 25, cooldown 2.5, windup 0.5, detection_radius 40
+#   - lunge_speed 15.0 (2× melee default 7.5 — closes 4.5u в windup'е,
+#     anti-walk-back на P3 high-cap; round 5 bump). lunge_window 0.30 inherited.
 #
 # Visual differentiation — золотой emissive HDR через override material'а после
 # super._ready'я. Mesh scale 1.6 — transform на Visual node в boss.tscn.
@@ -38,7 +41,7 @@ const PHASE_3_MOVE_SPEED := 7.8
 # ────────────────────────────────────────────────────────────────────
 # Charge attack (Phase 2+) constants
 # ────────────────────────────────────────────────────────────────────
-# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 36 u/s = 21.6u в captured
+# Mid-range gap-closer: telegraph 0.5s → dash 0.6s × 32.4 u/s = 19.44u в captured
 # direction → recovery 0.5s vulnerable. Cooldown 4s. Penalty 30 (выше swing 25 —
 # higher commitment, higher punishment). Direction captured при dash start
 # (реактивный per user lock — игрок может в первые 0.5с telegraph'а сместиться).
@@ -49,7 +52,7 @@ const CHARGE_RANGE_MIN := 6.0
 const CHARGE_RANGE_MAX := 12.0
 const CHARGE_TELEGRAPH_DURATION := 0.5
 const CHARGE_DASH_DURATION := 0.6
-const CHARGE_DASH_SPEED := 36.0
+const CHARGE_DASH_SPEED := 32.4
 const CHARGE_RECOVERY := 0.5
 const CHARGE_COOLDOWN := 4.0
 const CHARGE_PENALTY := 30
@@ -134,6 +137,14 @@ var _aoe_pulse_tween: Tween
 # секунду проигрывается ~60 roll'ов и шанс никогда не прокнуть).
 var _special_reroll_timer: float = 0.0
 
+# Anti-kite: если P2+ boss долго не enter'ил default-swing windup (например игрок
+# kite'ит за attack_range 2.5u), через 3 секунды force'им charge — bypass
+# probability roll и range gate (но cooldown respected). Reset на _start_attack
+# (default windup) или на successful force-trigger. Charge / AOE НЕ resets timer
+# — намеренно (special attacks ≠ default swing).
+const FORCED_CHARGE_TIMEOUT := 3.0
+var _time_since_last_swing: float = 0.0
+
 func _ready() -> void:
 	# Stat overrides ПОСЛЕ super._ready, иначе EnemyMelee._ready клоббит наши
 	# values своими defaults (max_hp=40, move_speed=5.5, attack_range=1.5, ...) и
@@ -152,6 +163,10 @@ func _ready() -> void:
 	attack_cooldown = 2.5
 	attack_penalty = 25
 	detection_radius = 40.0
+	# Lunge override: melee default 7.5 × 0.30 = 2.25u closure; boss 15.0 × 0.30 = 4.5u
+	# (2× distance). Anti-walk-back на P3 7.8 move_speed + cap=80 player walk 6.4u/s —
+	# windup'овая 4.5u closure теперь покрывает 0.3s × (boss-player) relative speed gap.
+	lunge_speed = 15.0
 
 	# Material override: super._ready клонировал base material из mesh'а (telegraph
 	# flash работает на _material из base'а). Перезаписываем emission на golden HDR
@@ -174,6 +189,14 @@ func _kill_type() -> String:
 	return "boss"
 
 
+# Pkg D: hook на момент когда default swing windup стартует. Reset anti-kite
+# timer — после этого момента боссу повторно копится таймер. Charge / AOE НЕ
+# resets таймер (special attacks ≠ default swing).
+func _start_attack() -> void:
+	_time_since_last_swing = 0.0
+	super._start_attack()
+
+
 # Override: kill polish — bright white emission flash 0.5s до super.die() чтобы
 # kill-моменat читался как climax. apply_kill_restore (внутри super.die()) идёт
 # через type="boss" → BOSS_KILL_RESTORE (2× regular) — большой cap burst.
@@ -187,6 +210,7 @@ func die() -> void:
 		_aoe_decal.visible = false
 	if _charge_beam != null:
 		_charge_beam.visible = false
+	_time_since_last_swing = 0.0  # defensive cleanup (Pkg D anti-kite timer)
 	if _material != null:
 		_material.emission = BOSS_KILL_FLASH_EMISSION_COLOR
 		_material.emission_energy_multiplier = BOSS_KILL_FLASH_EMISSION_ENERGY
@@ -263,11 +287,8 @@ func _apply_phase_transition(phase: int) -> void:
 		).set_ease(Tween.EASE_OUT)
 
 	# Per-phase side-effects.
-	if phase == 2:
-		# One-shot swarmling reinforcement on P2 entry — single mid-fight spawn,
-		# never repeats (no periodic timer). Phase 3 has no spawn — moves to speed boost.
-		_summon_swarmling()
-	elif phase == 3:
+	# Phase 2: только cue (без summon — round 5 cut). Phase 3: speed boost.
+	if phase == 3:
 		move_speed = PHASE_3_MOVE_SPEED
 
 
@@ -290,6 +311,9 @@ func _physics_process(delta: float) -> void:
 		_aoe_cooldown_timer = maxf(0.0, _aoe_cooldown_timer - delta)
 	if _special_reroll_timer > 0.0:
 		_special_reroll_timer = maxf(0.0, _special_reroll_timer - delta)
+	# Anti-kite timer (Pkg D). Tick БЕЗ guards на phase / state — таймер просто
+	# движется, gate на trigger лежит в _update_state.
+	_time_since_last_swing += delta
 	if _charging_telegraph:
 		_charging_telegraph_timer = maxf(0.0, _charging_telegraph_timer - delta)
 		if _charging_telegraph_timer <= 0.0:
@@ -319,6 +343,16 @@ func _update_state() -> void:
 		# Special-attack active → state.IDLE чтобы _apply_movement в base не лез к NavAgent.
 		# Movement override ниже перехватывает velocity сам.
 		state = State.IDLE
+		return
+	# Forced charge: anti-kite. После 3s без default swing → commit charge regardless
+	# of probability / range. Cooldown respected (если на cd — нет force'а, ждём).
+	# Phase 1 не имеет charge access — без guard'а P1 boss никогда не charge'ит even
+	# на 3s timeout. Это намеренно (P1 = territorial swing only).
+	if (_current_phase >= 2 and _time_since_last_swing >= FORCED_CHARGE_TIMEOUT
+			and _charge_cooldown_timer <= 0.0
+			and not _is_winding_up and _attack_cooldown_remaining <= 0.0):
+		_start_charge_telegraph()
+		_time_since_last_swing = 0.0  # consume timer to prevent re-fire next frame
 		return
 	# Phase 3+ только: AOE до charge до regular swing если в close range.
 	if _current_phase >= 3 and _check_should_aoe():
@@ -485,28 +519,3 @@ func _resolve_aoe() -> void:
 		VelocityGate.apply_hit(AOE_PENALTY)
 
 
-func _summon_swarmling() -> void:
-	# Single mid-fight reinforcement (per locked spec — Phase 2 only, exactly один).
-	# Spawn 1.5u в сторону игрока (или forward fallback) — рой должен сразу быть в
-	# активной зоне. add_child перед global_position set: enemy._ready() стреляет
-	# синхронно из add_child, position нужен resolved'ным к моменту _ready'я;
-	# pattern mirror'ит altar_director._instantiate_enemy_at.
-	var swarm_scene: PackedScene = load("res://objects/swarmling.tscn")
-	if swarm_scene == null:
-		return
-	var swarm := swarm_scene.instantiate() as Node3D
-	if swarm == null:
-		return
-	var dir := Vector3.FORWARD
-	if _player != null:
-		var to_player := _player.global_position - global_position
-		to_player.y = 0.0
-		if to_player.length() > 0.001:
-			dir = to_player.normalized()
-	if "is_spawning" in swarm:
-		swarm.is_spawning = true
-	get_parent().add_child(swarm)
-	swarm.global_position = global_position + dir * 1.5
-	if "is_spawning" in swarm:
-		swarm.is_spawning = false
-	Events.enemy_spawned.emit(swarm)
