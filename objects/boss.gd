@@ -63,12 +63,12 @@ const CHARGE_TELEGRAPH_EMISSION_ENERGY := 3.0
 # ────────────────────────────────────────────────────────────────────
 # AOE swing (Phase 3+) constants
 # ────────────────────────────────────────────────────────────────────
-# Close-range radial: red ground decal pulses 1.5s → resolve damage если игрок
+# Close-range radial: red ground decal pulses 1.0s → resolve damage если игрок
 # в радиусе. Trigger когда player ≤7.5u (sub-charge range, overlap с default
 # swing range 2.5 — но AOE проседает разовой 25 cap'а с radial coverage:
 # back-step не escape'ит как от swing'а). Cooldown 6s.
 const AOE_RANGE := 7.5
-const AOE_TELEGRAPH_DURATION := 1.5
+const AOE_TELEGRAPH_DURATION := 1.0
 const AOE_PENALTY := 25
 const AOE_COOLDOWN := 6.0
 # Pulse: emission energy 0.5 → 2.0 за 0.75s, повторяется (pulse в обе стороны
@@ -80,12 +80,12 @@ const AOE_PULSE_DURATION := 0.75
 # ────────────────────────────────────────────────────────────────────
 # Pattern selection (Pkg D)
 # ────────────────────────────────────────────────────────────────────
-# Probabilities per phase. Phase 2 в mid-range → 40% charge / 60% chase для default.
-# Phase 3 close → 20% AOE / остальное pипает к charge или default по range. Roll
+# Probabilities per phase. Phase 2 в mid-range → 70% charge / 30% chase для default.
+# Phase 3 close → 20% AOE / 55% charge / остальное default по range. Roll
 # на каждой entry'е в _check_should_X. Если roll провалился — set re-roll timer
 # чтобы не re-roll'ить 60Hz и не starve'ить opportunity.
-const PHASE_2_CHARGE_PROB := 0.40
-const PHASE_3_CHARGE_PROB := 0.30
+const PHASE_2_CHARGE_PROB := 0.70
+const PHASE_3_CHARGE_PROB := 0.55
 const PHASE_3_AOE_PROB := 0.20
 const SPECIAL_REROLL_COOLDOWN := 1.0
 
@@ -361,8 +361,8 @@ func _check_should_charge() -> bool:
 	if dist < CHARGE_RANGE_MIN or dist > CHARGE_RANGE_MAX:
 		return false
 	# Probability gate per phase. Roll fail → set reroll cooldown, boss продолжает
-	# chase. Phase 2: 40%. Phase 3: 30% (потому что AOE забирает 20% — суммарно
-	# 50% special / 50% default per spec).
+	# chase. Phase 2: 70%. Phase 3: 55% (плюс AOE забирает 20% — суммарно
+	# 75% special / 25% default per spec).
 	var prob: float = PHASE_2_CHARGE_PROB if _current_phase == 2 else PHASE_3_CHARGE_PROB
 	if randf() < prob:
 		return true
